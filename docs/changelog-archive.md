@@ -2,6 +2,20 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-13 — a shape on a board can point at a page
+
+### Additions
+
+- **Link a shape to a page.** Select any shape on a board and a *Link to page* button appears at the top right, beside Expand. Search, pick, done — the shape now points at that page, and the button says its name while the shape is selected (as a tooltip in the page, in full when the board is expanded). *Remove the link* is in the same list.
+- **Following the link opens the page.** Click the small link icon a linked shape shows, or the link in the popup that appears when you select it, and you're on the page. A web address typed into the drawing tool's own link box opens in your browser instead, the way links elsewhere in the app do.
+- **Typed names work too.** The drawing tool has its own link box (Ctrl+K). Type a page's name or alias in there and it resolves to the page when clicked — by the storyline note's rule, so a name two pages share points at neither, and a name nothing answers to says so rather than doing nothing.
+- **Backlinks and the graph see it.** A page a board's shape points at lists the board in its Backlinks, and the graph draws the line, the same as a scene on a storyline.
+
+### Notes
+
+- **Picked links survive renames; typed ones don't.** The picker writes the page's id into the shape; a typed name is looked up when clicked. Rename Greyharbour and the picked link still opens it, the typed one stops and tells you.
+- **One wart worth knowing.** When a linked shape is selected, the drawing tool's own popup shows the link as it stores it — `anamnesis://page/…` followed by an id — rather than the page's name. The name is on the button at the top right. Making the popup say the name would mean changing the library, which is not worth it for this.
+
 ## 2026-09-13 — A big world's graph can be read
 
 ### Fixes

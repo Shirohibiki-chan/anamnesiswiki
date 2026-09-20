@@ -24,13 +24,13 @@ type Props = {
   /** The box the library gave the card, in the drawing's own units. */
   width: number;
   height: number;
-  /** Whether the canvas has the card open for reading — only meant for the page presentation. */
-  reading: boolean;
+  /** Whether the canvas has the card open for writing — only meant for the page presentation. */
+  writing: boolean;
   /** The opened page's Open button: the page in full. */
   onOpen: () => void;
-  /** She is done reading the opened page. */
+  /** She is done writing in the opened page. */
   onDone: () => void;
-  /** A web link in the opened page's writing, clicked. */
+  /** A web link in the opened page's drawn writing, clicked. */
   onOpenLink: (href: string) => void;
 };
 
@@ -38,7 +38,7 @@ type Props = {
 // board.css), so clicks land on the canvas and BoardCanvas opens the page
 // from the library's pointer-up hook, where selecting and dragging already
 // are.
-export function BoardPageCard({ pageId, width, height, reading, onOpen, onDone, onOpenLink }: Props) {
+export function BoardPageCard({ pageId, width, height, writing, onOpen, onDone, onOpenLink }: Props) {
   const page = useProjectStore((state) => state.nodes[pageId]);
   // The page's own picture first; a page with only a banner shows that,
   // because a card with a picture on it is what LK's boards make and a page
@@ -56,7 +56,7 @@ export function BoardPageCard({ pageId, width, height, reading, onOpen, onDone, 
     );
   }
 
-  if (presentation === "page") return <BoardOpenPage page={page} reading={reading} onOpen={onOpen} onDone={onDone} onOpenLink={onOpenLink} />;
+  if (presentation === "page") return <BoardOpenPage page={page} writing={writing} onOpen={onOpen} onDone={onDone} onOpenLink={onOpenLink} />;
 
   const iconSize = presentation === "icon" ? Math.max(20, Math.min(width, height) * 0.5) : presentation === "row" ? 18 : 16;
 

@@ -222,11 +222,12 @@ export default function BoardCanvas({
   const lastClickSelectedRef = useRef(false);
   // The colour the last note was made in, which the next one starts as.
   const [noteColour, setNoteColour] = useState<NoteColour>(DEFAULT_NOTE_COLOUR);
-  // The page card being read — a card at the page presentation whose box
-  // has the pointer and the keyboard (step 6). State and ref for the
-  // note's reason: the library's change reports close over nothing.
-  const [readingCardId, setReadingCardId] = useState<string | null>(null);
-  const readingCardRef = useRef<string | null>(null);
+  // The page card being written in — a card at the page presentation
+  // whose box has the pointer and the keyboard, and the page's editor in
+  // it (step 6). State and ref for the note's reason: the library's change
+  // reports close over nothing.
+  const [writingCardId, setWritingCardId] = useState<string | null>(null);
+  const writingCardRef = useRef<string | null>(null);
 
   // Clicking anywhere else closes the picker, the storyline picker's rule.
   useEffect(() => {
@@ -475,22 +476,22 @@ export default function BoardCanvas({
 
   // ---- A page opened on the board (Phase 32, step 6) ----
 
-  const setReading = useCallback((id: string | null) => {
-    readingCardRef.current = id;
-    setReadingCardId(id);
+  const setWriting = useCallback((id: string | null) => {
+    writingCardRef.current = id;
+    setWritingCardId(id);
   }, []);
 
-  /** Reading is over: the box goes back to being a shape, and the keyboard to the board. */
-  const endReading = useCallback(() => {
-    if (readingCardRef.current === null) return;
-    setReading(null);
+  /** Writing is over: the box goes back to being a shape, and the keyboard to the board. The page has already saved itself. */
+  const endWriting = useCallback(() => {
+    if (writingCardRef.current === null) return;
+    setWriting(null);
     surface?.querySelector<HTMLElement>(".excalidraw-container")?.focus();
-  }, [setReading, surface]);
+  }, [setWriting, surface]);
 
   // A new note on N, and Enter on a selected note to write in it — the
   // library's own Enter on a shape with words — or on a selected opened
-  // page to read it. All only when the keyboard is the board's and not a
-  // box's.
+  // page to write in it. All only when the keyboard is the board's and
+  // not a box's.
   useEffect(() => {
     if (!surface) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -512,13 +513,13 @@ export default function BoardCanvas({
         } else if (isOpenPageCard(selected)) {
           event.preventDefault();
           event.stopPropagation();
-          setReading(selected.id);
+          setWriting(selected.id);
         }
       }
     }
     surface.addEventListener("keydown", onKeyDown);
     return () => surface.removeEventListener("keydown", onKeyDown);
-  }, [surface, addNote, noteColour, setEditing, setReading]);
+  }, [surface, addNote, noteColour, setEditing, setWriting]);
 
   /**
    * Puts a bookmark card for `url` on the board with its middle at
@@ -665,14 +666,14 @@ export default function BoardCanvas({
             }, 0);
           }
         }
-        // Reading an opened page ends the same way, and also when the box
-        // is shrunk back to a card.
-        const reading = readingCardRef.current;
-        if (reading !== null) {
-          const still = elements.find((element) => element.id === reading);
-          if (!still || still.isDeleted || !appState.selectedElementIds[reading] || !isOpenPageCard(still)) {
+        // Writing in an opened page ends the same way, and also when the
+        // box is shrunk back to a card.
+        const writing = writingCardRef.current;
+        if (writing !== null) {
+          const still = elements.find((element) => element.id === writing);
+          if (!still || still.isDeleted || !appState.selectedElementIds[writing] || !isOpenPageCard(still)) {
             window.setTimeout(() => {
-              if (readingCardRef.current === reading) endReading();
+              if (writingCardRef.current === writing) endWriting();
             }, 0);
           }
         }
@@ -688,15 +689,15 @@ export default function BoardCanvas({
         // A woken *note* is a note to write in: the library's double-click
         // and second click in the middle are how writing starts, and its
         // woken state is put back the same way, since the app keeps its own.
-        // A woken *opened page* is a page to read, by the same two gestures.
+        // A woken *opened page* is a page to write in, by the same two gestures.
         const woken = appState.activeEmbeddable;
         if (woken?.state === "active" && (isPageCard(woken.element) || isBookmarkCard(woken.element) || isNote(woken.element))) {
           const meant = !woken.element.locked && !lastGestureDraggedRef.current && !lastClickSelectedRef.current;
           if (isNote(woken.element) && meant && editingNoteRef.current !== woken.element.id) {
             noteDraftRef.current = null;
             setEditing(woken.element.id);
-          } else if (isOpenPageCard(woken.element) && meant && readingCardRef.current !== woken.element.id) {
-            setReading(woken.element.id);
+          } else if (isOpenPageCard(woken.element) && meant && writingCardRef.current !== woken.element.id) {
+            setWriting(woken.element.id);
           }
           window.setTimeout(() => apiRef.current?.updateScene({ appState: { activeEmbeddable: null } }), 0);
         }
@@ -749,9 +750,9 @@ export default function BoardCanvas({
           return;
         }
         if (!hit || pointerDownState.hit.wasAddedToSelection) return;
-        // A card opened as its page is read on the second click, not left
-        // for the page (the woken state above); its Open button is the way
-        // there.
+        // A card opened as its page is written in on the second click, not
+        // left for the page (the woken state above); its Open button is the
+        // way there.
         const pageId = isOpenPageCard(hit) ? null : cardPageId(hit);
         if (pageId) links.openLink(`${BOARD_PAGE_LINK_PREFIX}${pageId}`);
         else if (isBookmarkCard(hit) && hit.link) links.openLink(hit.link);
@@ -777,12 +778,13 @@ export default function BoardCanvas({
               pageId={pageId}
               width={element.width}
               height={element.height}
-              // Locked, an opened page is read without being woken — the
-              // library will not hit a locked shape, so nothing could wake
-              // it — and it cannot be moved, so the box may as well be hers.
-              reading={readingCardId === element.id || !!element.locked}
+              // Locked, an opened page is open for writing without being
+              // woken — the library will not hit a locked shape, so nothing
+              // could wake it — and it cannot be moved, so the box may as
+              // well be hers.
+              writing={writingCardId === element.id || !!element.locked}
               onOpen={() => links.openLink(`${BOARD_PAGE_LINK_PREFIX}${pageId}`)}
-              onDone={endReading}
+              onDone={endWriting}
               onOpenLink={links.openLink}
             />
           );
