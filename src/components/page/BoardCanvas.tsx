@@ -308,12 +308,14 @@ export default function BoardCanvas({
   const growNotes = useCallback(() => {
     growPendingRef.current = false;
     const api = apiRef.current;
+    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("grow api=" + !!api + " surface=" + !!surface + " resizing=" + api?.getAppState().isResizing);
     if (!api || !surface || api.getAppState().isResizing) return;
     const needs = new Map<string, number>();
     for (const words of surface.querySelectorAll<HTMLElement>(".board-note .board-note-words")) {
       const id = words.parentElement?.getAttribute("data-note-id");
       if (id) needs.set(id, words.offsetHeight + BOARD_NOTE_PADDING * 2);
     }
+    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("needs=" + JSON.stringify([...needs.entries()]) + " scene=" + JSON.stringify(api.getSceneElementsIncludingDeleted().filter(isNote).map((e) => [e.id, e.height, e.version])));
     let changed = false;
     let captured = false;
     const elements = api.getSceneElementsIncludingDeleted().map((element) => {
@@ -326,11 +328,21 @@ export default function BoardCanvas({
       captured = true;
       return newElementWith(element, { height: needed });
     });
-    if (changed) api.updateScene({ elements, captureUpdate: captured ? CaptureUpdateAction.IMMEDIATELY : CaptureUpdateAction.EVENTUALLY });
+    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("changed=" + changed + " captured=" + captured);
+    if (changed) {
+      try {
+        api.updateScene({ elements, captureUpdate: captured ? CaptureUpdateAction.IMMEDIATELY : CaptureUpdateAction.EVENTUALLY });
+        ((window as unknown as { __diag?: string[] }).__diag ??= []).push("after update scene=" + JSON.stringify(api.getSceneElementsIncludingDeleted().filter(isNote).map((e) => [e.id, e.height])));
+      } catch (error) {
+        ((window as unknown as { __diag?: string[] }).__diag ??= []).push("update threw " + String(error));
+        throw error;
+      }
+    }
   }, [surface]);
 
   /** Asks for the notes to be grown, once per tick however many ask, and never from inside a layout callback. */
   const scheduleGrow = useCallback(() => {
+    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("schedule pending=" + growPendingRef.current);
     if (growPendingRef.current) return;
     growPendingRef.current = true;
     window.setTimeout(growNotes, 0);
@@ -355,6 +367,7 @@ export default function BoardCanvas({
         captureUpdate: CaptureUpdateAction.EVENTUALLY,
       });
       // The words just changed, so the box may need to.
+      ((window as unknown as { __diag?: string[] }).__diag ??= []).push("edit lines=" + lines.length);
       scheduleGrow();
     },
     [scheduleGrow],

@@ -143,6 +143,10 @@ describe("sticky notes on a board", () => {
     }
     await finishBoardNote(app.window);
     const grown = await boardNoteBox(app.window, 0);
+    if (grown.height <= 260) {
+      const diag = await app.window.evaluate(() => (window as unknown as { __diag?: string[] }).__diag);
+      expect({ diag, errors: app.errors, box: await app.window.evaluate(() => { const n = document.querySelector<HTMLElement>("[data-testid='board-note']"); const inner = n?.closest<HTMLElement>(".excalidraw__embeddable-container__inner"); return [n?.offsetHeight, inner?.style.height, inner?.offsetHeight]; }) }).toEqual({});
+    }
     expect(grown.height).toBeGreaterThan(260);
     const [note] = await notesOnDisk(app);
     expect(note.height).toBeGreaterThan(260);
