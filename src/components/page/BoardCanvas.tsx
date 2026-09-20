@@ -35,7 +35,7 @@ import {
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { AppState, BinaryFileData, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIAppState } from "@excalidraw/excalidraw/types";
-import { FilePlus2, Grip, Link2, Maximize2, Minimize2, StickyNote, Unlink } from "lucide-react";
+import { FilePlus2, Grip, Link2, Maximize2, Minimize2, PanelLeftOpen, StickyNote, Unlink } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_NOTE_LINK, BOARD_NOTE_PADDING, BOARD_NOTE_SIZE, BOARD_PAGE_LINK_PREFIX, BOARD_PICTURE_MAX_SIDE, PAGE_DRAG_TYPE } from "../../constants/board";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
@@ -75,6 +75,10 @@ type Props = {
   placePicture: (fileName: string) => Promise<PictureFile | null>;
   /** What a web address's page says about itself, with its picture put in the library. Never rejects. */
   fetchBookmark: (url: string) => Promise<Bookmark>;
+  /** The page viewed beside the board, if one is: its box is never written in while it is. */
+  viewedPageId: string | null;
+  /** The View button: show this page beside the board. */
+  onViewPage: (pageId: string) => void;
 };
 
 /**
@@ -190,6 +194,8 @@ export default function BoardCanvas({
   readPictures,
   placePicture,
   fetchBookmark,
+  viewedPageId,
+  onViewPage,
 }: Props) {
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [picker, setPicker] = useState<Picker | null>(null);
@@ -228,6 +234,11 @@ export default function BoardCanvas({
   // reports close over nothing.
   const [writingCardId, setWritingCardId] = useState<string | null>(null);
   const writingCardRef = useRef<string | null>(null);
+  // The viewed page, readable from the library's change reports.
+  const viewedPageRef = useRef(viewedPageId);
+  useEffect(() => {
+    viewedPageRef.current = viewedPageId;
+  }, [viewedPageId]);
 
   // Clicking anywhere else closes the picker, the storyline picker's rule.
   useEffect(() => {
@@ -488,6 +499,24 @@ export default function BoardCanvas({
     surface?.querySelector<HTMLElement>(".excalidraw-container")?.focus();
   }, [setWriting, surface]);
 
+  /**
+   * Whether this card may be written in: not while its page is the one
+   * viewed beside the board. Two editors on one tab would each save over
+   * the other; the box stays drawn and follows the panel's writing instead.
+   */
+  const mayWrite = useCallback((element: { locked?: boolean } & Parameters<typeof cardPageId>[0]) => {
+    return !element.locked && cardPageId(element) !== viewedPageRef.current;
+  }, []);
+
+  // The panel opening on the page being written in ends the writing.
+  useEffect(() => {
+    const api = apiRef.current;
+    const id = writingCardRef.current;
+    if (!api || id === null || viewedPageId === null) return;
+    const card = api.getSceneElements().find((element) => element.id === id);
+    if (card && cardPageId(card) === viewedPageId) endWriting();
+  }, [viewedPageId, endWriting]);
+
   // A new note on N, and Enter on a selected note to write in it — the
   // library's own Enter on a shape with words — or on a selected opened
   // page to write in it. All only when the keyboard is the board's and
@@ -510,7 +539,7 @@ export default function BoardCanvas({
           event.stopPropagation();
           noteDraftRef.current = null;
           setEditing(selected.id);
-        } else if (isOpenPageCard(selected)) {
+        } else if (isOpenPageCard(selected) && mayWrite(selected)) {
           event.preventDefault();
           event.stopPropagation();
           setWriting(selected.id);
@@ -519,7 +548,7 @@ export default function BoardCanvas({
     }
     surface.addEventListener("keydown", onKeyDown);
     return () => surface.removeEventListener("keydown", onKeyDown);
-  }, [surface, addNote, noteColour, setEditing, setWriting]);
+  }, [surface, addNote, noteColour, setEditing, setWriting, mayWrite]);
 
   /**
    * Puts a bookmark card for `url` on the board with its middle at
@@ -696,7 +725,7 @@ export default function BoardCanvas({
           if (isNote(woken.element) && meant && editingNoteRef.current !== woken.element.id) {
             noteDraftRef.current = null;
             setEditing(woken.element.id);
-          } else if (isOpenPageCard(woken.element) && meant && writingCardRef.current !== woken.element.id) {
+          } else if (isOpenPageCard(woken.element) && meant && mayWrite(woken.element) && writingCardRef.current !== woken.element.id) {
             setWriting(woken.element.id);
           }
           window.setTimeout(() => apiRef.current?.updateScene({ appState: { activeEmbeddable: null } }), 0);
@@ -781,8 +810,9 @@ export default function BoardCanvas({
               // Locked, an opened page is open for writing without being
               // woken — the library will not hit a locked shape, so nothing
               // could wake it — and it cannot be moved, so the box may as
-              // well be hers.
-              writing={writingCardId === element.id || !!element.locked}
+              // well be hers. Never while its page is viewed beside the
+              // board: one editor per page.
+              writing={(writingCardId === element.id || !!element.locked) && pageId !== viewedPageId}
               onOpen={() => links.openLink(`${BOARD_PAGE_LINK_PREFIX}${pageId}`)}
               onDone={endWriting}
               onOpenLink={links.openLink}
@@ -911,6 +941,24 @@ export default function BoardCanvas({
                 >
                   <span className="board-colour-dot" />
                   <span className="board-link-label">Colour</span>
+                </button>
+              )}
+              {/* A selected page card's page, viewed beside the board — LK's
+                  View, the second of its three ways into a card's page. */}
+              {selectedIsCard && selected && (
+                <button
+                  type="button"
+                  className="board-top-button board-view-button"
+                  aria-pressed={viewedPageId !== null && cardPageId(selected) === viewedPageId}
+                  onClick={() => {
+                    const pageId = cardPageId(selected);
+                    if (pageId) onViewPage(pageId);
+                  }}
+                  title="View this page beside the board"
+                  aria-label="View this page beside the board"
+                >
+                  <PanelLeftOpen size={16} />
+                  <span className="board-link-label">View</span>
                 </button>
               )}
               {linkable && (

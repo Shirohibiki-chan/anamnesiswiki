@@ -551,9 +551,33 @@ Board spike, closed 2026-09-13. What binds the code:
   a short box is cut off — make the box taller; a property field in an
   infobox is live while the page is drawn; a mention chip with the
   keyboard focus is not a `wysiwyg` target, so Delete on one would delete
-  the card. When the View panel (step 6's last half) holds a page, that
-  page's box must stay drawn, never written in: two editors on one tab
-  would each save over the other.
+  the card.
+
+- **A page viewed beside the board is `PageView` for another page, in a
+  panel the board owns** (Phase 32, step 6, LK's *View*). `PageView` takes
+  an optional `nodeId` and reads the selection only without one; the
+  window's own page and the panel's are the same component, keyed on the
+  page, so there is one page view to keep right. `PageBoard` holds
+  `viewedPageId` — this session's only, not part of the drawing — and
+  renders `BoardViewPanel` as the board's first child with
+  `data-view-open` on the board; the board becomes a flex row and the
+  library's container takes the rest, resizing itself through its own
+  observer. The dots' `background-position` is shifted by
+  `--board-view-width` because the library's view now starts at the
+  panel's right edge while the dots are drawn from the board's left. **One
+  editor per page:** `BoardCanvas` is told `viewedPageId`, `mayWrite`
+  refuses to open that page's box for writing, the box's `writing` prop is
+  forced off for it, and the panel opening on a box being written in ends
+  the writing — two editors on one tab would each save over the other,
+  and the drawn box follows the panel's typing through `usePageReader`'s
+  `replaceBlocks` instead. A board or a storyline is not shown in the
+  panel (a drawing in a drawing; LK's cannot either) — the panel says so
+  and offers Open. The View button lives in the top-right row with the
+  others, shown when a page card is the sole selection. **The top-right
+  row wraps only when the board is expanded:** in the page, the library
+  is in its narrow layout and renders that row *inside* its toolbar
+  island, which grows with a wrapped row and covers the top of the
+  drawing — a box-select scenario found it.
 
 - **The drawing library is patched, and `scripts/excalidraw-patch.mjs` is
   the readable form of the patch.** `patches/@excalidraw__excalidraw@0.18.1.patch`

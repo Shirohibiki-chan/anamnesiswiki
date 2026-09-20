@@ -2,6 +2,47 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-13 — The graph learns from Obsidian
+
+### Additions
+
+- **A scene's card says what happens.** Double-click a card on the storyline and write the event into it — what you write is the scene's Summary, the same field on its page, so it's in both places and only lives in one. The card grows to fit however much you write; nothing else on the canvas moves while you type. Enter is a new line, Ctrl+Enter is done, Escape keeps what was there. The strip at the bottom has an *Edit what happens* button for the same thing.
+- **Every card has its own open-page button**, top-right corner. Double-clicking a card used to open its page; that's the description now, and the page has a button on the card rather than only at the bottom of the canvas. The strip's *Open this scene* button is gone with it.
+- **A scene with a banner shows it on its card**, behind the name, shaded dark near the words so they stay readable. A page with no banner but a picture of its own shows that instead.
+- **A character has Family, Friends, Allies, Rivals and Enemies fields by default.** Only Friends shipped before. They're reference fields, so each one is a line on the graph that says what it is.
+- **The graph's filter menu lists each relationship by name.** Under *Reference fields*: Friends, Enemies, Leader, Members — whatever the pages on this graph actually use — each one its own tick box.
+
+### Fixes
+
+- **A scene can be renamed on the storyline.** Select it and press *Rename* (or F2), type over the name on the card, and Enter keeps it — Escape keeps the old one. It's the page that gets renamed, the same as in the tree; the card only ever showed the page's name. Before this, the canvas had no way to do it at all: double-clicking a scene opens its page, and the only buttons were *Open this scene* and *Take off the canvas*.
+- **Selecting something on the storyline no longer shrinks the whole picture.** The strip of buttons for the selection was a row under the canvas, so every click took its height off the canvas and the picture re-fitted smaller — then grew back when you clicked away. The strip now lies over the bottom edge of the canvas instead; nothing moves. The zoom number and the "can't join those" note moved to the top edge to stay out from under it.
+- **Panning the storyline no longer highlights a stretch's name or a note's text as it sweeps across them.**
+- **Double-clicking a stretch's label renames it, as the label says.** The double-click was being listened for on the words, but pressing on a stretch grabs the pointer for the stretch as a whole, so the words never heard it. The Rename button worked all along; now both do.
+- **Dragging the storyline's background pans it.** It had the graph's pan bug below, copied over before that was found: the step came out as zero, so the canvas sat still under the drag.
+- **Dragging the graph's background pans it — for real this time.** The pan was adding up its steps in a way React was free to apply late, and when it did, every step came out as zero. That's why a drag sometimes did nothing at all; it had nothing to do with what was under the pointer.
+- **The wheel glides and zooms toward your pointer.** A notch sets a target and the view eases to it over a dozen frames instead of jumping the whole notch at once, and the point under the pointer stays put — Obsidian's feel, both of them.
+- **Pointing at dots is precise, and the background is the background.** While the pages are dots there are no clickable boxes at all: the graph works out the nearest dot to the pointer itself — generous for pointing, tight for picking up — and any press anywhere else pans. A box big enough to hover was covering the gaps between dots and grabbing pages on a background drag.
+- **Zooming a big graph is smooth.** While the wheel turns, only what's on screen is painted and the filed-under lines are drawn solid; they get their dashes back the moment it stops. Measured on 831 pages: 43ms a frame → 18ms, the same as with no lines at all. Lines also never grow wider than a pixel and a half on screen, however far in you go.
+- **Pointing at a page no longer flashes the lines.** The dots still fade and the page's own lines still light up in the accent, but the other lines stay as they are — they only step back when you click a page. Lines can't fade the way dots can, so dimming them on hover made thousands of them flash as the pointer crossed a row of dots.
+
+- **Changing a filter or the reach on a big graph no longer freezes the app.** The layout is worked out on a separate thread now; the last picture stays up with a "Working out the picture…" note until the new one is ready, and the window keeps answering meanwhile. On 831 pages that's about a second of waiting instead of a second of frozen window — the same wait the graph had on opening, which is also no longer a freeze.
+
+### Changes
+
+- **Scene cards are wider (220), and Tidy up stacks cards edge to edge with a fixed space between**, since they're no longer all one height. Tidy up also stays quiet when a card is within a few pixels of where it would put it. The example world's storyline is re-spaced to match.
+- **The storyline's toolbar is one row, always.** Beside an ordinary sidebar it was wrapping *Tidy up* and the expand corner onto a second line. The four buttons say *Scene*, *Existing page*, *Note* and *Stretch* now (hover for the long version), and when the page column is too narrow even for those they fold into one *Add* menu with the same four rows — words kept, never icons alone. The scene count is gone from the bar; the canvas shows it.
+- **Scene cards on the storyline are one row.** Icon and name, 52 tall instead of 84. The bottom third of every card was kept empty for the little icons of who's in the scene, drawn whether or not anyone was — on a new storyline that was a name in a corner over a band of air. The icons now hang off the card's bottom-right corner as a small cluster of dots, and only when there is someone to show. Cards are still one fixed size, so nothing moves when a name is written into a page.
+- **A stretch's label is small caps, and a new stretch starts at half the size.** Room for two scenes side by side rather than four cards' worth of dashed box around whatever it landed on.
+- **Far out, a page is a dot.** At whole-world zoom a page is a filled dot in its colour rather than a ring with an unreadable icon in it; the ring, icon and name come back as you zoom in. Hundreds of dots are something the eye can take in, and drawing them is cheap enough that zooming repaints crisp on every tick — no more soft picture while the wheel turns.
+- **Pages nothing points at sit in a ring around the rest.** A page with no written connections (a mention, a reference field, a manual link) is placed on a band outside the connected pages instead of being mixed in with them — where it's filed doesn't count, since every page is filed somewhere. It's the picture Obsidian's physics happens to produce, done on purpose so it's the same every time.
+- **Pointing at a page lights its connections in the accent colour and the rest of the world steps back.** The page, the pages it touches and the lines between them stay at full strength; everything else fades. Clicking keeps it that way while the page is selected.
+- **Hubs are bigger dots.** Far out, a page's dot grows with how many lines it has, so the pages everything points at are the ones your eye lands on.
+- **The filter menu can switch kinds of line on and off** — mentions in the writing, reference fields, manual links, storylines, boards, and filed-under. On the whole-world graph a filter, a hidden kind or the lone-pages tick hides in place: nothing else moves, and it's instant. On a page's own graph they decide what's walked to, as before.
+- **Pointing at a page far out is precise again, and the fade is calmer.** The dot had shrunk its clickable area down to four pixels; it has a proper one back. And the rest of the world fades over about a third of a second rather than flashing as the pointer crosses a row of dots.
+- **A *Display* menu on the graph's bar, with a slider for when names appear.** Obsidian's text-fade threshold, in our terms: lower shows names from further out, higher keeps the picture to dots until you are close. It's a preference, like the Lines setting, so it follows you between worlds.
+- **The filter menu can hide pages nothing points at.** A tick box beside the filters; the bar counts it as one. Where a page is filed doesn't count as pointing at it.
+- **The test-world generator can make a world with hubs** (`--shape hubs`): a few pages most things point at, one home hub per page so the clusters are real, and a quarter of pages nothing points at. The default world still links everything to random other pages, which is the one shape no graph can make readable — judge the graph on the hub one.
+
 ## 2026-09-13 — a shape on a board can point at a page
 
 ### Additions

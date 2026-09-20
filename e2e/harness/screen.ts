@@ -3479,3 +3479,68 @@ export async function wheelOverBoardCard(window: Page, name: string, dy: number)
   await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await window.mouse.wheel(0, dy);
 }
+
+// ---- A page viewed beside a board (Phase 32, step 6, the View panel) ----
+
+const BOARD_VIEW_BUTTON = ".board-view-button";
+const BOARD_VIEW_PANEL = "[data-testid='board-view-panel']";
+
+/** Whether the top-right row offers View — a page card is the selected shape. */
+export async function boardOffersView(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD_VIEW_BUTTON).count()) > 0;
+}
+
+/** Clicks View for the selected card and waits for the panel beside the board. */
+export async function viewBoardCardPage(window: Page): Promise<void> {
+  await window.locator(BOARD_VIEW_BUTTON).click();
+  await window.locator(BOARD_VIEW_PANEL).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+export async function boardViewPanelIsOpen(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD_VIEW_PANEL).count()) > 0;
+}
+
+/** The name of the page the panel shows, as its bar says it. */
+export async function boardViewPanelName(window: Page): Promise<string> {
+  return normalize(await window.locator(`${BOARD_VIEW_PANEL} .board-view-panel-name`).innerText());
+}
+
+/** The page's title as the panel's own page view draws it — the same heading the page in full has. */
+export async function boardViewPanelTitle(window: Page): Promise<string> {
+  return normalize(await window.locator(`${BOARD_VIEW_PANEL} ${PAGE_TITLE}`).first().innerText());
+}
+
+/** Everything written in the panel's editor, as one run of text. */
+export async function boardViewPanelText(window: Page): Promise<string> {
+  return normalize((await window.locator(`${BOARD_VIEW_PANEL} ${EDITOR}`).first().textContent()) ?? "");
+}
+
+/** Types at the end of the panel's page, the way `typeInEditor` does for the page in full. */
+export async function typeInBoardViewPanel(window: Page, text: string): Promise<void> {
+  const editor = window.locator(`${BOARD_VIEW_PANEL} ${EDITOR}`).first();
+  await editor.waitFor({ state: "visible", timeout: WAIT_MS });
+  await editor.click({ position: { x: 8, y: 8 } });
+  await window.keyboard.press("Control+End");
+  await window.keyboard.type(text, { delay: 20 });
+}
+
+/** The panel's Open button — the page in full. */
+export async function openBoardViewPanelPage(window: Page): Promise<void> {
+  await window.locator(`${BOARD_VIEW_PANEL} .board-view-panel-open`).click();
+}
+
+export async function closeBoardViewPanel(window: Page): Promise<void> {
+  await window.locator(`${BOARD_VIEW_PANEL} .board-view-panel-close`).click();
+  await window.locator(BOARD_VIEW_PANEL).waitFor({ state: "detached", timeout: WAIT_MS });
+}
+
+/**
+ * Double-clicks the card for `name` at its middle and waits past the
+ * library's wake, without expecting anything to open — for saying that a
+ * card did *not* open.
+ */
+export async function doubleClickBoardCardQuietly(window: Page, name: string): Promise<void> {
+  const box = await boardCardBox(window, name);
+  await window.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  await window.waitForTimeout(600);
+}

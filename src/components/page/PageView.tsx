@@ -31,7 +31,13 @@ import "./page.css";
 // land on a specific tab: `pendingFocus` only has to be right at mount, and
 // it's matched against this node's id so a leftover from an earlier jump
 // can't open the wrong tab on the next page opened.
-export function PageView() {
+//
+// **Given a `nodeId`, it shows that page instead of the selected one** — the
+// board's View panel (Phase 32, step 6) is the one caller, showing a page
+// beside the board it is pinned to. Everything else is the same view, so
+// there is one page view to keep right; only the pending rename and the
+// pending focus are the selected page's, and they match on id anyway.
+export function PageView({ nodeId }: { nodeId?: string } = {}) {
   const {
     contentRevisions,
     project,
@@ -47,8 +53,8 @@ export function PageView() {
   } = useProject();
   const createPageIn = useCreatePageIn();
   const { openPageGraph } = useGraphOverlayActions();
-  const selectedId = project?.selectedId ?? null;
-  const node = selectedId ? nodes[selectedId] : undefined;
+  const shownId = nodeId ?? project?.selectedId ?? null;
+  const node = shownId ? nodes[shownId] : undefined;
   // What a snippet aims at — see `styleClass` on Node. Read here, above the
   // early returns, because it is a hook.
   const styleClass = useEffectiveStyleClass(node);
