@@ -720,18 +720,12 @@ is built; it is all checked as present and not switched off.
    description, picture and site, kept on the element and drawn with the
    internet off; the picture is a library picture; a click opens the
    address the way a page card opens its page.
-6. **A page opened on the board.** LK's "nested article": stretch a page
-   card past a threshold and it stops being a card and shows the page's
-   writing in the board. **Shipped 2026-09-20 in two halves** —
-   `docs/shipped.md` § Phase 32, step 6: past 400 by 300 the card is the
-   page's name, tabs and writing, drawn by the page's own editor; a
-   double-click makes the box that editor for real, saving to the page;
-   an *Open* button is the page in full. **What is left is LK's third
-   button, *View*:** a side panel on the board holding the page's full
-   view — title, tabs, writing — for any selected page card, with Open
-   and a close. While the panel has a page, that page's box on the board
-   stays drawn rather than written in, so two editors never hold the same
-   page. Left of the board, one place, never moving by state.
+6. ~~**A page opened on the board.**~~ Shipped 2026-09-20 in three
+   halves — `docs/shipped.md` § Phase 32, step 6. LK's page card has
+   three ways in and so does ours: past 400 by 300 the card is the page's
+   name, tabs and writing, and a double-click makes the box the page's
+   real editor; a *View* button opens the page's whole view in a panel
+   beside the board; *Open* is the page in full.
 7. **Boards in the exports.** A board is not in the Markdown, website or LK
    export. The Markdown and site exports carry a picture of it (the library
    draws PNG and SVG); the LK export names it in its lossy list, since LK's
@@ -848,10 +842,10 @@ a second page while the board's page is also open, which is the
 situation Phase 21.5 (Split Panes) was deferred over. She checked LK: its
 page on a board has three buttons — edit in the box (a plain editor),
 *View* (a side panel with the full editor), and open in full — so the
-answer was all three. The box is the real editor here rather than a
-plain one, because it already was one with the typing off; the panel is
-the half still to build. The one rule that keeps the two apart: a page
-the panel holds is never written in its box at the same time.
+answer was all three, and all three shipped that day. The box is the
+real editor here rather than a plain one, because it already was one
+with the typing off. The one rule that keeps the two apart: a page the
+panel holds is never written in its box at the same time.
 
 **What is verified before step 1 is called done, because the library's
 embed has habits of its own:** an embed takes a first click to select and

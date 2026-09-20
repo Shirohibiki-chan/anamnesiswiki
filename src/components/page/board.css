@@ -43,6 +43,108 @@
   border-radius: 0;
 }
 
+/* ---- A page viewed beside the board (Phase 32, step 6) ----
+   The View button's panel: the page's own view, on the left, the drawing
+   keeping the rest. One place whether the board is in the page or
+   expanded, and the same width, so it never moves by state. The dots
+   are shifted by the panel's width, since the library's view starts at
+   the panel's right edge while the dots are drawn from the board's left. */
+.board {
+  --board-view-width: 0px;
+}
+
+.board[data-view-open="true"] {
+  --board-view-width: 26rem;
+  display: flex;
+  align-items: stretch;
+}
+
+.board[data-dots="true"] {
+  background-position: calc(var(--board-dots-x) + var(--board-view-width)) var(--board-dots-y);
+}
+
+.board[data-view-open="true"] > .excalidraw {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.board-view-panel {
+  display: flex;
+  flex: 0 0 var(--board-view-width);
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.board-view-panel-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-panel);
+}
+
+.board-view-panel-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.board-view-panel-open,
+.board-view-panel-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-edge);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.board-view-panel-close {
+  width: 1.75rem;
+  padding: 0;
+}
+
+.board-view-panel-open:hover,
+.board-view-panel-close:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-light);
+}
+
+.board-view-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.board-view-panel-note {
+  margin: 0;
+  padding: var(--space-lg) var(--space-md);
+  color: var(--color-text-secondary);
+}
+
+/* The page view in a panel a third the width of the window: the page's
+   own margins are for a page in the middle of it. */
+.board-view-panel .page-view {
+  padding: var(--space-lg) var(--space-md) var(--space-xl);
+}
+
 /* In the library's top-right slot, drawn to match its own buttons. */
 .board-top-button {
   display: inline-flex;
@@ -96,7 +198,10 @@
   text-overflow: ellipsis;
 }
 
-.board-expanded .board-link-button {
+/* Expanded, every top-right button with a label shows it and takes the
+   width for it — Note and View were being squeezed to their first letter
+   until 2026-09-20, because only two of the buttons were named here. */
+.board-expanded .board-top-button:has(.board-link-label) {
   width: auto;
   padding: 0 var(--space-sm);
 }
@@ -114,9 +219,16 @@
   gap: var(--space-xs);
 }
 
-.board-expanded .board-put-button {
-  width: auto;
-  padding: 0 var(--space-sm);
+/* Expanded, the row wraps: the library gives its top-right slot a quarter
+   of the width, and with a card selected — Put a Page on It, Note, View,
+   the card's page — the labelled row is wider than that and was running
+   off the window's edge (2026-09-20). Only expanded: in the page, the
+   library is in its narrow layout and puts this row *inside* its toolbar
+   island, which grows with a wrapped row and covers the top of the
+   drawing — a box drawn from there selected nothing. */
+.board-expanded .board-picker-anchor {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .board-picker {

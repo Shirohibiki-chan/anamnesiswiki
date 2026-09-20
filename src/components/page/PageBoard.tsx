@@ -9,6 +9,7 @@ import { dotsLayout } from "../../services/board-service";
 import { useBoardBookmarks } from "../../hooks/use-board-bookmarks";
 import { useBoardView } from "../../hooks/use-board-view";
 import { useBoardLinks } from "../../hooks/use-board-links";
+import { BoardViewPanel } from "./BoardViewPanel";
 import "./board.css";
 
 // Where the drawing library finds its fonts. Resolved against the page's own
@@ -57,6 +58,10 @@ export function PageBoard({ node }: { node: Node }) {
   // Whether a page card is the selected shape: the stylesheet hides the
   // library's link popup for one, since the address in it is not for reading.
   const [cardSelected, setCardSelected] = useState(false);
+  // The page viewed beside the board, if one is — the View button's panel
+  // (step 6). This session's only: which page was being looked at is not
+  // part of the drawing.
+  const [viewedPageId, setViewedPageId] = useState<string | null>(null);
   const { initialData, theme, onChange, dots, toggleDots, readPictures, placePicture } = useBoardView(node.id, surface);
   const { fetchBookmark } = useBoardBookmarks();
   const links = useBoardLinks(node.id);
@@ -68,7 +73,15 @@ export function PageBoard({ node }: { node: Node }) {
       data-testid="board"
       data-card-selected={cardSelected ? "true" : "false"}
       data-dots={dots ? "true" : "false"}
+      data-view-open={viewedPageId !== null ? "true" : "false"}
     >
+      {viewedPageId !== null && (
+        <BoardViewPanel
+          pageId={viewedPageId}
+          onOpen={() => links.openLink(links.pageLinkFor(viewedPageId))}
+          onClose={() => setViewedPageId(null)}
+        />
+      )}
       <Suspense fallback={<div className="board-loading">Loading the board…</div>}>
         <BoardCanvas
           initialData={initialData}
@@ -86,6 +99,8 @@ export function PageBoard({ node }: { node: Node }) {
           readPictures={readPictures}
           placePicture={placePicture}
           fetchBookmark={fetchBookmark}
+          viewedPageId={viewedPageId}
+          onViewPage={setViewedPageId}
         />
       </Suspense>
       {/* A link that went nowhere, said once and briefly — the storyline's

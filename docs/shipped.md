@@ -6934,6 +6934,37 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 6 — A page viewed beside the board, the View panel ✅ Shipped 2026-09-20
+
+**What it delivered.** LK's third way into a page card: a *View*
+button in the top-right row when a page card is selected, opening the
+page's whole view — title, tabs, writing, editable — in a panel on the
+left of the board, with Open and a close in its bar. Same place and
+size in the page and expanded. While a page is viewed, its opened box
+on the board stays drawn and follows the panel's typing; boards and
+storylines are not viewed beside a board.
+
+**How.** `PageView` given a `nodeId`; `BoardViewPanel` and
+`viewedPageId` in `PageBoard`; the one-editor rule in `BoardCanvas`.
+`docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-view-panel.e2e.ts`, four scenarios on the
+expanded board: View on a selected card opens the panel with the page's
+own title and the writing the page holds on disk; typing in the panel
+reaches the file and the page's stretched box on the board shows it;
+the box will not open for writing while its page is viewed and will
+again once the panel is closed; the panel's Open button is the page in
+full with the words typed beside the board. The other board files and
+the unit suite green beside it. Looked at in the real app, expanded:
+the panel with the page's banner slot, title, tab strip and writing,
+the box following, the top-right row wrapped to three lines. Found on
+the way: the row's Note and View buttons were squeezed to "N…" and
+"V…" when expanded (only two of the buttons had been given their width)
+and the row ran off the window; and the first fix, wrapping the row
+everywhere, made the library's toolbar island taller in the page's
+narrow layout and covered the top of the drawing — a page-card scenario
+that box-selects from there caught it. The row wraps only expanded.
+
 ### Step 6 — A page opened on the board, the writing half ✅ Shipped 2026-09-20
 
 **What it delivered.** The opened page takes typing: the double-click
