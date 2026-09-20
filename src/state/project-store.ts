@@ -1084,8 +1084,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
    */
   const releaseAsset = (rootPath: string, fileName: string | undefined): void => {
     if (!fileName) return;
-    const { nodes, templates } = get();
-    if (isAssetInUse(nodes, templates, fileName)) return;
+    const { nodes, templates, boards } = get();
+    if (isAssetInUse(nodes, templates, boards, fileName)) return;
     track(() => fsService.deleteAssetImage(rootPath, fileName));
   };
 
@@ -2998,10 +2998,10 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
      * Undo puts it back either way.
      */
     async removeAssetFromLibrary(fileName) {
-      const { rootPath, nodes, templates } = get();
+      const { rootPath, nodes, templates, boards } = get();
       if (!rootPath) return;
 
-      const inUse = isAssetInUse(nodes, templates, fileName);
+      const inUse = isAssetInUse(nodes, templates, boards, fileName);
       const before = get().removedAssets;
       const after = removeAsset(before, fileName);
 

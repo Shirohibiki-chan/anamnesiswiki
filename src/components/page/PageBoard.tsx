@@ -56,7 +56,7 @@ export function PageBoard({ node }: { node: Node }) {
   // Whether a page card is the selected shape: the stylesheet hides the
   // library's link popup for one, since the address in it is not for reading.
   const [cardSelected, setCardSelected] = useState(false);
-  const { initialData, theme, onChange, dots, toggleDots } = useBoardView(node.id, surface);
+  const { initialData, theme, onChange, dots, toggleDots, readPictures, placePicture } = useBoardView(node.id, surface);
   const links = useBoardLinks(node.id);
 
   return (
@@ -81,6 +81,8 @@ export function PageBoard({ node }: { node: Node }) {
           dots={dots}
           onToggleDots={toggleDots}
           onOverButton={onOverButton}
+          readPictures={readPictures}
+          placePicture={placePicture}
         />
       </Suspense>
       {/* A link that went nowhere, said once and briefly — the storyline's

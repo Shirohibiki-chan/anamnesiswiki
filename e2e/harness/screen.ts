@@ -1906,6 +1906,10 @@ const BOARD_PUT_BUTTON = ".board-put-button";
 const BOARD_MENU_BUTTON = ".board [data-testid='main-menu-trigger']";
 const BOARD_DOTS_TOGGLE = "[data-testid='board-dots-toggle']";
 const BOARD_PAGE_CARD = "[data-testid='board-page-card']";
+// The Assets tab's drag type — `ASSET_DRAG_TYPE` in src/constants/paths.ts,
+// written out here the way the tree's page drag is dispatched: what a drop
+// on the board is handed, not what the app calls it.
+const ASSET_DRAG_TYPE = "application/x-anamnesis-asset";
 
 /** The card showing the page called `name` — by the name it carries, since a card shrunk to its icon shows no text. */
 function boardCard(window: Page, name: string): Locator {
@@ -2999,6 +3003,43 @@ export async function dragPageOntoBoard(window: Page, name: string): Promise<voi
   }, BOARD_CANVAS);
   await clearTreeSearch(window);
   await window.locator(BOARD_PAGE_CARD).nth(before).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/**
+ * Drops a picture from the Assets tab on the middle of the board — the tab's
+ * own drag, with its payload, dispatched at the canvas the way
+ * `dragPageOntoBoard` dispatches the tree's.
+ */
+export async function dropAssetOntoBoard(window: Page, fileName: string): Promise<void> {
+  await window.locator(BOARD_CANVAS).first().evaluate((board, [type, name]) => {
+    const carried = new DataTransfer();
+    carried.setData(type, name);
+    const box = board.getBoundingClientRect();
+    const over = { bubbles: true, cancelable: true, dataTransfer: carried, clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 };
+    board.dispatchEvent(new DragEvent("dragenter", over));
+    board.dispatchEvent(new DragEvent("dragover", over));
+    board.dispatchEvent(new DragEvent("drop", over));
+  }, [ASSET_DRAG_TYPE, fileName]);
+}
+
+/**
+ * Pastes a PNG onto the board, as Ctrl+V with a picture on the clipboard
+ * would: a paste event carrying the file, dispatched where the library
+ * listens for one.
+ */
+export async function pasteImageOnBoard(window: Page, png: Uint8Array): Promise<void> {
+  // The library takes a paste only with the keyboard on the board and the
+  // mouse over its canvas — the picture lands under the mouse.
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await canvas.click({ position: { x: box.width / 2, y: box.height - 8 } });
+  await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await canvas.evaluate((board, bytes) => {
+    const carried = new DataTransfer();
+    carried.items.add(new File([new Uint8Array(bytes)], "pasted.png", { type: "image/png" }));
+    board.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: carried }));
+  }, Array.from(png));
 }
 
 /** Waits until the board shows at least `count` cards — on a fresh load they arrive after the library does. */

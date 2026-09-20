@@ -19,6 +19,7 @@ import {
   LIBRARY_DEFAULT_BACKGROUND,
 } from "../constants/board";
 import { UNIVERSE_TEMPLATE_KEY, type Board, type Node } from "../constants/schema";
+import { mimeForFileName, storedPicture } from "./board-pictures";
 import { linkTargets } from "./storyline-service";
 
 export function createBoard(): Board {
@@ -89,12 +90,20 @@ export function boardFingerprint(elements: readonly unknown[], appState: Record<
  * can bring them back within the session, but on disk they would be a
  * drawing that grows forever with things nobody can see. Pictures are kept
  * only when an element still points at them, for the same reason.
+ *
+ * A picture whose asset is known (`assets`, the library's file id to the
+ * name in `assets/`) is written as that name and nothing more, whether or
+ * not the library has the bytes in hand yet — a board written while its
+ * pictures are still being read back must not lose them. One the app has
+ * not yet put in the library is written as the library holds it, a data
+ * URL, until the upload lands and the next write replaces it.
  */
 export function boardFromScene(
   elements: readonly unknown[],
   appState: Record<string, unknown>,
   files: Record<string, unknown>,
   dots: boolean,
+  assets: ReadonlyMap<string, string>,
 ): Board {
   const kept = elements.filter((entry) => !(entry as { isDeleted?: boolean }).isDeleted);
   const referenced = new Set<string>();
@@ -103,8 +112,15 @@ export function boardFromScene(
     if (typeof fileId === "string") referenced.add(fileId);
   }
   const keptFiles: Record<string, unknown> = {};
-  for (const [id, file] of Object.entries(files)) {
-    if (referenced.has(id)) keptFiles[id] = file;
+  for (const id of referenced) {
+    const asset = assets.get(id);
+    const file = files[id];
+    if (asset) {
+      const mimeType = (file as { mimeType?: unknown } | undefined)?.mimeType;
+      keptFiles[id] = storedPicture(id, typeof mimeType === "string" ? mimeType : mimeForFileName(asset), asset);
+    } else if (file !== undefined) {
+      keptFiles[id] = file;
+    }
   }
   const keptState: Record<string, unknown> = {};
   for (const key of KEPT_APP_STATE) {

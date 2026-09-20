@@ -37,10 +37,11 @@ export function useAssets(): {
   /** Re-reads the directory. Called after anything that changes what's in it. */
   refresh: () => void;
 } {
-  const { nodes, templates, listAssets, loadWasIncomplete, pruneAssetFolders, pruneAssetNames, removedAssets } = useProjectStore(
+  const { nodes, templates, boards, listAssets, loadWasIncomplete, pruneAssetFolders, pruneAssetNames, removedAssets } = useProjectStore(
     useShallow((state) => ({
       nodes: state.nodes,
       templates: state.templates,
+      boards: state.boards,
       listAssets: state.listAssets,
       loadWasIncomplete: state.loadWasIncomplete,
       pruneAssetFolders: state.pruneAssetFolders,
@@ -81,7 +82,7 @@ export function useAssets(): {
     if (files) pruneAssetNames(files.map((file) => file.fileName));
   }, [files, pruneAssetNames]);
 
-  const usage = useMemo(() => indexAssetUsage(nodes, templates), [nodes, templates]);
+  const usage = useMemo(() => indexAssetUsage(nodes, templates, boards), [nodes, templates, boards]);
 
   // Pictures she took out of the library are hidden here rather than earlier,
   // and the order matters: the prunes above run on the *directory*, and a file

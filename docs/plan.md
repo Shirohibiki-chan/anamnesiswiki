@@ -710,13 +710,11 @@ is built; it is all checked as present and not switched off.
    turns by its grip with its contents and its name, and clips to its
    turned box. The patching path the step was meant to prove had been
    proven the day before, on selection.
-4. **Pictures through the world's library.** A picture dropped on a board
-   is held inside `_board.json` as a data URL — three photos make a
-   three-megabyte file, and Assets cannot see them. The ideas list has had
-   this since the spike; it is step 4 because page cards and bookmark cards
-   both draw pictures and should land on the right mechanism, not the
-   temporary one. The Assets panel already drags a picture into a page;
-   the board takes the same drag.
+4. ~~**Pictures through the world's library.**~~ Shipped 2026-09-19 —
+   `docs/shipped.md` § Phase 32, step 4. A picture on a board is a file
+   in `assets/`; the board holds its name; the Assets tab drags onto the
+   board and counts the board as a use; the spike's boards migrate on
+   their first open.
 5. **Bookmark cards.** Paste a web address and get a card with the page's
    title, description and picture; click it and the address opens in the
    browser. Today a pasted address is a line of text with a link on it.

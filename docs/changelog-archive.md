@@ -2,6 +2,19 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-13 — Recently edited and Shortcuts, two blocks for a home page
+
+### Additions
+
+- **Recently edited.** *Add Block ▸ Recently edited*, or `/recent` in the writing: the pages you touched last, newest first. Writing in a page moves it to the top. It never lists the page it sits on — a home page is edited every time its dashboard is rearranged, and a list that opened with *Home* would never say anything — and it leaves universes out for the same reason. Its menu has a *How many* row: 5, 8, 12 or 20.
+- **Shortcuts.** *Add Block ▸ Shortcuts*, or `/shortcuts`: the pages you've *Set as shortcut*, in the rail's order. It's the rail's own list drawn as a block, so the two can't disagree — set a shortcut and it's in both; remove it and it's gone from both.
+- **Both are the same collection block as Manual links, Subpage index, Tag index and Backlinks**, so they get the same menu, colour, title and drag as the rest, can sit in the page body or an infobox, and both switch to any of the other sources from *Where these come from*.
+
+### Notes
+
+- **They export.** A Recently edited or Shortcuts block writes the same list it shows into a Markdown export or a published website, because the sidebar and the exports now share one resolver for every collection source — an internal tidy-up, nothing visible on the older four.
+- **This is step 3 of Phase 30.** Left in the phase: one example dashboard, shipped as a page template with a snippet beside it.
+
 ## 2026-09-13 — a style name, so a snippet can skin one page
 
 ### Additions

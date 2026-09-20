@@ -83,6 +83,7 @@ describe("indexAssetUsage", () => {
     const index = indexAssetUsage(
       byId([node({ id: "v", name: "Valera", image: "face.png", banner: "cover.png", tabs: [tab([imageBlock("map.png")])] })]),
       empty,
+      {},
     );
     expect(usersOf(index, "face.png")).toEqual(["project:portrait:v"]);
     expect(usersOf(index, "cover.png")).toEqual(["project:banner:v"]);
@@ -93,6 +94,7 @@ describe("indexAssetUsage", () => {
     const index = indexAssetUsage(
       byId([node({ id: "v", name: "Valera", blocks: [{ id: "b1", kind: "image", image: "sword.png" }] })]),
       empty,
+      {},
     );
     expect(usersOf(index, "sword.png")).toEqual(["project:block:v"]);
   });
@@ -100,7 +102,7 @@ describe("indexAssetUsage", () => {
   // A hidden tab is one she isn't looking at, not one that stopped holding
   // what's written in it.
   it("looks inside hidden tabs", () => {
-    const index = indexAssetUsage(byId([node({ id: "v", name: "V", tabs: [tab([imageBlock("secret.png")], { hidden: true })] })]), empty);
+    const index = indexAssetUsage(byId([node({ id: "v", name: "V", tabs: [tab([imageBlock("secret.png")], { hidden: true })] })]), empty, {});
     expect(usersOf(index, "secret.png")).toEqual(["project:page:v"]);
   });
 
@@ -108,6 +110,7 @@ describe("indexAssetUsage", () => {
     const index = indexAssetUsage(
       byId([node({ id: "v", name: "V", tabs: [tab([], { id: "a" }), tab([imageBlock("late.png")], { id: "b" })] })]),
       empty,
+      {},
     );
     expect(usersOf(index, "late.png")).toEqual(["project:page:v"]);
   });
@@ -116,6 +119,7 @@ describe("indexAssetUsage", () => {
     const index = indexAssetUsage(
       byId([node({ id: "a", name: "A", image: "shared.png" }), node({ id: "b", name: "B", banner: "shared.png" })]),
       empty,
+      {},
     );
     expect(usersOf(index, "shared.png")).toEqual(["project:banner:b", "project:portrait:a"]);
   });
@@ -124,12 +128,12 @@ describe("indexAssetUsage", () => {
   // copies a page's portrait and cover files but not the pictures inside its
   // tabs, so a template and its source page can share one.
   it("counts a picture used only by a template as in use", () => {
-    const index = indexAssetUsage({}, library([node({ id: "t", name: "Character sheet", tabs: [tab([imageBlock("crest.png")])] })]));
+    const index = indexAssetUsage({}, library([node({ id: "t", name: "Character sheet", tabs: [tab([imageBlock("crest.png")])] })]), {});
     expect(usersOf(index, "crest.png")).toEqual(["template:page:t"]);
   });
 
   it("counts a template's own portrait and cover", () => {
-    const index = indexAssetUsage({}, library([node({ id: "t", name: "T", image: "ti.png", banner: "tb.png" })]));
+    const index = indexAssetUsage({}, library([node({ id: "t", name: "T", image: "ti.png", banner: "tb.png" })]), {});
     expect(usersOf(index, "ti.png")).toEqual(["template:portrait:t"]);
     expect(usersOf(index, "tb.png")).toEqual(["template:banner:t"]);
   });
@@ -138,12 +142,13 @@ describe("indexAssetUsage", () => {
     const index = indexAssetUsage(
       byId([node({ id: "p", name: "P", tabs: [tab([imageBlock("both.png")])] })]),
       library([node({ id: "t", name: "T", tabs: [tab([imageBlock("both.png")])] })]),
+      {},
     );
     expect(usersOf(index, "both.png")).toEqual(["project:page:p", "template:page:t"]);
   });
 
   it("has nothing to say about a file nobody points at", () => {
-    expect(indexAssetUsage(byId([node({ id: "a", name: "A" })]), empty).get("orphan.png")).toBeUndefined();
+    expect(indexAssetUsage(byId([node({ id: "a", name: "A" })]), empty, {}).get("orphan.png")).toBeUndefined();
   });
 });
 
@@ -155,7 +160,7 @@ describe("buildAssetEntries", () => {
   ];
 
   it("marks a file nothing points at as unused, and puts those first", () => {
-    const usage = indexAssetUsage(byId([node({ id: "a", name: "A", image: "used.png" })]), empty);
+    const usage = indexAssetUsage(byId([node({ id: "a", name: "A", image: "used.png" })]), empty, {});
     const entries = buildAssetEntries(files, usage);
     expect(entries.map((e) => e.fileName)).toEqual(["another-orphan.png", "orphan.png", "used.png"]);
     expect(entries.map((e) => e.isUnused)).toEqual([true, true, false]);
@@ -164,13 +169,13 @@ describe("buildAssetEntries", () => {
   // The directory is the truth about what exists. A reference to a file that
   // isn't there is a broken picture, not a picture you have.
   it("lists what's on disk, never what a page merely points at", () => {
-    const usage = indexAssetUsage(byId([node({ id: "a", name: "A", image: "gone.png" })]), empty);
+    const usage = indexAssetUsage(byId([node({ id: "a", name: "A", image: "gone.png" })]), empty, {});
     const entries = buildAssetEntries([{ fileName: "here.png", size: 1 }], usage);
     expect(entries.map((e) => e.fileName)).toEqual(["here.png"]);
   });
 
   it("carries the uses through so the tile can name them", () => {
-    const usage = indexAssetUsage(byId([node({ id: "a", name: "Valera", image: "used.png" })]), empty);
+    const usage = indexAssetUsage(byId([node({ id: "a", name: "Valera", image: "used.png" })]), empty, {});
     const entry = buildAssetEntries(files, usage).find((e) => e.fileName === "used.png")!;
     expect(entry.uses).toEqual([{ where: "portrait", nodeId: "a", nodeName: "Valera", source: "project" }]);
   });
@@ -210,27 +215,48 @@ describe("describeSize", () => {
   });
 });
 
+describe("pictures on boards", () => {
+  const board = (asset: string) => ({
+    version: 1 as const,
+    elements: [],
+    appState: {},
+    files: { f1: { id: "f1", mimeType: "image/png", asset }, legacy: { id: "legacy", mimeType: "image/png", dataURL: "data:image/png;base64,AA" } },
+    dots: true,
+  });
+
+  it("counts a picture on a board as used by that page, and not the spike's data URLs", () => {
+    const index = indexAssetUsage(byId([node({ id: "b", name: "War Room" })]), empty, { b: board("map.png") });
+    expect(usersOf(index, "map.png")).toEqual(["project:board:b"]);
+    expect(index.size).toBe(1);
+  });
+
+  it("guards a delete of a picture only a board holds", () => {
+    expect(isAssetInUse({}, empty, { b: board("map.png") }, "map.png")).toBe(true);
+    expect(isAssetInUse({}, empty, { b: board("other.png") }, "map.png")).toBe(false);
+  });
+});
+
 // `isAssetInUse` is the guard every asset delete now passes through, so these
 // are written as the questions a delete asks: after this change, is anyone
 // still holding the file? A false here deletes bytes someone is using.
 describe("isAssetInUse", () => {
   it("is false when nothing points at the file", () => {
-    expect(isAssetInUse(byId([node({ id: "a", name: "Valera" })]), empty, "map.png")).toBe(false);
+    expect(isAssetInUse(byId([node({ id: "a", name: "Valera" })]), empty, {}, "map.png")).toBe(false);
   });
 
   it("finds it in a portrait", () => {
     const nodes = byId([node({ id: "a", name: "Valera", image: "map.png" })]);
-    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+    expect(isAssetInUse(nodes, empty, {}, "map.png")).toBe(true);
   });
 
   it("finds it in a cover", () => {
     const nodes = byId([node({ id: "a", name: "Valera", banner: "map.png" })]);
-    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+    expect(isAssetInUse(nodes, empty, {}, "map.png")).toBe(true);
   });
 
   it("finds it inside a page, including a hidden tab", () => {
     const nodes = byId([node({ id: "a", name: "Valera", tabs: [tab([imageBlock("map.png")], { hidden: true })] })]);
-    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+    expect(isAssetInUse(nodes, empty, {}, "map.png")).toBe(true);
   });
 
   // Phase 19.5: an image block on the page can hold its own picture, held
@@ -240,20 +266,20 @@ describe("isAssetInUse", () => {
     const nodes = byId([
       node({ id: "a", name: "Valera", blocks: [{ id: "b1", kind: "image", image: "map.png" }] }),
     ]);
-    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+    expect(isAssetInUse(nodes, empty, {}, "map.png")).toBe(true);
   });
 
   it("finds it nested inside another block", () => {
     const nodes = byId([
       node({ id: "a", name: "Valera", tabs: [tab([{ type: "bulletListItem", children: [imageBlock("map.png")] }])] }),
     ]);
-    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+    expect(isAssetInUse(nodes, empty, {}, "map.png")).toBe(true);
   });
 
   // The one a caller forgets, which is why the parameter is required.
   it("finds it in a template even when no page uses it", () => {
     const templates = library([node({ id: "t", name: "Character", image: "map.png" })]);
-    expect(isAssetInUse({}, templates, "map.png")).toBe(true);
+    expect(isAssetInUse({}, templates, {}, "map.png")).toBe(true);
   });
 
   // The whole point of the library: one file, many references. Deleting the
@@ -263,11 +289,11 @@ describe("isAssetInUse", () => {
       node({ id: "b", name: "The Amber Coast", image: "map.png" }),
       node({ id: "c", name: "Her Sword", banner: "map.png" }),
     ]);
-    expect(isAssetInUse(nodes, empty, "map.png")).toBe(true);
+    expect(isAssetInUse(nodes, empty, {}, "map.png")).toBe(true);
   });
 
   it("does not match a different file", () => {
     const nodes = byId([node({ id: "a", name: "Valera", image: "other.png" })]);
-    expect(isAssetInUse(nodes, empty, "map.png")).toBe(false);
+    expect(isAssetInUse(nodes, empty, {}, "map.png")).toBe(false);
   });
 });

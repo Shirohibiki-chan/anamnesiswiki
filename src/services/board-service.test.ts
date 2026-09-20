@@ -52,13 +52,26 @@ describe("boardFromScene", () => {
   const files = { pic: { id: "pic" }, orphan: { id: "orphan" } };
 
   it("drops deleted elements and the pictures nothing points at any more", () => {
-    const board = boardFromScene([kept, gone], {}, files, true);
+    const board = boardFromScene([kept, gone], {}, files, true, new Map());
     expect(board.elements).toEqual([kept]);
     expect(Object.keys(board.files)).toEqual(["pic"]);
   });
 
+  it("writes a picture whose asset is known as its name, even before the library has its bytes", () => {
+    const assets = new Map([["pic", "abc.png"]]);
+    const withBytes = boardFromScene([kept], {}, { pic: { id: "pic", mimeType: "image/jpeg", dataURL: "data:image/jpeg;base64,AA" } }, true, assets);
+    expect(withBytes.files).toEqual({ pic: { id: "pic", mimeType: "image/jpeg", asset: "abc.png" } });
+    const stillReading = boardFromScene([kept], {}, {}, true, assets);
+    expect(stillReading.files).toEqual({ pic: { id: "pic", mimeType: "image/png", asset: "abc.png" } });
+  });
+
+  it("keeps a picture the library holds as a data URL until the upload lands", () => {
+    const raw = { id: "pic", mimeType: "image/png", dataURL: "data:image/png;base64,AA", created: 1 };
+    expect(boardFromScene([kept], {}, { pic: raw }, true, new Map()).files).toEqual({ pic: raw });
+  });
+
   it("keeps only the view state worth reopening to", () => {
-    const board = boardFromScene([], { viewBackgroundColor: "#fff", selectedElementIds: { a: true }, zoom: { value: 2 } }, {}, false);
+    const board = boardFromScene([], { viewBackgroundColor: "#fff", selectedElementIds: { a: true }, zoom: { value: 2 } }, {}, false, new Map());
     expect(board.appState).toEqual({ viewBackgroundColor: "#fff", zoom: { value: 2 } });
     expect(board.dots).toBe(false);
   });
