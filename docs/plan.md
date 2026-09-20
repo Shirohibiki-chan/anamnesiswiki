@@ -722,8 +722,12 @@ is built; it is all checked as present and not switched off.
    address the way a page card opens its page.
 6. **A page opened on the board.** LK's "nested article": stretch a page
    card past a threshold and it stops being a card and shows the page's
-   writing, editable, in the board. The biggest step and the one with the
-   open question — see below.
+   writing in the board. **The reading half shipped 2026-09-20** —
+   `docs/shipped.md` § Phase 32, step 6: past 400 by 300 the card is the
+   page's name, tabs and writing, drawn by the page's own editor with the
+   typing off, read in place on a double-click, with an *Open* button to
+   the page in full. What is left is the question below, put to her with
+   the card running: whether the box takes typing too.
 7. **Boards in the exports.** A board is not in the Markdown, website or LK
    export. The Markdown and site exports carry a picture of it (the library
    draws PNG and SVG); the LK export names it in its lossy list, since LK's
@@ -837,11 +841,14 @@ set, which is what LK's "resize the card" arrow means.
 **The open question — step 6.** A page shown editable inside a board is a
 second editor open on a second page while the board's page is also open,
 which is the situation Phase 21.5 (Split Panes) was deferred over. Two
-answers on the table: show the page read-only in the card with an *Edit*
-that opens it properly (cheap, and honest), or mount the real editor in
-the card (what LK does, and what the panel promises). Step 6 starts with
-the read-only card and the question is put to her *with the card running*,
-which is how design questions get answered here.
+answers on the table: the page read-only in the card with an *Open* that
+takes her to it (shipped 2026-09-20, and honest), or the real editor in
+the card (what LK does, and what the panel promises). The card already
+*is* the real editor with its typing off, so the second answer is a
+switch and the wiring around it — where the writing is saved to, how the
+board's undo and the page's stay apart, what a second open copy of the
+same page does — rather than a second build. The question is put to her
+with the card running, which is how design questions get answered here.
 
 **What is verified before step 1 is called done, because the library's
 embed has habits of its own:** an embed takes a first click to select and

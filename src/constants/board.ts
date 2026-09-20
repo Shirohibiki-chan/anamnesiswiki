@@ -49,6 +49,16 @@ export const BOARD_CARD_HEIGHT = 160;
 export const BOARD_CARD_ICON_MAX_WIDTH = 110;
 export const BOARD_CARD_ROW_MAX_HEIGHT = 110;
 
+/**
+ * Where a picture card stops being a card at all and opens as the page
+ * itself — its writing, shown in the box (Phase 32, step 6). Both have to
+ * be met: a wide short card is still a picture card, and so is a tall
+ * narrow one. A card put on is 240 by 160, so a page is opened by
+ * stretching its card well past that, which is LK's gesture for it too.
+ */
+export const BOARD_CARD_PAGE_MIN_WIDTH = 400;
+export const BOARD_CARD_PAGE_MIN_HEIGHT = 300;
+
 /** How far each card put on in a row is stepped from the last, so several picks do not stack exactly. */
 export const BOARD_CARD_CASCADE = 24;
 
