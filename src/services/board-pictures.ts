@@ -15,6 +15,7 @@
 // URL and bytes.
 import type { Board } from "../constants/schema";
 import { bookmarkOf } from "./bookmark-service";
+import { videoOf } from "./board-videos";
 
 /** A picture as `_board.json` holds it: the library's id, its type, and the asset it lives in. */
 export type StoredPicture = { id: string; mimeType: string; asset: string };
@@ -130,6 +131,9 @@ export function boardAssetUses(board: Board): string[] {
     if ((element as { isDeleted?: boolean }).isDeleted) continue;
     const image = bookmarkOf(element)?.image;
     if (image) names.add(image);
+    // A video is a file in the library too (step 12), named on its element.
+    const video = videoOf(element)?.file;
+    if (video) names.add(video);
   }
   return [...names];
 }

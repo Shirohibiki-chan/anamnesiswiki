@@ -34,6 +34,7 @@
 import { FolderPlus, ImagePlus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
+import { isVideoFileName } from "../../services/board-videos";
 import {
   ALL_PICTURES,
   assetDisplayName,
@@ -330,7 +331,11 @@ function AssetTile({
           trying to see what something is. Dragging is the deliberate version of
           that, and the picture block's own Library tab is the other route. */}
       <div className="tree-assets-thumb">
-        {status === "ready" && url ? (
+        {status === "ready" && url && isVideoFileName(entry.fileName) ? (
+          // A video (Phase 32, step 12) shows its first frame; muted and
+          // never played here, this is a thumbnail.
+          <video src={url} className="tree-assets-image" muted preload="metadata" draggable={false} />
+        ) : status === "ready" && url ? (
           // Not draggable itself: an `<img>` is a drag source by default, and
           // its drag carries the picture's own data rather than ours. It sits
           // under the overlay button so the pointer never reaches it anyway,
@@ -353,7 +358,8 @@ function AssetTile({
           type="button"
           className="tree-assets-open"
           aria-label={`Open this picture full size — ${detail}`}
-          disabled={status !== "ready" || !url}
+          // A video has no full-size viewer; it plays on a board.
+          disabled={status !== "ready" || !url || isVideoFileName(entry.fileName)}
           onClick={() => url && openImage(url, "")}
         />
 

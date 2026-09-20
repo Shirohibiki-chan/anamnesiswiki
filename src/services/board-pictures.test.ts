@@ -61,7 +61,15 @@ describe("a board picture's two forms", () => {
     });
     const board = {
       version: 1 as const,
-      elements: [bookmark("b1", "three.png"), bookmark("b2", "one.png"), bookmark("b3", null), bookmark("b4", "gone.png", true)],
+      elements: [
+        bookmark("b1", "three.png"),
+        bookmark("b2", "one.png"),
+        bookmark("b3", null),
+        bookmark("b4", "gone.png", true),
+        // A video names its file too (step 12); a deleted one is not a use.
+        { type: "embeddable", link: "anamnesis://video", customData: { video: { file: "clip.mp4" } } },
+        { type: "embeddable", link: "anamnesis://video", isDeleted: true, customData: { video: { file: "old.mp4" } } },
+      ],
       appState: {},
       files: {
         a: { id: "a", mimeType: "image/png", asset: "one.png" },
@@ -71,6 +79,6 @@ describe("a board picture's two forms", () => {
       },
       dots: true,
     };
-    expect(boardAssetUses(board).sort()).toEqual(["one.png", "three.png", "two.png"]);
+    expect(boardAssetUses(board).sort()).toEqual(["clip.mp4", "one.png", "three.png", "two.png"]);
   });
 });

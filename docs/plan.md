@@ -761,12 +761,11 @@ other people's cursors. In the order they would matter:
     ink. No multiply blend: the library has no per-shape blend and the
     dark look inverts the canvas anyway; half-opacity under the ink does
     the job.
-12. **Video on the board.** A video file dropped on the board — through the
-    world's library, step 4's mechanism — plays where it lands, in a
-    player drawn by the app inside an embed; a YouTube address pasted on
-    the board already plays through the library's own embed. Phase 31's
-    look applies: a still with a play mark until played, the page's frame
-    around it.
+12. ~~**Video on the board.**~~ Shipped 2026-09-20 — `docs/shipped.md`
+    § Phase 32, step 12. A dropped video file goes into the library and
+    lands as an embed drawn by the app: a still with a play mark, the
+    window's own player once played. A YouTube address pasted on the
+    board already played through the library's own embed.
 13. **Several pages in one board.** tldraw's boards have tabs along the
     bottom, sheets in a workbook. Here a board is already a page that
     holds pages (`CLAUDE.md`'s standing rule — a board's sub-boards are

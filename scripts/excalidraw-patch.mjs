@@ -6,8 +6,8 @@
 // what it swallows whole; a click inside an unfilled shape picks up
 // nothing; its labels are sentence case; a frame can neither hold a
 // frame nor turn; and every embed wears a link icon, which a sticky note
-// must not. Each is written into its two builds, in its own section
-// below.
+// and a video must not. Each is written into its two builds, in its own
+// section below.
 //
 // **Why this script exists beside the patch**: the patch file is enormous
 // because the library's built files are single minified lines, so nobody
@@ -800,37 +800,40 @@ edit("dist/prod/index.js", [
   ],
 ]);
 
-// ---- A sticky note wears no link icon (Phase 32, step 10) ----
+// ---- A sticky note and a video wear no link icon (Phase 32, steps 10 and 12) ----
 //
 // A note is an embed whose link, `anamnesis://note`, only says what it is
-// (the library draws an embed with no link as nothing at all). The library
-// draws a link icon at the corner of every unselected linked element and
-// opens the link when the icon is clicked; for a note that icon would open
-// an address that is not one. Both the drawing and the hit test skip a
-// note's link, and nothing else about links changes. The address is the
-// app's `BOARD_NOTE_LINK`, repeated here because the library cannot import
-// it.
-const NOTE_LINK = '"anamnesis://note"';
+// (the library draws an embed with no link as nothing at all), and a video
+// is the same with `anamnesis://video`. The library draws a link icon at
+// the corner of every unselected linked element and opens the link when
+// the icon is clicked; for these that icon would open an address that is
+// not one. Both the drawing and the hit test skip their links, and nothing
+// else about links changes. The addresses are the app's `BOARD_NOTE_LINK`
+// and `BOARD_VIDEO_LINK`, repeated here because the library cannot import
+// them.
+const ICONLESS_LINKS = ['"anamnesis://note"', '"anamnesis://video"'];
+const isIconless = (expr) => ICONLESS_LINKS.map((link) => `${expr}===${link}`).join("||");
+const notIconless = (expr) => ICONLESS_LINKS.map((link) => `${expr}!==${link}`).join("&&");
 
 edit("dist/dev/chunk-4FTI6OG3.js", [
   [
     `var renderLinkIcon = (element, context, appState, elementsMap) => {
   if (element.link && !appState.selectedElementIds[element.id]) {`,
     `var renderLinkIcon = (element, context, appState, elementsMap) => {
-  if (element.link && element.link !== ${NOTE_LINK} && !appState.selectedElementIds[element.id]) {`,
+  if (element.link && ${notIconless("element.link")} && !appState.selectedElementIds[element.id]) {`,
   ],
   [
     `var isPointHittingLink = (element, elementsMap, appState, [x, y], isMobile) => {
   if (!element.link || appState.selectedElementIds[element.id]) {`,
     `var isPointHittingLink = (element, elementsMap, appState, [x, y], isMobile) => {
-  if (!element.link || element.link === ${NOTE_LINK} || appState.selectedElementIds[element.id]) {`,
+  if (!element.link || ${isIconless("element.link")} || appState.selectedElementIds[element.id]) {`,
   ],
 ]);
 
 // The same, minified: sp = renderLinkIcon, BO = isPointHittingLink.
 edit("dist/prod/chunk-K2UTITRG.js", [
-  [`sp=(e,t,n,r)=>{if(e.link&&!n.selectedElementIds[e.id]){`, `sp=(e,t,n,r)=>{if(e.link&&e.link!==${NOTE_LINK}&&!n.selectedElementIds[e.id]){`],
-  [`BO=(e,t,n,[r,o],i)=>!e.link||n.selectedElementIds[e.id]?!1:`, `BO=(e,t,n,[r,o],i)=>!e.link||e.link===${NOTE_LINK}||n.selectedElementIds[e.id]?!1:`],
+  [`sp=(e,t,n,r)=>{if(e.link&&!n.selectedElementIds[e.id]){`, `sp=(e,t,n,r)=>{if(e.link&&${notIconless("e.link")}&&!n.selectedElementIds[e.id]){`],
+  [`BO=(e,t,n,[r,o],i)=>!e.link||n.selectedElementIds[e.id]?!1:`, `BO=(e,t,n,[r,o],i)=>!e.link||${isIconless("e.link")}||n.selectedElementIds[e.id]?!1:`],
 ]);
 
 // ---- Title Case, both builds ----

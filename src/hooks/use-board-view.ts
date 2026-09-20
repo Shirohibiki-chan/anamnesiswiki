@@ -242,5 +242,23 @@ export function useBoardView(boardId: string, surface: Element | null) {
 
   const theme = useMemo(() => boardThemeFor(surface), [surface]);
 
-  return { initialData, theme, onChange, dots, toggleDots, readPictures, placePicture };
+  /**
+   * A video file dropped on the board, put into the world's library (step
+   * 12): its name there, or null if it would not read. The file's own name
+   * is kept as the library's name for it, as a picked picture's is.
+   */
+  const placeVideo = useCallback(
+    async (file: File): Promise<string | null> => {
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const extension = (/\.([a-zA-Z0-9]+)$/.exec(file.name)?.[1] ?? "mp4").toLowerCase();
+        return assetFileName(await uploadAsset(bytes, extension, file.name));
+      } catch {
+        return null;
+      }
+    },
+    [uploadAsset],
+  );
+
+  return { initialData, theme, onChange, dots, toggleDots, readPictures, placePicture, placeVideo };
 }

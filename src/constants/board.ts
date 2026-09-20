@@ -97,6 +97,15 @@ export const BOARD_NOTE_SIZE = 200;
 export const BOARD_NOTE_PADDING = 16;
 
 /**
+ * A video on a board (Phase 32, step 12): an embed whose link says only that
+ * it is one, its file named in `customData` — a file in the world's library.
+ * A dropped video lands at a wide-screen 480 by 270, in the drawing's units.
+ */
+export const BOARD_VIDEO_LINK = "anamnesis://video";
+export const BOARD_VIDEO_WIDTH = 480;
+export const BOARD_VIDEO_HEIGHT = 270;
+
+/**
  * The highlighter (Phase 32, step 11): the library's pen with a preset —
  * wide, see-through, in a marker's yellow to start with — offered as a
  * tool of its own. The width is the pen's stroke width, which the library

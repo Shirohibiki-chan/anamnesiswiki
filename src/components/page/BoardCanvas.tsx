@@ -38,6 +38,7 @@ import type { AppState, BinaryFileData, ExcalidrawImperativeAPI, ExcalidrawIniti
 import { FilePlus2, Grip, Highlighter, Link2, Maximize2, Minimize2, PanelLeftOpen, StickyNote, Unlink } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  BOARD_CARD_CASCADE,
   BOARD_CARD_HEIGHT,
   BOARD_CARD_WIDTH,
   BOARD_HIGHLIGHT_COLOUR,
@@ -48,18 +49,23 @@ import {
   BOARD_NOTE_SIZE,
   BOARD_PAGE_LINK_PREFIX,
   BOARD_PICTURE_MAX_SIDE,
+  BOARD_VIDEO_HEIGHT,
+  BOARD_VIDEO_LINK,
+  BOARD_VIDEO_WIDTH,
   PAGE_DRAG_TYPE,
 } from "../../constants/board";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import { DEFAULT_NOTE_COLOUR, NOTE_COLOURS, emptyNote, isNote, noteColourName, noteOf, type NoteColour, type NoteLine } from "../../services/board-notes";
 import { fittedSize, type PictureFile } from "../../services/board-pictures";
 import { cardPageId, cardPlacement, draggedPageIds, elementLink, isHighlight, isOpenPageCard, isPageCard, lockedButtonAt, sunkUnderInk } from "../../services/board-service";
+import { isVideo, isVideoFileName, videoOf } from "../../services/board-videos";
 import { bookmarkOf, isBookmarkCard, placeholderBookmark, webAddressIn, type Bookmark } from "../../services/bookmark-service";
 import { BoardNote, type NoteEditor } from "./BoardNote";
 import type { BoardLinks } from "../../hooks/use-board-links";
 import { NodeIcon } from "../blocks/IconPicker";
 import { BoardBookmarkCard } from "./BoardBookmarkCard";
 import { BoardPageCard } from "./BoardPageCard";
+import { BoardVideo } from "./BoardVideo";
 
 // The app holds a drawing opaquely (see `Board` in constants/schema.ts); this
 // is the one file that knows what the library's shape is, so the cast lives
@@ -85,6 +91,8 @@ type Props = {
   readPictures: () => Promise<PictureFile[]>;
   /** A picture from the Assets tab, as the library takes it, or null if its file will not read. */
   placePicture: (fileName: string) => Promise<PictureFile | null>;
+  /** A video file dropped on the board, put into the world's library: its name there, or null if it would not read. */
+  placeVideo: (file: File) => Promise<string | null>;
   /** What a web address's page says about itself, with its picture put in the library. Never rejects. */
   fetchBookmark: (url: string) => Promise<Bookmark>;
   /** The page viewed beside the board, if one is: its box is never written in while it is. */
@@ -140,6 +148,14 @@ function bookmarkCardElement(bookmark: Bookmark, x: number, y: number): Excalidr
 function noteElement(colour: NoteColour, x: number, y: number): ExcalidrawElement {
   const [rectangle] = convertToExcalidrawElements([{ type: "rectangle", x, y, width: BOARD_NOTE_SIZE, height: BOARD_NOTE_SIZE, strokeWidth: 1, roundness: null }]);
   return { ...rectangle, type: "embeddable", link: BOARD_NOTE_LINK, customData: { note: emptyNote(colour) } } as ExcalidrawElement;
+}
+
+/** A video element for the file called `file` in the world's library, with its middle at `centre`. */
+function videoElement(file: string, centre: { x: number; y: number }): ExcalidrawElement {
+  const [rectangle] = convertToExcalidrawElements([
+    { type: "rectangle", x: centre.x - BOARD_VIDEO_WIDTH / 2, y: centre.y - BOARD_VIDEO_HEIGHT / 2, width: BOARD_VIDEO_WIDTH, height: BOARD_VIDEO_HEIGHT, strokeWidth: 1, roundness: null },
+  ]);
+  return { ...rectangle, type: "embeddable", link: BOARD_VIDEO_LINK, customData: { video: { file } } } as ExcalidrawElement;
 }
 
 /**
@@ -205,6 +221,7 @@ export default function BoardCanvas({
   onOverButton,
   readPictures,
   placePicture,
+  placeVideo,
   fetchBookmark,
   viewedPageId,
   onViewPage,
@@ -326,6 +343,18 @@ export default function BoardCanvas({
     },
     [placePicture],
   );
+
+  /** Puts the video called `file` in the world's library on the board with its middle at `centre`, selected like a dropped card. */
+  const addVideo = useCallback((file: string, centre: { x: number; y: number }) => {
+    const api = apiRef.current;
+    if (!api) return;
+    const video = videoElement(file, centre);
+    api.updateScene({
+      elements: [...api.getSceneElements(), video],
+      appState: { selectedElementIds: { [video.id]: true } },
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    });
+  }, []);
 
   // ---- Sticky notes (Phase 32, step 10) ----
 
@@ -715,9 +744,16 @@ export default function BoardCanvas({
   // no answer to.
   useEffect(() => {
     if (!surface) return;
-    const carried = (event: DragEvent): "page" | "picture" | null => {
+    // The Assets tab's drag is a picture or a video by its name (step
+    // 12); a drag of files from outside the app is the board's when any of
+    // them is a video, which the library has no answer to — its own drop
+    // handler takes pictures, and is left every drag without a video.
+    const carried = (event: DragEvent): "page" | "picture" | "videos" | null => {
       const types = event.dataTransfer?.types ?? [];
-      return types.includes(PAGE_DRAG_TYPE) ? "page" : types.includes(ASSET_DRAG_TYPE) ? "picture" : null;
+      if (types.includes(PAGE_DRAG_TYPE)) return "page";
+      if (types.includes(ASSET_DRAG_TYPE)) return "picture";
+      if (types.includes("Files") && [...(event.dataTransfer?.items ?? [])].some((item) => item.kind === "file" && item.type.startsWith("video/"))) return "videos";
+      return null;
     };
     function onDragOver(event: DragEvent) {
       if (!carried(event) || !event.dataTransfer) return;
@@ -733,7 +769,20 @@ export default function BoardCanvas({
       event.stopPropagation();
       const at = viewportCoordsToSceneCoords(event, api.getAppState());
       if (kind === "page") addCards(draggedPageIds(event.dataTransfer.getData(PAGE_DRAG_TYPE)), at);
-      else void addPicture(event.dataTransfer.getData(ASSET_DRAG_TYPE), at);
+      else if (kind === "videos") {
+        // Each video into the library, then onto the board where it was
+        // dropped; several land stepped like several cards do.
+        const files = [...event.dataTransfer.files].filter((file) => file.type.startsWith("video/") || isVideoFileName(file.name));
+        files.forEach((file, index) => {
+          void placeVideo(file).then((name) => {
+            if (name) addVideo(name, { x: at.x + index * BOARD_CARD_CASCADE, y: at.y + index * BOARD_CARD_CASCADE });
+          });
+        });
+      } else {
+        const fileName = event.dataTransfer.getData(ASSET_DRAG_TYPE);
+        if (isVideoFileName(fileName)) addVideo(fileName, at);
+        else void addPicture(fileName, at);
+      }
     }
     surface.addEventListener("dragover", onDragOver, true);
     surface.addEventListener("drop", onDrop, true);
@@ -741,7 +790,7 @@ export default function BoardCanvas({
       surface.removeEventListener("dragover", onDragOver, true);
       surface.removeEventListener("drop", onDrop, true);
     };
-  }, [surface, addCards, addPicture]);
+  }, [surface, addCards, addPicture, addVideo, placeVideo]);
 
   return (
     <Excalidraw
@@ -763,7 +812,7 @@ export default function BoardCanvas({
         // the top-right button is where a card's page is named.
         const selectedId = soleSelection(appState);
         const selected = selectedId ? elements.find((element) => element.id === selectedId) : undefined;
-        onCardSelected(!!selected && (isPageCard(selected) || isNote(selected)));
+        onCardSelected(!!selected && (isPageCard(selected) || isNote(selected) || isVideo(selected)));
         // Writing in a note ends when the note stops being selected — a
         // click on the canvas, on another shape, or its deletion.
         // Ended from outside this callback, for the woken state's reason
@@ -847,9 +896,9 @@ export default function BoardCanvas({
       // through `window.open`, which the Electron shell refuses.
       onLinkOpen={(element, event) => {
         event.preventDefault();
-        // A note's link only says it is a note; the links in its words are
-        // the note's own to open.
-        if (element.link && !isNote(element)) links.openLink(element.link);
+        // A note's link only says it is a note, and a video's that it is a
+        // video; the links in a note's words are the note's own to open.
+        if (element.link && !isNote(element) && !isVideo(element)) links.openLink(element.link);
       }}
       // A card opens its page on the second click: the first selects it, as
       // it selects any shape, and a plain click on a card already selected —
@@ -900,7 +949,7 @@ export default function BoardCanvas({
       // the address alone and asks once, so every web address is taken —
       // an embed of the library's own with one, from its embed tool, keeps
       // its own drawing, since the card is drawn only for a bookmark.
-      validateEmbeddable={(link) => (link.startsWith(BOARD_PAGE_LINK_PREFIX) || link === BOARD_NOTE_LINK || /^https?:\/\//i.test(link) ? true : undefined)}
+      validateEmbeddable={(link) => (link.startsWith(BOARD_PAGE_LINK_PREFIX) || link === BOARD_NOTE_LINK || link === BOARD_VIDEO_LINK || /^https?:\/\//i.test(link) ? true : undefined)}
       renderEmbeddable={(element) => {
         const pageId = cardPageId(element);
         if (pageId) {
@@ -923,6 +972,8 @@ export default function BoardCanvas({
         }
         const bookmark = bookmarkOf(element);
         if (bookmark) return <BoardBookmarkCard bookmark={bookmark} width={element.width} height={element.height} />;
+        const video = videoOf(element);
+        if (video) return <BoardVideo file={video.file} />;
         const note = noteOf(element);
         if (note) {
           return (

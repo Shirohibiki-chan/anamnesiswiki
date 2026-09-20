@@ -3572,3 +3572,87 @@ export async function drawBoardStrokeAt(window: Page, from: { x: number; y: numb
   await window.mouse.move(box.x + box.width * to.x, box.y + box.height * to.y, { steps: 12 });
   await window.mouse.up();
 }
+
+// ---- Video on the board (Phase 32, step 12) ----
+
+const BOARD_VIDEO = "[data-testid='board-video']";
+
+/**
+ * Drops a video file from outside the app on the middle of the board, the
+ * way a file dragged in from a folder arrives: a `drop` carrying the file,
+ * dispatched where the board listens for one. The file is made in the
+ * window — a few frames recorded off a canvas — since a driven drag from
+ * the desktop never starts inside Electron, and a fixture would be bytes
+ * in the repository for the sake of one scenario.
+ */
+export async function dropVideoFileOntoBoard(window: Page, name: string, seconds: number): Promise<void> {
+  await window.locator(BOARD_CANVAS).first().evaluate(
+    async (board, [fileName, length]) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 160;
+      canvas.height = 90;
+      const context = canvas.getContext("2d")!;
+      const stream = canvas.captureStream(15);
+      const recorder = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp8" });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (event) => chunks.push(event.data);
+      const stopped = new Promise<void>((resolve) => {
+        recorder.onstop = () => resolve();
+      });
+      recorder.start();
+      const started = performance.now();
+      await new Promise<void>((resolve) => {
+        const tick = () => {
+          const t = (performance.now() - started) / 1000;
+          context.fillStyle = `hsl(${(t * 120) % 360} 80% 50%)`;
+          context.fillRect(0, 0, 160, 90);
+          if (t < Number(length)) requestAnimationFrame(tick);
+          else resolve();
+        };
+        tick();
+      });
+      recorder.stop();
+      await stopped;
+      const file = new File(chunks, String(fileName), { type: "video/webm" });
+      const carried = new DataTransfer();
+      carried.items.add(file);
+      const box = board.getBoundingClientRect();
+      const over = { bubbles: true, cancelable: true, dataTransfer: carried, clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 };
+      board.dispatchEvent(new DragEvent("dragenter", over));
+      board.dispatchEvent(new DragEvent("dragover", over));
+      board.dispatchEvent(new DragEvent("drop", over));
+    },
+    [name, String(seconds)],
+  );
+  await window.locator(BOARD_VIDEO).first().waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** The library file names of the videos on the board, in drawing order. */
+export async function boardVideoFiles(window: Page): Promise<string[]> {
+  return window.locator(BOARD_VIDEO).evaluateAll((videos) => videos.map((video) => video.getAttribute("data-file") ?? ""));
+}
+
+/** Whether the video at `index` is playing — the box holding the pointer, the controls up. */
+export async function boardVideoIsPlaying(window: Page, index: number): Promise<boolean> {
+  return (await window.locator(BOARD_VIDEO).nth(index).getAttribute("data-playing")) === "true";
+}
+
+/** Clicks the play mark on the video at `index`. */
+export async function playBoardVideo(window: Page, index: number): Promise<void> {
+  await window.locator(BOARD_VIDEO).nth(index).locator(".board-video-play").click();
+}
+
+/** Whether the player of the video at `index` has its own controls up and is not paused. */
+export async function boardVideoPlayerState(window: Page, index: number): Promise<{ paused: boolean; controls: boolean; hasFrames: boolean }> {
+  return window
+    .locator(BOARD_VIDEO)
+    .nth(index)
+    .locator("video")
+    .evaluate((video: HTMLVideoElement) => ({ paused: video.paused, controls: video.controls, hasFrames: video.readyState >= 2 }));
+}
+
+export async function boardVideoBox(window: Page, index: number): Promise<{ x: number; y: number; width: number; height: number }> {
+  const box = await window.locator(BOARD_VIDEO).nth(index).boundingBox();
+  if (!box) throw new Error(`no video ${index} on the board`);
+  return box;
+}

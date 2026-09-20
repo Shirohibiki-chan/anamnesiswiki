@@ -553,6 +553,32 @@ Board spike, closed 2026-09-13. What binds the code:
   keyboard focus is not a `wysiwyg` target, so Delete on one would delete
   the card.
 
+- **A video is an embed whose link, `anamnesis://video`, only says what
+  it is, with the file's name in `customData` — a file in the world's
+  library** (Phase 32, step 12). The fourth thing drawn by the app inside
+  an embed, on the note's shape exactly: `videoOf` reads it, `BoardVideo`
+  draws it, `boardAssetUses` counts its file so the Library will not
+  delete it from under the board, `lockedButtonAt` and `onLinkOpen` ignore
+  its link, and the patch keeps the link icon off it (the note's section,
+  now a list of iconless links). **The bytes never go through the drawing
+  library.** Its own drop handler takes pictures and has no answer to a
+  video, so the board's capture-phase drop handler claims a drag from
+  outside the app when any of its files is a video — and only then, so
+  every other file drop is still the library's — puts each file into the
+  library through `placeVideo` (`uploadAsset`, the file's own name kept)
+  and adds the element itself; an Assets-tab drag of a video name adds the
+  element with no upload. **Playing is the box's own state, not the
+  canvas's:** the play mark is the one live part of a resting video
+  (`pointer-events: auto` under the inert box, like a note's links), the
+  player's own `play`/`pause`/`ended` events set `data-playing`, and the
+  "never takes the pointer" rule excludes a playing box so the controls
+  can be used — which is why a playing video cannot be dragged: pause it
+  first. The file is read whole into a blob URL by `useNodeImage`, the
+  same read a picture gets; a long video is a lot of memory, and a
+  streaming route (a file URL, or a custom protocol in the shell) is the
+  fix when it matters. `resolveAssetUrl`'s cache would hold it for the
+  page editor, but a board does not use that path.
+
 - **The highlighter is the library's pen with the app holding a preset
   over it** (Phase 32, step 11). `startHighlighting` puts the pen's
   `currentItem*` colour, width and opacity aside, writes the highlighter's
@@ -601,7 +627,8 @@ Board spike, closed 2026-09-13. What binds the code:
   drawing — a box-select scenario found it.
 
 - **The drawing library is patched, and `scripts/excalidraw-patch.mjs` is
-  the readable form of the patch.** `patches/@excalidraw__excalidraw@0.18.1.patch`
+  the readable form of the patch.** (A patch change never reaches a
+  running dev launcher: restart it, Ctrl+R is not enough.) `patches/@excalidraw__excalidraw@0.18.1.patch`
   is applied by `pnpm install` (pnpm's `patchedDependencies`, in
   `pnpm-workspace.yaml`); it is huge because the library ships single
   minified lines, so the change is read from the script, not the diff. What
