@@ -170,6 +170,7 @@ describe("sticky notes on a board", () => {
     await probe("after typing");
     await finishBoardNote(app.window);
     await probe("after escape");
+    diag.push(JSON.stringify(await app.window.evaluate(() => (window as unknown as { __diag?: string[] }).__diag)));
     const grown = await boardNoteBox(app.window, 0);
     if (grown.height <= 260) expect(diag).toEqual([]);
     expect(grown.height).toBeGreaterThan(260);

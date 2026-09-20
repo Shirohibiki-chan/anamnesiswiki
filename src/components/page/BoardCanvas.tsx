@@ -304,6 +304,7 @@ export default function BoardCanvas({
   const growNotes = useCallback(() => {
     growPendingRef.current = false;
     const api = apiRef.current;
+    ((window as unknown as { __diag?: string[] }).__diag ??= []).push("grow api=" + !!api + " resizing=" + api?.getAppState().isResizing + " heights=" + JSON.stringify([...noteHeightsRef.current.values()]) + " scene=" + JSON.stringify(api?.getSceneElements().map((e) => [isNote(e), e.height])));
     if (!api || api.getAppState().isResizing) return;
     let changed = false;
     let captured = false;
@@ -322,6 +323,7 @@ export default function BoardCanvas({
 
   const onNoteMeasure = useCallback(
     (id: string, height: number) => {
+      ((window as unknown as { __diag?: string[] }).__diag ??= []).push("measure " + height + " pending=" + growPendingRef.current);
       noteHeightsRef.current.set(id, height);
       // Once per tick however many notes report, and never from inside a
       // measurement — the library's re-render would be mid-layout.
