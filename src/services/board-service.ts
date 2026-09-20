@@ -15,10 +15,12 @@ import {
   BOARD_CARD_WIDTH,
   BOARD_DOT_MIN_SCREEN_SPACING,
   BOARD_DOT_SPACING,
+  BOARD_NOTE_LINK,
   BOARD_PAGE_LINK_PREFIX,
   LIBRARY_DEFAULT_BACKGROUND,
 } from "../constants/board";
 import { UNIVERSE_TEMPLATE_KEY, type Board, type Node } from "../constants/schema";
+import { noteOf, notePageIds } from "./board-notes";
 import { mimeForFileName, storedPicture } from "./board-pictures";
 import { linkTargets } from "./storyline-service";
 
@@ -210,13 +212,23 @@ export function elementLink(element: unknown): string | null {
 export function boardPageLinks(board: Board, nodes: Record<string, Node>, targets: Map<string, string | null>): string[] {
   const found: string[] = [];
   const seen = new Set<string>();
+  const add = (pageId: string) => {
+    if (seen.has(pageId)) return;
+    seen.add(pageId);
+    found.push(pageId);
+  };
   for (const element of board.elements) {
+    // A note's words carry links of their own (Phase 32, step 10); its
+    // element's link only says it is a note.
+    const note = noteOf(element);
+    if (note) {
+      notePageIds(note).filter((pageId) => nodes[pageId]).forEach(add);
+      continue;
+    }
     const link = elementLink(element);
     if (!link) continue;
     const target = resolveLink(link, nodes, targets);
-    if (target.kind !== "page" || seen.has(target.pageId)) continue;
-    seen.add(target.pageId);
-    found.push(target.pageId);
+    if (target.kind === "page") add(target.pageId);
   }
   return found;
 }
@@ -337,7 +349,9 @@ export function lockedButtonAt(elements: readonly unknown[], point: { x: number;
   let found: LockedButton | null = null;
   elements.forEach((entry, index) => {
     const element = entry as BoxLike;
-    if (!element.locked || element.isDeleted || typeof element.link !== "string" || !element.link.trim()) return;
+    // A note's link says only that it is a note; locked, it is a note that
+    // stays put, not a button.
+    if (!element.locked || element.isDeleted || typeof element.link !== "string" || !element.link.trim() || element.link === BOARD_NOTE_LINK) return;
     if (insideBox(element, point)) found = { link: element.link, index };
   });
   return found;

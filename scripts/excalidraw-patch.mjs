@@ -2,10 +2,11 @@
 //
 // **Why a patch at all**: a board has to work the way her hands expect
 // from Canva and from LegendKeeper's boards, and the library's rules do
-// not, in four places it has no switch for: a selection box takes only
+// not, in five places it has no switch for: a selection box takes only
 // what it swallows whole; a click inside an unfilled shape picks up
-// nothing; its labels are sentence case; and a frame can neither hold a
-// frame nor turn. Each is written into its two builds, in its own section
+// nothing; its labels are sentence case; a frame can neither hold a
+// frame nor turn; and every embed wears a link icon, which a sticky note
+// must not. Each is written into its two builds, in its own section
 // below.
 //
 // **Why this script exists beside the patch**: the patch file is enormous
@@ -797,6 +798,39 @@ edit("dist/prod/index.js", [
     `ie(l))ko(d,l.id).forEach(p=>{delete m[p.id]});else if(l.frameId)m[l.frameId]&&delete m[l.id];else{`,
     `ie(l))d.filter(p=>anamnesisFrameAncestors(p,this.scene.getNonDeletedElementsMap()).some(u=>u.id===l.id)).forEach(p=>{delete m[p.id]});else if(l.frameId)anamnesisFrameAncestors(l,this.scene.getNonDeletedElementsMap()).some(p=>m[p.id])&&delete m[l.id];else{`,
   ],
+]);
+
+// ---- A sticky note wears no link icon (Phase 32, step 10) ----
+//
+// A note is an embed whose link, `anamnesis://note`, only says what it is
+// (the library draws an embed with no link as nothing at all). The library
+// draws a link icon at the corner of every unselected linked element and
+// opens the link when the icon is clicked; for a note that icon would open
+// an address that is not one. Both the drawing and the hit test skip a
+// note's link, and nothing else about links changes. The address is the
+// app's `BOARD_NOTE_LINK`, repeated here because the library cannot import
+// it.
+const NOTE_LINK = '"anamnesis://note"';
+
+edit("dist/dev/chunk-4FTI6OG3.js", [
+  [
+    `var renderLinkIcon = (element, context, appState, elementsMap) => {
+  if (element.link && !appState.selectedElementIds[element.id]) {`,
+    `var renderLinkIcon = (element, context, appState, elementsMap) => {
+  if (element.link && element.link !== ${NOTE_LINK} && !appState.selectedElementIds[element.id]) {`,
+  ],
+  [
+    `var isPointHittingLink = (element, elementsMap, appState, [x, y], isMobile) => {
+  if (!element.link || appState.selectedElementIds[element.id]) {`,
+    `var isPointHittingLink = (element, elementsMap, appState, [x, y], isMobile) => {
+  if (!element.link || element.link === ${NOTE_LINK} || appState.selectedElementIds[element.id]) {`,
+  ],
+]);
+
+// The same, minified: sp = renderLinkIcon, BO = isPointHittingLink.
+edit("dist/prod/chunk-K2UTITRG.js", [
+  [`sp=(e,t,n,r)=>{if(e.link&&!n.selectedElementIds[e.id]){`, `sp=(e,t,n,r)=>{if(e.link&&e.link!==${NOTE_LINK}&&!n.selectedElementIds[e.id]){`],
+  [`BO=(e,t,n,[r,o],i)=>!e.link||n.selectedElementIds[e.id]?!1:`, `BO=(e,t,n,[r,o],i)=>!e.link||e.link===${NOTE_LINK}||n.selectedElementIds[e.id]?!1:`],
 ]);
 
 // ---- Title Case, both builds ----

@@ -747,14 +747,12 @@ licence key with a watermark or a fee. So the question became what tldraw
 gives LK that our library does not, and her answer was all of it, minus
 other people's cursors. In the order they would matter:
 
-10. **Sticky notes are a real thing.** Today a sticky is a filled box with
-    words in it, which draws right and feels wrong: no colour swatch made
-    for it, no growing as you type, no rich text. A *Note* tool in the
-    board's top-right slot puts down a note in one of the twelve colours;
-    it grows with its words; its words take bold, italic and links, a page
-    link among them. Built as an embed drawn by the app (§ How page cards
-    and bookmark cards are built), which is what makes rich text possible
-    without touching the library's own text drawing.
+10. ~~**Sticky notes are a real thing.**~~ Shipped 2026-09-20 —
+    `docs/shipped.md` § Phase 32, step 10. A *Note* button and N put down a
+    square in one of twelve colours, open for writing; the words take bold,
+    italic and links, a page link among them, and the note grows with them.
+    The third thing drawn by the app inside an embed, and the first written
+    in.
 11. **A highlighter.** A pen that is wide, see-through and drawn under the
     ink, for marking a region rather than writing in it. The library's pen
     with a preset — wide, half-opacity, multiply blend — offered as its

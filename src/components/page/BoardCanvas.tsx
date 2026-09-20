@@ -17,6 +17,13 @@
 // the host what to draw in an embed it does not recognise, and the answer is
 // `BoardPageCard`. Cards come from the *Put a Page on It* picker in the
 // top-right slot, or from a page row dragged out of the tree.
+//
+// **A sticky note is the third thing drawn in an embed** (Phase 32, step
+// 10): a coloured square whose words take bold, italic and links, drawn
+// and edited by `BoardNote`. The library owns its box as it owns a card's;
+// this file owns when a note is being written in, which is the app's own
+// state rather than the library's "active embed" — the library keeps that
+// by the element's identity, and every keystroke here makes a new element.
 import {
   CaptureUpdateAction,
   Excalidraw,
@@ -28,13 +35,15 @@ import {
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { AppState, BinaryFileData, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIAppState } from "@excalidraw/excalidraw/types";
-import { FilePlus2, Grip, Link2, Maximize2, Minimize2, Unlink } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_PAGE_LINK_PREFIX, BOARD_PICTURE_MAX_SIDE, PAGE_DRAG_TYPE } from "../../constants/board";
+import { FilePlus2, Grip, Link2, Maximize2, Minimize2, StickyNote, Unlink } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_NOTE_LINK, BOARD_NOTE_PADDING, BOARD_NOTE_SIZE, BOARD_PAGE_LINK_PREFIX, BOARD_PICTURE_MAX_SIDE, PAGE_DRAG_TYPE } from "../../constants/board";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
+import { DEFAULT_NOTE_COLOUR, NOTE_COLOURS, emptyNote, isNote, noteColourName, noteOf, type NoteColour, type NoteLine } from "../../services/board-notes";
 import { fittedSize, type PictureFile } from "../../services/board-pictures";
 import { cardPageId, cardPlacement, draggedPageIds, elementLink, isPageCard, lockedButtonAt } from "../../services/board-service";
 import { bookmarkOf, isBookmarkCard, placeholderBookmark, webAddressIn, type Bookmark } from "../../services/bookmark-service";
+import { BoardNote, type NoteEditor } from "./BoardNote";
 import type { BoardLinks } from "../../hooks/use-board-links";
 import { NodeIcon } from "../blocks/IconPicker";
 import { BoardBookmarkCard } from "./BoardBookmarkCard";
@@ -68,8 +77,12 @@ type Props = {
   fetchBookmark: (url: string) => Promise<Bookmark>;
 };
 
-/** Which picker is open and what has been typed into it so far; null when closed. */
-type Picker = { mode: "link" | "put"; query: string };
+/**
+ * Which picker is open and what has been typed into it so far; null when
+ * closed. `note` and `colour` are the swatch grid, for a new note and for
+ * the selected ones; they have no box to type in.
+ */
+type Picker = { mode: "link" | "put" | "note" | "colour"; query: string };
 
 /** The one selected shape's id, or null when nothing or several are selected. */
 function soleSelection(appState: UIAppState | AppState): string | null {
@@ -101,6 +114,31 @@ function bookmarkCardElement(bookmark: Bookmark, x: number, y: number): Excalidr
     { type: "rectangle", x, y, width: BOARD_CARD_WIDTH, height: BOARD_CARD_HEIGHT, strokeWidth: 1, roundness: null },
   ]);
   return { ...rectangle, type: "embeddable", link: bookmark.url, customData: { bookmark } } as ExcalidrawElement;
+}
+
+/**
+ * A sticky note, as the library's own element: an embed whose address says
+ * it is a note and whose `customData` is its colour and words. A square,
+ * made the way a card is.
+ */
+function noteElement(colour: NoteColour, x: number, y: number): ExcalidrawElement {
+  const [rectangle] = convertToExcalidrawElements([{ type: "rectangle", x, y, width: BOARD_NOTE_SIZE, height: BOARD_NOTE_SIZE, strokeWidth: 1, roundness: null }]);
+  return { ...rectangle, type: "embeddable", link: BOARD_NOTE_LINK, customData: { note: emptyNote(colour) } } as ExcalidrawElement;
+}
+
+/**
+ * `element` with `changes` and its version left alone. A change made to a
+ * note mid-edit — a keystroke, the box growing under it — is not a change
+ * of its own: it is folded into the one captured when the edit ends. The
+ * library's `updateScene` keeps an element whose version has run ahead of
+ * its last captured state *out* of the next capture (it takes a version
+ * ahead to mean a gesture still in progress), so an edit written with
+ * version bumps along the way would never reach the undo history at all.
+ * An unbumped version also leaves the board file alone until the edit is
+ * done, which is one write per note rather than one per key.
+ */
+function withoutBump<T extends ExcalidrawElement>(element: T, changes: Partial<T>): T {
+  return { ...element, ...changes };
 }
 
 /** Whether the keyboard is in something that takes typing — a paste there is that box's, not the board's. */
@@ -160,6 +198,26 @@ export default function BoardCanvas({
   // so a pasted address lands under it — the library's own rule for a
   // pasted picture.
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
+  // The note being written in, if one is: state so the note redraws as its
+  // editor, and a ref so the library's change reports — which close over
+  // nothing — can read it.
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const editingNoteRef = useRef<string | null>(null);
+  // The note's handle on its editor while it is being written in, for
+  // putting a link at the caret from the picker.
+  const noteEditorRef = useRef<NoteEditor | null>(null);
+  // The words of the note being written in, as last reported.
+  const noteDraftRef = useRef<NoteLine[] | null>(null);
+  const growPendingRef = useRef(false);
+  // Whether the last pointer gesture on the canvas moved anything, or was
+  // the click that selected the shape: the library calls a quick drag a
+  // click and wakes the note under it, and wakes a note on the click that
+  // selects it. A note dragged into place must not open for writing, and a
+  // note opens on the second click, as a card does — the first selects.
+  const lastGestureDraggedRef = useRef(false);
+  const lastClickSelectedRef = useRef(false);
+  // The colour the last note was made in, which the next one starts as.
+  const [noteColour, setNoteColour] = useState<NoteColour>(DEFAULT_NOTE_COLOUR);
 
   // Clicking anywhere else closes the picker, the storyline picker's rule.
   useEffect(() => {
@@ -226,6 +284,211 @@ export default function BoardCanvas({
     },
     [placePicture],
   );
+
+  // ---- Sticky notes (Phase 32, step 10) ----
+
+  const setEditing = useCallback((id: string | null) => {
+    editingNoteRef.current = id;
+    setEditingNoteId(id);
+  }, []);
+
+  /**
+   * Makes every note as tall as its words need, in one edit, measuring
+   * the words on the board itself: each note's box is in the drawing's
+   * own units, so what its words take up on screen is what the box needs.
+   * Measured here, at the moment of deciding, rather than from what the
+   * notes reported earlier — a resize observer inside the library's embed
+   * was seen to fall silent after the first report on CI's machine
+   * (2026-09-20), and the words were taller than the box by then. Never
+   * shorter: a note she made taller stays so. Left alone while the
+   * library is mid-resize, since a box being dragged narrower wraps more
+   * and would be grown back under the hand; the pointer-up hook runs this
+   * again when the drag ends.
+   */
+  /** The height the note with `id` needs for its words, measured off the board, or null when it is not drawn. */
+  const noteNeeds = useCallback(
+    (id: string): number | null => {
+      const words = surface?.querySelector<HTMLElement>(`.board-note[data-note-id="${CSS.escape(id)}"] .board-note-words`);
+      return words ? words.offsetHeight + BOARD_NOTE_PADDING * 2 : null;
+    },
+    [surface],
+  );
+
+  const growNotes = useCallback(() => {
+    growPendingRef.current = false;
+    const api = apiRef.current;
+    if (!api || !surface || api.getAppState().isResizing) return;
+    const needs = new Map<string, number>();
+    for (const words of surface.querySelectorAll<HTMLElement>(".board-note .board-note-words")) {
+      const id = words.parentElement?.getAttribute("data-note-id");
+      if (id) needs.set(id, words.offsetHeight + BOARD_NOTE_PADDING * 2);
+    }
+    let changed = false;
+    let captured = false;
+    const elements = api.getSceneElementsIncludingDeleted().map((element) => {
+      const needed = needs.get(element.id);
+      if (needed === undefined || element.isDeleted || !isNote(element) || element.height >= needed - 0.5) return element;
+      changed = true;
+      // Mid-edit the growth belongs to the edit; otherwise — a note dragged
+      // narrower, a note just loaded — it is a change of its own.
+      if (element.id === editingNoteRef.current) return withoutBump(element, { height: needed });
+      captured = true;
+      return newElementWith(element, { height: needed });
+    });
+    if (changed) api.updateScene({ elements, captureUpdate: captured ? CaptureUpdateAction.IMMEDIATELY : CaptureUpdateAction.EVENTUALLY });
+  }, [surface]);
+
+  /** Asks for the notes to be grown, once per tick however many ask, and never from inside a layout callback. */
+  const scheduleGrow = useCallback(() => {
+    if (growPendingRef.current) return;
+    growPendingRef.current = true;
+    window.setTimeout(growNotes, 0);
+  }, [growNotes]);
+
+  /**
+   * The words of the note being written in, on every change: written to
+   * the element at once so the note draws them, but with its version left
+   * alone (see `withoutBump`), so the edit is one undo step and one write
+   * when it ends. The box's growth goes in the same update, measured off
+   * the box the keystroke just changed — not on a timer: under steady
+   * typing on a slow machine the key events starve a timer of its turn,
+   * and a note that grows "next tick" never grows at all (CI, 2026-09-20).
+   */
+  const onNoteEdit = useCallback(
+    (id: string, lines: NoteLine[]) => {
+      const api = apiRef.current;
+      if (!api) return;
+      noteDraftRef.current = lines;
+      const needed = noteNeeds(id);
+      api.updateScene({
+        elements: api.getSceneElementsIncludingDeleted().map((element) => {
+          const note = noteOf(element);
+          if (element.id !== id || !note) return element;
+          const height = needed !== null && needed > element.height ? needed : element.height;
+          return withoutBump(element, { customData: { note: { ...note, lines } }, height });
+        }),
+        captureUpdate: CaptureUpdateAction.EVENTUALLY,
+      });
+    },
+    [noteNeeds],
+  );
+
+  /** Writing ends: the words as they stand become one undoable edit, and the keyboard goes back to the board. */
+  const endNoteEditing = useCallback(() => {
+    const api = apiRef.current;
+    const id = editingNoteRef.current;
+    if (!api || id === null) return;
+    const draft = noteDraftRef.current;
+    noteDraftRef.current = null;
+    setEditing(null);
+    // The one bump of the edit: the words as they stand, and the height
+    // the box grew to under them, captured together.
+    api.updateScene({
+      elements: api.getSceneElementsIncludingDeleted().map((element) => {
+        const note = noteOf(element);
+        return element.id === id && note && draft ? newElementWith(element, { customData: { note: { ...note, lines: draft } } }) : element;
+      }),
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    });
+    surface?.querySelector<HTMLElement>(".excalidraw-container")?.focus();
+  }, [setEditing, surface]);
+
+  /** Puts a note of `colour` down with its middle at `centre`, selected and ready to be written in. */
+  const addNote = useCallback(
+    (colour: NoteColour, centre: { x: number; y: number }) => {
+      const api = apiRef.current;
+      if (!api) return;
+      endNoteEditing();
+      const note = noteElement(colour, centre.x - BOARD_NOTE_SIZE / 2, centre.y - BOARD_NOTE_SIZE / 2);
+      api.setActiveTool({ type: "selection" });
+      api.updateScene({
+        elements: [...api.getSceneElements(), note],
+        appState: { selectedElementIds: { [note.id]: true } },
+        captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+      });
+      setNoteColour(colour);
+      noteDraftRef.current = null;
+      setEditing(note.id);
+      setPicker(null);
+    },
+    [endNoteEditing, setEditing],
+  );
+
+  /** Recolours every selected note, as one undoable edit. */
+  const recolourNotes = useCallback(
+    (colour: NoteColour) => {
+      const api = apiRef.current;
+      if (!api) return;
+      const selectedIds = api.getAppState().selectedElementIds;
+      api.updateScene({
+        elements: api.getSceneElements().map((element) => {
+          const note = noteOf(element);
+          return selectedIds[element.id] && note ? newElementWith(element, { customData: { note: { ...note, colour } } }) : element;
+        }),
+        captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+      });
+      setNoteColour(colour);
+      setPicker(null);
+    },
+    [],
+  );
+
+  // A note still being written in when the board goes away — another
+  // page opened, the world closed — is committed as it stands, through
+  // the board's own change report: the library is on its way out by then
+  // and would not report the edit itself.
+  // The library empties its scene as it unmounts, before this cleanup
+  // runs, so the drawing is remembered from its last change report rather
+  // than asked for.
+  const onChangeRef = useRef(onChange);
+  const lastSceneRef = useRef<{ elements: readonly ExcalidrawElement[]; appState: Record<string, unknown>; files: Record<string, unknown> } | null>(null);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  // A layout effect, so its cleanup runs before the board hook's own
+  // unmount flush and the words go out with it rather than after.
+  useLayoutEffect(
+    () => () => {
+      const scene = lastSceneRef.current;
+      const id = editingNoteRef.current;
+      const draft = noteDraftRef.current;
+      if (!scene || id === null || !draft) return;
+      editingNoteRef.current = null;
+      noteDraftRef.current = null;
+      const elements = scene.elements.map((element) => {
+        const note = noteOf(element);
+        return element.id === id && note ? newElementWith(element, { customData: { note: { ...note, lines: draft } } }) : element;
+      });
+      onChangeRef.current(elements, scene.appState, scene.files);
+    },
+    [],
+  );
+
+  // A new note on N, and Enter on a selected note to write in it — the
+  // library's own Enter on a shape with words. Both only when the keyboard
+  // is the board's and not a box's.
+  useEffect(() => {
+    if (!surface) return;
+    function onKeyDown(event: KeyboardEvent) {
+      const api = apiRef.current;
+      if (!api || isWritable(document.activeElement) || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key.toLowerCase() === "n" && !event.shiftKey) {
+        event.preventDefault();
+        event.stopPropagation();
+        addNote(noteColour, viewCentre(api.getAppState()));
+      } else if (event.key === "Enter") {
+        const selectedId = soleSelection(api.getAppState());
+        const selected = selectedId ? api.getSceneElements().find((element) => element.id === selectedId) : undefined;
+        if (!selected || !isNote(selected) || selected.locked) return;
+        event.preventDefault();
+        event.stopPropagation();
+        noteDraftRef.current = null;
+        setEditing(selected.id);
+      }
+    }
+    surface.addEventListener("keydown", onKeyDown);
+    return () => surface.removeEventListener("keydown", onKeyDown);
+  }, [surface, addNote, noteColour, setEditing]);
 
   /**
    * Puts a bookmark card for `url` on the board with its middle at
@@ -349,13 +612,29 @@ export default function BoardCanvas({
       initialData={initialData as unknown as ExcalidrawInitialDataState}
       theme={theme}
       onChange={(elements, appState, files) => {
+        lastSceneRef.current = { elements, appState: appState as unknown as Record<string, unknown>, files };
         // The library shows its own link popup for any selected embed, with
         // the raw page address in it. For a card the address is not for
         // reading, so the board is told and its stylesheet hides the popup;
         // the top-right button is where a card's page is named.
         const selectedId = soleSelection(appState);
         const selected = selectedId ? elements.find((element) => element.id === selectedId) : undefined;
-        onCardSelected(!!selected && isPageCard(selected));
+        onCardSelected(!!selected && (isPageCard(selected) || isNote(selected)));
+        // Writing in a note ends when the note stops being selected — a
+        // click on the canvas, on another shape, or its deletion.
+        // Ended from outside this callback, for the woken state's reason
+        // below: the commit is an `updateScene` of its own.
+        const editing = editingNoteRef.current;
+        if (editing !== null) {
+          const still = elements.find((element) => element.id === editing);
+          if (!still || still.isDeleted || !appState.selectedElementIds[editing]) {
+            // For *this* note: by the time this runs a new note may be the
+            // one being written in, and that one is not to be ended.
+            window.setTimeout(() => {
+              if (editingNoteRef.current === editing) endNoteEditing();
+            }, 0);
+          }
+        }
         // The library "wakes" an embed clicked in its middle, a hundred
         // milliseconds after the click, and then refuses to drag it from the
         // canvas — the pointer is meant to be the iframe's. A card's box takes
@@ -365,8 +644,15 @@ export default function BoardCanvas({
         // selected card, and an `updateScene` from inside the change report,
         // mid-gesture, made the library drop the next box selection's first
         // element.
+        // A woken *note* is a note to write in: the library's double-click
+        // and second click in the middle are how writing starts, and its
+        // woken state is put back the same way, since the app keeps its own.
         const woken = appState.activeEmbeddable;
-        if (woken?.state === "active" && (isPageCard(woken.element) || isBookmarkCard(woken.element))) {
+        if (woken?.state === "active" && (isPageCard(woken.element) || isBookmarkCard(woken.element) || isNote(woken.element))) {
+          if (isNote(woken.element) && !woken.element.locked && !lastGestureDraggedRef.current && !lastClickSelectedRef.current && editingNoteRef.current !== woken.element.id) {
+            noteDraftRef.current = null;
+            setEditing(woken.element.id);
+          }
           window.setTimeout(() => apiRef.current?.updateScene({ appState: { activeEmbeddable: null } }), 0);
         }
         // The dots underneath follow the view. Told from here rather than
@@ -384,7 +670,9 @@ export default function BoardCanvas({
       // through `window.open`, which the Electron shell refuses.
       onLinkOpen={(element, event) => {
         event.preventDefault();
-        if (element.link) links.openLink(element.link);
+        // A note's link only says it is a note; the links in its words are
+        // the note's own to open.
+        if (element.link && !isNote(element)) links.openLink(element.link);
       }}
       // A card opens its page on the second click: the first selects it, as
       // it selects any shape, and a plain click on a card already selected —
@@ -398,7 +686,14 @@ export default function BoardCanvas({
       // all, so the click arrives with nothing hit and the shape is found
       // by its box.
       onPointerUp={(_tool, pointerDownState) => {
-        if (pointerDownState.drag.hasOccurred) return;
+        lastGestureDraggedRef.current = pointerDownState.drag.hasOccurred;
+        lastClickSelectedRef.current = pointerDownState.hit.wasAddedToSelection;
+        // A note dragged narrower wraps more; now that the hand is off it,
+        // it can grow to fit.
+        if (pointerDownState.drag.hasOccurred) {
+          window.setTimeout(growNotes, 0);
+          return;
+        }
         const elements = apiRef.current?.getSceneElements() ?? [];
         const hit = pointerDownState.hit.element;
         // The library skips locked shapes and reports whatever lies beneath,
@@ -425,12 +720,28 @@ export default function BoardCanvas({
       // the address alone and asks once, so every web address is taken —
       // an embed of the library's own with one, from its embed tool, keeps
       // its own drawing, since the card is drawn only for a bookmark.
-      validateEmbeddable={(link) => (link.startsWith(BOARD_PAGE_LINK_PREFIX) || /^https?:\/\//i.test(link) ? true : undefined)}
+      validateEmbeddable={(link) => (link.startsWith(BOARD_PAGE_LINK_PREFIX) || link === BOARD_NOTE_LINK || /^https?:\/\//i.test(link) ? true : undefined)}
       renderEmbeddable={(element) => {
         const pageId = cardPageId(element);
         if (pageId) return <BoardPageCard pageId={pageId} width={element.width} height={element.height} />;
         const bookmark = bookmarkOf(element);
         if (bookmark) return <BoardBookmarkCard bookmark={bookmark} width={element.width} height={element.height} />;
+        const note = noteOf(element);
+        if (note) {
+          return (
+            <BoardNote
+              id={element.id}
+              note={note}
+              editing={editingNoteId === element.id}
+              editorRef={noteEditorRef}
+              onEdit={onNoteEdit}
+              onMeasure={scheduleGrow}
+              onDone={endNoteEditing}
+              onWantLink={() => setPicker({ mode: "link", query: "" })}
+              onOpenLink={links.openLink}
+            />
+          );
+        }
         return null;
       }}
       // The library's own open/save-to-file actions are the desktop app's
@@ -453,7 +764,51 @@ export default function BoardCanvas({
         const current = selected ? elementLink(selected) : null;
         const linked = links.linkedPage(current);
         const candidates = picker !== null ? links.candidates(picker.query) : [];
-        const pickerLabel = picker?.mode === "put" ? "Put a page on this board" : "Link this shape to a page";
+        // A note's link says it is a note, so the link button is for the
+        // words instead: shown while she is writing in it, and its picks go
+        // into the words at the caret. A note not being written in has no
+        // link button at all.
+        const writingNote = !!selected && isNote(selected) && editingNoteId === selected.id;
+        const linkable = !!selected && (!isNote(selected) || writingNote);
+        const selectedNotes = apiRef.current?.getSceneElements().filter((element) => appState.selectedElementIds[element.id] && isNote(element)) ?? [];
+        const selectedNoteColour = selectedNotes.length > 0 ? (noteOf(selectedNotes[0])?.colour ?? DEFAULT_NOTE_COLOUR) : null;
+        const typedAddress = picker?.mode === "link" && writingNote ? webAddressIn(picker.query) : null;
+        const pickLink = (href: string, text: string) => {
+          if (writingNote) {
+            noteEditorRef.current?.insertLink(href, text);
+            setPicker(null);
+          } else if (selected) {
+            setLink(selected.id, href);
+          }
+        };
+        const pickerLabel =
+          picker?.mode === "put"
+            ? "Put a page on this board"
+            : picker?.mode === "note"
+              ? "Add a note in a colour"
+              : picker?.mode === "colour"
+                ? "Colour the selected notes"
+                : writingNote
+                  ? "Link the words to a page"
+                  : "Link this shape to a page";
+        const swatches = (mode: "note" | "colour") => (
+          <div className="board-picker board-note-picker" role="dialog" aria-label={pickerLabel}>
+            <div className="board-note-swatches">
+              {NOTE_COLOURS.map((colour) => (
+                <button
+                  type="button"
+                  key={colour}
+                  className="board-note-swatch"
+                  data-colour={colour}
+                  aria-label={mode === "note" ? `Add a ${noteColourName(colour)} Note` : noteColourName(colour)}
+                  aria-pressed={mode === "colour" ? colour === selectedNoteColour : undefined}
+                  title={noteColourName(colour)}
+                  onClick={() => (mode === "note" ? addNote(colour, viewCentre(apiRef.current!.getAppState())) : recolourNotes(colour))}
+                />
+              ))}
+            </div>
+          </div>
+        );
         return (
           <>
             <div className="board-picker-anchor" ref={pickerRef}>
@@ -468,7 +823,32 @@ export default function BoardCanvas({
                 <FilePlus2 size={16} />
                 <span className="board-link-label">Put a Page on It</span>
               </button>
-              {selected && (
+              <button
+                type="button"
+                className="board-top-button board-note-button"
+                aria-expanded={picker?.mode === "note"}
+                onClick={() => setPicker((open) => (open?.mode === "note" ? null : { mode: "note", query: "" }))}
+                title="Add a Note (N)"
+                aria-label="Add a sticky note to this board"
+              >
+                <StickyNote size={16} />
+                <span className="board-link-label">Note</span>
+              </button>
+              {selectedNoteColour !== null && (
+                <button
+                  type="button"
+                  className="board-top-button board-colour-button"
+                  data-colour={selectedNoteColour}
+                  aria-expanded={picker?.mode === "colour"}
+                  onClick={() => setPicker((open) => (open?.mode === "colour" ? null : { mode: "colour", query: "" }))}
+                  title="Note Colour"
+                  aria-label="Change the colour of the selected notes"
+                >
+                  <span className="board-colour-dot" />
+                  <span className="board-link-label">Colour</span>
+                </button>
+              )}
+              {linkable && (
                 <button
                   type="button"
                   className="board-top-button board-link-button"
@@ -482,12 +862,14 @@ export default function BoardCanvas({
                   <span className="board-link-label">{linked ? linked.name : "Link to Page"}</span>
                 </button>
               )}
-              {picker !== null && (
+              {picker?.mode === "note" && swatches("note")}
+              {picker?.mode === "colour" && swatches("colour")}
+              {(picker?.mode === "put" || picker?.mode === "link") && (
                 <div className="board-picker" role="dialog" aria-label={pickerLabel}>
                   <input
                     type="text"
                     className="property-field-input"
-                    placeholder="Search pages…"
+                    placeholder={writingNote && picker.mode === "link" ? "Search pages, or paste an address…" : "Search pages…"}
                     aria-label={picker.mode === "put" ? "Search pages to put on this board" : "Search pages to link this shape to"}
                     value={picker.query}
                     autoFocus
@@ -498,15 +880,25 @@ export default function BoardCanvas({
                       // tool shortcuts; typing a page name must not switch
                       // tools under her.
                       event.stopPropagation();
-                      if (event.key === "Escape") setPicker(null);
-                      if (event.key === "Enter" && candidates.length > 0) {
+                      if (event.key === "Escape") {
+                        setPicker(null);
+                        if (writingNote) noteEditorRef.current?.focus();
+                      }
+                      if (event.key === "Enter" && picker.mode === "link" && typedAddress) pickLink(typedAddress, typedAddress);
+                      else if (event.key === "Enter" && candidates.length > 0) {
                         if (picker.mode === "put") putPageOn(candidates[0].id);
-                        else if (selected) setLink(selected.id, links.pageLinkFor(candidates[0].id));
+                        else pickLink(links.pageLinkFor(candidates[0].id), candidates[0].name);
                       }
                     }}
                     onKeyUp={(event) => event.stopPropagation()}
                   />
-                  {picker.query.trim() && candidates.length === 0 && <p className="board-picker-empty">No page by that name.</p>}
+                  {typedAddress && (
+                    <button type="button" className="board-picker-row" onClick={() => pickLink(typedAddress, typedAddress)}>
+                      <Link2 size={14} />
+                      <span className="board-picker-name">Link to {typedAddress}</span>
+                    </button>
+                  )}
+                  {picker.query.trim() && candidates.length === 0 && !typedAddress && <p className="board-picker-empty">No page by that name.</p>}
                   {candidates.map((candidate) => (
                     <button
                       type="button"
@@ -514,7 +906,7 @@ export default function BoardCanvas({
                       className="board-picker-row"
                       onClick={() => {
                         if (picker.mode === "put") putPageOn(candidate.id);
-                        else if (selected) setLink(selected.id, links.pageLinkFor(candidate.id));
+                        else pickLink(links.pageLinkFor(candidate.id), candidate.name);
                       }}
                     >
                       <NodeIcon icon={candidate.icon} templateKey={candidate.templateKey} size={14} />

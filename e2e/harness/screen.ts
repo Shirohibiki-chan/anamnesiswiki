@@ -1908,6 +1908,10 @@ const BOARD_MENU_BUTTON = ".board [data-testid='main-menu-trigger']";
 const BOARD_DOTS_TOGGLE = "[data-testid='board-dots-toggle']";
 const BOARD_PAGE_CARD = "[data-testid='board-page-card']";
 const BOARD_BOOKMARK_CARD = "[data-testid='board-bookmark-card']";
+const BOARD_NOTE = "[data-testid='board-note']";
+const BOARD_NOTE_BUTTON = ".board-note-button";
+const BOARD_COLOUR_BUTTON = ".board-colour-button";
+const BOARD_NOTE_SWATCH = ".board-note-swatch";
 // The Assets tab's drag type — `ASSET_DRAG_TYPE` in src/constants/paths.ts,
 // written out here the way the tree's page drag is dispatched: what a drop
 // on the board is handed, not what the app calls it.
@@ -3284,6 +3288,122 @@ export async function lockBoardSelection(window: Page): Promise<void> {
 /** Whether the board is showing the pointer cursor of a button — a locked shape with a link under the mouse. */
 export async function boardShowsButtonCursor(window: Page): Promise<boolean> {
   return (await window.locator(BOARD).first().getAttribute("data-over-button")) === "true";
+}
+
+// ---- Sticky notes (Phase 32, step 10) ----
+
+/**
+ * Adds a note in `colour` through the top-right Note button and its
+ * swatches, and waits for it to be open for writing — a new note is
+ * ready for the keyboard at once.
+ */
+export async function addBoardNote(window: Page, colour: string): Promise<void> {
+  const before = await window.locator(BOARD_NOTE).count();
+  const button = window.locator(BOARD_NOTE_BUTTON);
+  if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
+  await window.locator(`${BOARD_NOTE_SWATCH}[data-colour="${colour}"]`).click();
+  await window.locator(`${BOARD_NOTE}[data-editing="true"]`).nth(0).waitFor({ state: "visible", timeout: WAIT_MS });
+  await window.locator(BOARD_NOTE).nth(before).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Whether a note on the board is open for writing, with the keyboard in it. */
+export async function boardNoteIsBeingWritten(window: Page): Promise<boolean> {
+  return window.evaluate((selector) => {
+    const words = document.querySelector<HTMLElement>(`${selector}[data-editing="true"] .board-note-words`);
+    return !!words && words === document.activeElement;
+  }, BOARD_NOTE);
+}
+
+/** Whether any note on the board is open for writing, wherever the keyboard is. */
+export async function boardNoteIsOpen(window: Page): Promise<boolean> {
+  return (await window.locator(`${BOARD_NOTE}[data-editing="true"]`).count()) > 0;
+}
+
+/** The words of every note on the board, marks off, in drawing order. */
+export async function boardNoteTexts(window: Page): Promise<string[]> {
+  return window.locator(BOARD_NOTE).evaluateAll((notes) => notes.map((note) => (note.querySelector(".board-note-words") as HTMLElement).innerText.replace(/\n+$/, "")));
+}
+
+/** The colours of every note on the board, in drawing order. */
+export async function boardNoteColours(window: Page): Promise<string[]> {
+  return window.locator(BOARD_NOTE).evaluateAll((notes) => notes.map((note) => note.getAttribute("data-colour") ?? ""));
+}
+
+/** The words a note draws in bold, and the ones it draws as links, for the note at `index`. */
+export async function boardNoteMarks(window: Page, index: number): Promise<{ bold: string[]; links: { text: string; href: string }[] }> {
+  return window.locator(BOARD_NOTE).nth(index).evaluate((note) => ({
+    bold: Array.from(note.querySelectorAll("strong, b")).map((element) => element.textContent ?? ""),
+    links: Array.from(note.querySelectorAll("a")).map((element) => ({ text: element.textContent ?? "", href: element.getAttribute("href") ?? "" })),
+  }));
+}
+
+/** The box of the note at `index`, in window pixels — the drawing's units at the default zoom. */
+export async function boardNoteBox(window: Page, index: number): Promise<{ x: number; y: number; width: number; height: number }> {
+  const box = await window.locator(BOARD_NOTE).nth(index).boundingBox();
+  if (!box) throw new Error(`no note at index ${index} on the board`);
+  return box;
+}
+
+/** Ends the writing in a note with Escape, which keeps it selected. */
+export async function finishBoardNote(window: Page): Promise<void> {
+  await window.keyboard.press("Escape");
+  await window.locator(`${BOARD_NOTE}[data-editing="true"]`).waitFor({ state: "detached", timeout: WAIT_MS });
+}
+
+/**
+ * Clicks the note at `index` at its middle, by coordinates like a card:
+ * the first click selects it; the second, or a double-click, opens it for
+ * writing.
+ */
+export async function clickBoardNote(window: Page, index: number): Promise<void> {
+  const box = await boardNoteBox(window, index);
+  await window.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await settlePastWake(window);
+}
+
+export async function doubleClickBoardNote(window: Page, index: number): Promise<void> {
+  const box = await boardNoteBox(window, index);
+  await window.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  await window.locator(`${BOARD_NOTE}[data-editing="true"]`).nth(0).waitFor({ state: "visible", timeout: WAIT_MS });
+  // Open is not enough: the keyboard has to be in it before anything is
+  // typed, and the library's wake timers from the two clicks are still to
+  // fire (see BoardNote's keep-focus note).
+  await window.waitForFunction(
+    (selector) => {
+      const words = document.querySelector<HTMLElement>(`${selector}[data-editing="true"] .board-note-words`);
+      return !!words && words === document.activeElement;
+    },
+    BOARD_NOTE,
+    { timeout: WAIT_MS },
+  );
+  await settlePastWake(window);
+}
+
+/** Clicks the link reading `text` in the words of the note at `index`. */
+export async function clickBoardNoteLink(window: Page, index: number, text: string): Promise<void> {
+  await window.locator(BOARD_NOTE).nth(index).locator("a").filter({ hasText: text }).first().click();
+}
+
+/** Recolours the selected notes through the top-right Colour button. */
+export async function recolourBoardNotes(window: Page, colour: string): Promise<void> {
+  const button = window.locator(BOARD_COLOUR_BUTTON);
+  if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
+  await window.locator(`${BOARD_NOTE_SWATCH}[data-colour="${colour}"]`).click();
+}
+
+/** Whether the top-right row offers the Colour button, which it does only with a note selected. */
+export async function boardOffersNoteColour(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD_COLOUR_BUTTON).count()) > 0;
+}
+
+/**
+ * Puts a link to the page called `name` into the note being written, at
+ * the caret, through Ctrl+K and the picker.
+ */
+export async function linkBoardNoteWordsToPage(window: Page, name: string): Promise<void> {
+  await window.keyboard.press("Control+k");
+  await window.locator(BOARD_PICKER_INPUT).fill(name);
+  await window.locator(BOARD_PICKER_ROW).filter({ hasText: name }).first().click();
 }
 
 /** Moves the mouse over the middle of the card for `name`, without clicking. */
