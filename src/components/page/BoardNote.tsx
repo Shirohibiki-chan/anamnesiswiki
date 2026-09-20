@@ -26,6 +26,9 @@ export type NoteEditor = {
   focus: () => void;
 };
 
+/** How long a note just opened for writing keeps taking the keyboard back from nothing. */
+const KEEP_FOCUS_MS = 800;
+
 type Props = {
   id: string;
   note: Note;
@@ -66,20 +69,38 @@ export function BoardNote({ id, note, editing, editorRef, onEdit, onMeasure, onD
     return () => observer.disconnect();
   }, [id, editing, onMeasure]);
 
-  // Editing starts: the keyboard goes into the box, at the end of the words.
+  // Editing starts: the keyboard goes into the box, at the end of the
+  // words. And it is kept there through the first moments: the library's
+  // own wake timers from the clicks that started the writing fire after
+  // this, each a state change and a redraw, and on a slow machine one of
+  // them was seen to leave the keyboard on nothing at all (CI, 2026-09-20)
+  // — so for a short while the box takes it back whenever it finds the
+  // keyboard on the body or on the library's own container, never from a
+  // box that takes typing, such as the link picker's.
   useLayoutEffect(() => {
     if (!editing) return;
     const words = wordsRef.current;
     if (!words) return;
-    words.focus();
-    const selection = window.getSelection();
-    if (selection) {
+    const take = () => {
+      words.focus();
+      const selection = window.getSelection();
+      if (!selection) return;
       const range = document.createRange();
       range.selectNodeContents(words);
       range.collapse(false);
       selection.removeAllRanges();
       selection.addRange(range);
-    }
+    };
+    take();
+    const until = performance.now() + KEEP_FOCUS_MS;
+    let frame = 0;
+    const keep = () => {
+      const active = document.activeElement;
+      if (active !== words && (active === null || active === document.body || active.classList.contains("excalidraw-container"))) take();
+      if (performance.now() < until) frame = requestAnimationFrame(keep);
+    };
+    frame = requestAnimationFrame(keep);
+    return () => cancelAnimationFrame(frame);
   }, [editing]);
 
   // While editing, the caret is remembered on every move, and the canvas is

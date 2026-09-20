@@ -6918,4 +6918,10 @@ full suite then found two more: a deferred end-of-writing that ended
 whichever note was open by the time it ran, and a page change mid-write
 that lost the words — and, once committed from the library at unmount,
 wrote an empty board, because the library had emptied its scene first.
-Both in the handoff, both guarded by the scenario.
+Both in the handoff, both guarded by the scenario. CI found one more:
+on its slower machine a note opened by double-click sometimes lost the
+keyboard to nothing at all a moment after opening — the library's wake
+timers from the two clicks fire after the editor has taken focus — so
+the box takes the keyboard back for its first moments whenever it finds
+it on the body or the library's container (`BoardNote`, keep-focus),
+and the harness waits for the keyboard to be in the box before typing.

@@ -3365,6 +3365,18 @@ export async function doubleClickBoardNote(window: Page, index: number): Promise
   const box = await boardNoteBox(window, index);
   await window.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
   await window.locator(`${BOARD_NOTE}[data-editing="true"]`).nth(0).waitFor({ state: "visible", timeout: WAIT_MS });
+  // Open is not enough: the keyboard has to be in it before anything is
+  // typed, and the library's wake timers from the two clicks are still to
+  // fire (see BoardNote's keep-focus note).
+  await window.waitForFunction(
+    (selector) => {
+      const words = document.querySelector<HTMLElement>(`${selector}[data-editing="true"] .board-note-words`);
+      return !!words && words === document.activeElement;
+    },
+    BOARD_NOTE,
+    { timeout: WAIT_MS },
+  );
+  await settlePastWake(window);
 }
 
 /** Clicks the link reading `text` in the words of the note at `index`. */
