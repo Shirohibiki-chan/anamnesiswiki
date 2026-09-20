@@ -14,6 +14,7 @@
 // this is the shape of what is stored and the arithmetic between a data
 // URL and bytes.
 import type { Board } from "../constants/schema";
+import { bookmarkOf } from "./bookmark-service";
 
 /** A picture as `_board.json` holds it: the library's id, its type, and the asset it lives in. */
 export type StoredPicture = { id: string; mimeType: string; asset: string };
@@ -114,12 +115,21 @@ export function fittedSize(width: number, height: number, maxSide: number): { wi
   return { width: Math.round(width * scale), height: Math.round(height * scale) };
 }
 
-/** Every asset a board's pictures live in, each once. */
+/**
+ * Every asset a board's pictures live in, each once: the pictures on it,
+ * and the picture on each bookmark card (step 5), which is on the element
+ * rather than in `files`.
+ */
 export function boardAssetUses(board: Board): string[] {
   const names = new Set<string>();
   for (const file of Object.values(board.files)) {
     const asset = pictureAsset(file);
     if (asset) names.add(asset);
+  }
+  for (const element of board.elements) {
+    if ((element as { isDeleted?: boolean }).isDeleted) continue;
+    const image = bookmarkOf(element)?.image;
+    if (image) names.add(image);
   }
   return [...names];
 }

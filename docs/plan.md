@@ -715,9 +715,11 @@ is built; it is all checked as present and not switched off.
    in `assets/`; the board holds its name; the Assets tab drags onto the
    board and counts the board as a use; the spike's boards migrate on
    their first open.
-5. **Bookmark cards.** Paste a web address and get a card with the page's
-   title, description and picture; click it and the address opens in the
-   browser. Today a pasted address is a line of text with a link on it.
+5. ~~**Bookmark cards.**~~ Shipped 2026-09-20 — `docs/shipped.md` § Phase
+   32, step 5. A pasted web address is a card with the page's title,
+   description, picture and site, kept on the element and drawn with the
+   internet off; the picture is a library picture; a click opens the
+   address the way a page card opens its page.
 6. **A page opened on the board.** LK's "nested article": stretch a page
    card past a threshold and it stops being a card and shows the page's
    writing, editable, in the board. The biggest step and the one with the

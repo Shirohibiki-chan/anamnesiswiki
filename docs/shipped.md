@@ -6845,3 +6845,35 @@ picture in the library and its name in the file after a reload. Looked
 at in the real app: both pictures drawn after the reload, read out of the
 library, and the Library tab counting the banner's board among its pages.
 Unit suites over the picture service and the usage index's third record.
+
+### Step 5 — Bookmark cards ✅ Shipped 2026-09-20
+
+**What it delivered.** A web address pasted onto a board is a card where
+the mouse is, drawn from its address at once and from what the page says
+about itself a moment later: title, description, site and picture, the
+picture put into the world's library. The card keeps all of it on the
+element, so it draws the same with no internet and in a world handed to a
+player. A second click opens the address in the browser; a locked card
+opens on the first. A sentence with an address in it stays text, and a
+page that will not answer is a card with the address on it.
+
+**How.** The page card's mechanism with a second address scheme: an embed
+whose link is the URL and whose `customData.bookmark` is what is drawn.
+The paste is taken in the capture phase on the board's box; the fetch
+goes through the main process; the summary is read off the HTML by the
+service with Open Graph first. `docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-bookmarks.e2e.ts`, against a web server the
+scenario starts itself so nothing is asked of the internet: a pasted
+address becomes a card whose title is the page's Open Graph title, with
+the description and site name on the element, the picture in `assets/`
+and the card pointing at it, and the server asked exactly twice; a page
+that says nothing gives a card of the host alone and adds nothing to the
+library; a sentence with an address in it is pasted as text; and with the
+server shut down and the app reloaded the card draws as before. Looked at
+in the real app: the card with its picture, title, one line of
+description and site, and the bare card beside it, at the default size.
+Found on the way: the description looked cut off in the first screenshot
+because the second card had been pasted on top of it — the words are
+fitted to the box by line count from the card itself, and the first
+version overflowed a two-line clamp into the site row.
