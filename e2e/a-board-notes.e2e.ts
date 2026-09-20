@@ -136,13 +136,42 @@ describe("sticky notes on a board", () => {
   it("grows taller as its words need, and never back", async () => {
     await doubleClickBoardNote(app.window, 0);
     expect(await boardNoteIsBeingWritten(app.window)).toBe(true);
+    const diag: string[] = [];
+    const probe = async (label: string) =>
+      diag.push(
+        label +
+          " " +
+          JSON.stringify(
+            await app.window.evaluate(() => {
+              const active = document.activeElement;
+              const words = document.querySelector<HTMLElement>("[data-testid='board-note'] .board-note-words");
+              const container = words?.closest<HTMLElement>(".excalidraw__embeddable-container");
+              return {
+                active: active ? active.tagName + "." + active.className.toString().slice(0, 40) : null,
+                html: words?.innerHTML.slice(0, 200),
+                editing: document.querySelector("[data-testid='board-note']")?.getAttribute("data-editing"),
+                display: container?.style.display,
+                wordsHeight: words?.offsetHeight,
+                noteHeight: document.querySelector<HTMLElement>("[data-testid='board-note']")?.offsetHeight,
+                size: [window.innerWidth, window.innerHeight],
+              };
+            }),
+          ),
+      );
+    await probe("after dblclick");
     await app.window.keyboard.press("Control+End");
+    await probe("after ctrl+end");
     for (let line = 0; line < 8; line += 1) {
       await app.window.keyboard.press("Enter");
+      if (line === 0) await probe("after enter 1");
       await app.window.keyboard.type(`line ${line + 1}`, { delay: 10 });
+      if (line === 0) await probe("after line 1");
     }
+    await probe("after typing");
     await finishBoardNote(app.window);
+    await probe("after escape");
     const grown = await boardNoteBox(app.window, 0);
+    if (grown.height <= 260) expect(diag).toEqual([]);
     expect(grown.height).toBeGreaterThan(260);
     const [note] = await notesOnDisk(app);
     expect(note.height).toBeGreaterThan(260);
