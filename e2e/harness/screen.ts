@@ -3097,6 +3097,46 @@ export async function drawBoardRectangleAt(window: Page, from: { x: number; y: n
   await window.keyboard.press("Escape");
 }
 
+/**
+ * Draws a frame on the board between two points given as fractions of the
+ * canvas, with the library's frame tool.
+ */
+export async function drawBoardFrameAt(window: Page, from: { x: number; y: number }, to: { x: number; y: number }): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await canvas.click({ position: { x: box.width * from.x, y: box.height * from.y } });
+  await window.keyboard.press("f");
+  await window.mouse.move(box.x + box.width * from.x, box.y + box.height * from.y);
+  await window.mouse.down();
+  await window.mouse.move(box.x + box.width * to.x, box.y + box.height * to.y, { steps: 8 });
+  await window.mouse.up();
+  await window.keyboard.press("Escape");
+}
+
+/**
+ * Turns whatever is selected on the board by its rotation grip — the small
+ * handle above the selection's top edge — dragging it to a point given as
+ * fractions of the canvas. `top` is the selection's top-centre, also as
+ * fractions; the grip sits a fixed 20px above it at the default zoom.
+ */
+export async function turnBoardSelection(window: Page, top: { x: number; y: number }, to: { x: number; y: number }): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  await window.mouse.move(box.x + box.width * top.x, box.y + box.height * top.y - 20);
+  await window.mouse.down();
+  await window.mouse.move(box.x + box.width * to.x, box.y + box.height * to.y, { steps: 8 });
+  await window.mouse.up();
+}
+
+/** The size of the board's canvas on screen, for turning fractions into pixels. */
+export async function boardCanvasSize(window: Page): Promise<{ width: number; height: number }> {
+  const box = await window.locator(BOARD_CANVAS).first().boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  return { width: box.width, height: box.height };
+}
+
 /** Clicks the board at a point given as fractions of the canvas, with the selection tool. */
 export async function clickBoardAt(window: Page, at: { x: number; y: number }): Promise<void> {
   const canvas = window.locator(BOARD_CANVAS).first();

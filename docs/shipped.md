@@ -6782,3 +6782,36 @@ Asked the same afternoon: why is there no Layers panel, meaning Canva's
 list of every element. There is none because the library has none — its
 "Layers" is four z-order buttons. Added to the phase as step 15; the plan
 has the shape it should take.
+
+### Step 3 — Frames that nest and turn ✅ Shipped 2026-09-19
+
+**What it delivered.** A frame drawn inside a frame is its child, and a
+frame dragged into one becomes so; the outer frame moves, duplicates and
+deletes it with everything in it, and the inner frame's contents are cut
+by both. A frame has a rotation grip, turning it turns its contents about
+its centre with its name label, and it clips to its turned box — LK's
+diamond frame with a straight frame inside it is a turned outer and an
+inner turned back. Deleting a frame deletes what it holds, where the
+library had unframed the contents.
+
+**How.** Two helpers in the library patch — the contents of a frame at any
+depth, and the frames enclosing an element — replace every place the
+library gathered direct children or read a single `frameId`; the rotation
+exclusions are removed and a frame's rotation is the library's own
+multi-element turn of frame and contents together. Twenty-odd small
+replacements per build, in `scripts/excalidraw-patch.mjs` § Frames;
+`docs/handoff.md` § Boards has the rules and the two things not done.
+
+**Verified.** `e2e/a-board-frames.e2e.ts` (three scenarios, each given the 120-second timeout the long ones have, after CI ran the first at five times local speed and hit the default), against the built app and again
+against the dev build served by Vite: an inner frame is the outer's child
+and a shape drawn inside is the inner's; dragging the outer by its edge
+moves all three by the same distance; dragging the inner out makes it its
+own, still holding its shape, and dragging it back makes it a child again;
+duplicating the outer copies the tree wired the same way; deleting a frame
+takes its contents. And a frame turned by its grip a quarter turn takes
+its rectangle round its centre. Screenshots of the real app: a rectangle
+clipped by the inner frame and another by the outer; a turned inner frame
+clipping to its turned box with its label turned; a duplicated tree; the
+innermost turned frame lit as the drop target with a shape dragged over
+it. Found on the way: the board file lists elements newest first, so the
+scenario picks frames by width rather than order.

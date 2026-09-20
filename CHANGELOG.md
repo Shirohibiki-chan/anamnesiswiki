@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-19 — Frames inside frames, and frames that turn
+
+### Additions
+
+- **A frame can hold a frame.** Draw a frame inside a frame and it is part of it: move the outer one and the inner one comes along with everything in it, duplicate it and the whole set is copied, delete it and everything inside goes too. Drag a frame into another frame to put it there, and out to take it back. Anything sticking out of an inner frame is cut off at the inner frame's edge, and at the outer's too. *Wrap Selection in Frame* now works when a frame is among what you selected.
+- **A frame can be turned.** Select one and it has the same rotation handle as any shape. Turning it turns everything in it round the frame's middle — a straight frame inside a turned one is a matter of turning the inner one back — and the frame's name goes round with it. The frame cuts off its contents at its turned edges, so a frame at forty-five degrees is a diamond, and a shape dropped into a turned frame lands inside its turned shape, not the box around it.
+
+### Changes
+
+- **Deleting a frame deletes what it holds.** It used to keep the contents and quietly leave them selected, which is not what the eraser did with a frame, and not what Canva does. Put things outside a frame first if they should stay.
+
 ## 2026-09-19 — The board's menus and panels look like the app
 
 ### Changes
@@ -235,29 +246,3 @@
 
 - **They export.** A Recently edited or Shortcuts block writes the same list it shows into a Markdown export or a published website, because the sidebar and the exports now share one resolver for every collection source — an internal tidy-up, nothing visible on the older four.
 - **This is step 3 of Phase 30.** Left in the phase: one example dashboard, shipped as a page template with a snippet beside it.
-
-## 2026-09-13 — a style name, so a snippet can skin one page
-
-### Additions
-
-- **Style name, on a page's right-click menu.** Give a page a short name — *Zen Home* saves as `zen-home` and the menu says so — and it lands on that page as `data-style="zen-home"`. A snippet in your snippets folder that starts `[data-style="zen-home"]` now reaches that page and no other. That's the gap between themes and the dashboards in the Obsidian gallery: a theme is the whole app, a skin is one page, and the name is how a stylesheet tells them apart. Names already used anywhere in the world are offered under the box so you pick rather than retype; *Clear* takes it off again.
-- **A template can carry one too.** Open a template from the Templates panel and there's a *Style name* chip beside its kind. Every page of that template picks the name up — every Character gets the character-sheet skin — unless the page names its own, which wins. A template with a style name counts as edited, so *Put back to the original* is offered for it. Saving a page as a template keeps its name, and a page made from that template starts with it.
-- **Every page also says what kind it is** — `data-template="character"`, `data-template="location"` and so on, on the same root — so a snippet can say "all my locations" without anyone naming a style first. A folder shown as a folder carries both hooks as well, and so does a template while you're editing it, so you can see a skin land while you write it.
-- **It travels with a Markdown export** as `style:` in the front matter, and an imported note carrying one gets it back, normalised the same way.
-
-### Notes
-
-- **Only the page's *own* name is exported**, never the one it inherits from its template — that belongs to the template, and writing it into every page would turn an inheritance into a hundred copies on the way back in.
-- **Names are lowercase letters, digits and hyphens**, and anything else is dropped rather than kept: a colon or a space in a name is a snippet that silently matches nothing, and "my styles don't work" is a worse day than "it saved as zen-home".
-- **This is step 2 of Phase 30.** Next are the two blocks a home page is missing: Recently edited and Pinned.
-
-## 2026-09-13 — capture a thought from anywhere
-
-### Additions
-
-- **Quick capture from anywhere.** Ctrl+Shift+N — one step out from New page, the way All properties sits one step out from Search — opens the capture box over whatever you're doing, and it's on the search palette's footer too. It's the same box as the one on your page, not a second one: the dialog names whose it is (*The box on your home page*, or the page it found one on), files under the same destinations, remembers the same last one, and reads the same code words. Type, capture, Escape, and you're back where you were. The shortcut can be rebound in Settings → Keyboard like every other.
-- **It reaches for the home page's box first**, then the first box anywhere in the world — so a world that keeps its box on a `Quick capture` page rather than on home works just as well. A world with no box yet is told so, and if it has a home page, offered a button that puts one there.
-
-### Notes
-
-- **This finishes step 1 of Phase 30.** Next is a style class per page, so a snippet can skin one page.
