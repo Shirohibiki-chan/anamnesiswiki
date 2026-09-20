@@ -67,3 +67,21 @@ export const BOARD_DOT_MIN_SCREEN_SPACING = 14;
  * the library's choice on the spike's boards, never hers.
  */
 export const LIBRARY_DEFAULT_BACKGROUND = "#ffffff";
+
+/**
+ * The link a sticky note's embed carries, so the library asks the app to
+ * draw it (an embed with no address is drawn as nothing). Not a page and not
+ * a web address: a note is its own kind, told by this exactly. Phase 32,
+ * step 10.
+ */
+export const BOARD_NOTE_LINK = "anamnesis://note";
+
+/**
+ * A note's size when it is first put down, in the drawing's units — a
+ * square, the sticky note's shape everywhere. It grows taller with its
+ * words and never shorter than them.
+ */
+export const BOARD_NOTE_SIZE = 200;
+
+/** How much of a note's box is margin around the words, in the drawing's units. */
+export const BOARD_NOTE_PADDING = 16;

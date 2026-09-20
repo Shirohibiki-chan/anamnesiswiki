@@ -2,6 +2,18 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-13 — Board, a whiteboard page
+
+### Additions
+
+- **Board, a new template.** Pick it for a new page and the page's body is a whiteboard: rectangles, circles, arrows, freehand lines, text, pictures, in the hand-drawn style — drawn wherever you put them, with the drawing tool's own colours, stroke styles and undo. Expand fills the window; the same button shrinks it back. The drawing is saved on its own inside the page's folder as `_board.json`, the way a storyline's canvas is, so drawing on a board is never an edit to the page.
+- **Everything the board needs is inside the app.** The drawing's fonts ship with it and load off your disk, so a board works with no internet.
+
+### Notes
+
+- **This is a first cut — the spike that answers "does a real whiteboard library fit in a page here", and it does.** It is drawn by Excalidraw, which is MIT-licensed like the app. What it deliberately does not do yet: a picture dropped on a board is kept inside `_board.json` rather than in the world's picture library; a shape can't link to a page; a board doesn't appear in the Markdown, website or LegendKeeper exports; and the board's light/dark look is read from your theme when the page opens, not while it's open. The follow-ups are listed in `docs/ideas.md` § Canvas / board / whiteboard.
+- **It is the storyline's sibling, not its replacement.** A storyline knows its cards are pages and its arrows are the order of events; a board knows nothing about the world, and that's what it's for.
+
 ## 2026-09-13 — a Dashboard template, and the snippet that dresses it
 
 ### Additions

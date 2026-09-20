@@ -508,7 +508,10 @@ Board spike, closed 2026-09-13. What binds the code:
   rectangle, diamond or ellipse picks it up** (2026-09-19, her Canva rule),
   where the library took only the outline. The second means a drag started
   inside an empty rectangle moves the rectangle rather than drawing a
-  selection box — Canva's behaviour too, and what frames are for. Upgrading
+  selection box — Canva's behaviour too, and what frames are for. Later
+  sections of the script add frames that nest and turn (step 3), Title
+  Case on the library's own labels, and a sticky note that wears no link
+  icon (step 10). Upgrading
   the library means re-running the
   script against the new version (the how-to is at its top); every
   replacement asserts its target once, so a moved or renamed line stops the
@@ -517,6 +520,58 @@ Board spike, closed 2026-09-13. What binds the code:
   library's `getElementsWithinSelection` is also what decides which shapes
   a *frame* holds, so the new rule is behind a flag only the marquee sets;
   a frame still holds only what is wholly inside it.
+
+- **A sticky note is an embed whose link, `anamnesis://note`, only says
+  what it is, and whose `customData.note` is its colour and its words as
+  runs** (Phase 32, step 10) — the third thing drawn by the app in an embed,
+  and the first written *in*. Runs rather than HTML on purpose: a run is
+  text with three named marks (bold, italic, a link that is a page link or
+  a web address — `noteLinkAllowed`), so what is on the element, and in a
+  world handed to a player, can carry nothing a pasted page brought along.
+  The editor is the browser's own contenteditable, marked
+  `data-type="wysiwyg"` because that is how the library recognises its
+  *own* text editor — its shortcuts, paste and undo all step aside for a
+  box so marked — and the DOM it makes is read back into runs by
+  `noteLinesFromDom`, through a node interface small enough to fake in a
+  test. **Whether a note is being written in is the app's state, not the
+  library's "active embed".** The library keeps that by the element's
+  identity, and every keystroke here writes a new element; so the woken
+  state is the *signal* (double-click, or a second click in the middle, the
+  library's own rules) and `editingNoteId` is the state, with the woken
+  state put back the way a card's is. The library also wakes a note on the
+  click that *selects* it and on a quick drag (any pointer-up under 300 ms
+  is a click to it), so `onPointerUp` records whether the last gesture
+  moved anything or was the selecting click, and a woken note after either
+  is left alone — the first click selects, the second writes, as a card's
+  opens. It ends when the note stops being selected (deferred out of the
+  change report, and only for that note, since a new note may be the one
+  open by then), on Escape, on deletion, and when the board itself goes
+  away. That last is a layout-effect cleanup committing the draft through
+  the board's own change report, from the scene as last reported: the
+  library empties its scene on unmount before any passive cleanup runs
+  (a first version asked it and wrote an empty board), and a layout
+  cleanup runs before the board hook's own unmount flush, so the words go
+  out with that flush rather than on a timer after it. **Mid-edit writes leave the element's version alone**
+  (`withoutBump`): the library's `updateScene` keeps an element whose
+  version is ahead of its last captured state out of the next capture — it
+  reads a version ahead as a gesture in progress — so an edit written with
+  version bumps along the way never reached the undo history at all
+  (found 2026-09-20, undo did nothing). The one bump is the commit when
+  writing ends, with `IMMEDIATELY`, and that is one undo step and one
+  board write per edit. Growth is the note measuring its words
+  (`ResizeObserver`, in the drawing's units since the embed's box is
+  scaled with the zoom) and the canvas making the box taller and never
+  shorter, deferred while the library is mid-resize and run again on
+  pointer-up. The library draws a link icon at the corner of every
+  unselected linked element and opens the link on a click; a note's would
+  open an address that is not one, so the patch skips the note link in
+  `renderLinkIcon` and `isPointHittingLink`, and `onLinkOpen` and
+  `lockedButtonAt` ignore it too. The twelve fills live on `.board` as
+  tokens so the picker's swatches, the Colour button and the note share
+  them; the dark look dims each with `color-mix` rather than swapping it.
+  Not done: the library's styles panel still offers stroke and background
+  for a selected note, which do nothing visible; Ctrl+U underlines in the
+  box and is read back as plain words.
 
 - **A bookmark card is an embed whose link is the address and whose
   `customData.bookmark` is what it draws** (Phase 32, step 5) — the plan's

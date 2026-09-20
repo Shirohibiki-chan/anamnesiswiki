@@ -379,6 +379,155 @@
   -webkit-line-clamp: 1;
 }
 
+/* ---- Sticky notes (Phase 32, step 10) ----
+   A coloured square drawn inside the library's embed box, in the drawing's
+   own units like a card, in the library's own hand for its text so a note
+   and a caption on the same board are in one hand. Twelve fills, pale
+   paper in the light look and the same twelve dimmed to the dark one, with
+   the words dark on the pale and light on the dim. */
+
+.board-note {
+  --note-fill: var(--note-yellow);
+  --note-ink: #1f1d17;
+  /* A column, so the words are as tall as they are and no taller — the
+     box grows from what they measure. */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 16px;
+  border-radius: 2px;
+  background: var(--note-fill);
+  color: var(--note-ink);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.06);
+  font-family: "Excalifont", var(--font-ui);
+  font-size: 18px;
+  line-height: 1.4;
+  user-select: none;
+}
+
+/* The twelve, on the board so the picker's swatches and the colour button
+   share them with the notes. Pale enough that black ink reads on every
+   one; the white note is the paper the board's own text is printed on. */
+.board {
+  --note-yellow: #fff3a1;
+  --note-orange: #ffd9a3;
+  --note-red: #ffc2bd;
+  --note-pink: #ffc9e6;
+  --note-violet: #e2ccff;
+  --note-blue: #c7d9ff;
+  --note-sky: #c4ecff;
+  --note-teal: #bdf0e6;
+  --note-green: #c8f0be;
+  --note-lime: #e9f5aa;
+  --note-grey: #e4e4e4;
+  --note-white: #ffffff;
+}
+
+.board [data-colour="yellow"] { --note-fill: var(--note-yellow); }
+.board [data-colour="orange"] { --note-fill: var(--note-orange); }
+.board [data-colour="red"] { --note-fill: var(--note-red); }
+.board [data-colour="pink"] { --note-fill: var(--note-pink); }
+.board [data-colour="violet"] { --note-fill: var(--note-violet); }
+.board [data-colour="blue"] { --note-fill: var(--note-blue); }
+.board [data-colour="sky"] { --note-fill: var(--note-sky); }
+.board [data-colour="teal"] { --note-fill: var(--note-teal); }
+.board [data-colour="green"] { --note-fill: var(--note-green); }
+.board [data-colour="lime"] { --note-fill: var(--note-lime); }
+.board [data-colour="grey"] { --note-fill: var(--note-grey); }
+.board [data-colour="white"] { --note-fill: var(--note-white); }
+
+/* In the dark look the same twelve are dimmed rather than swapped, so a
+   note keeps its colour between the two, and the ink goes light. The
+   library puts `theme--dark` on its root. */
+.excalidraw.theme--dark .board-note {
+  --note-ink: #f6f4ee;
+  background: color-mix(in srgb, var(--note-fill) 40%, #17171a);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+.board-note-words {
+  /* Never squeezed to the box: its height is what the box grows to. */
+  flex: none;
+  width: 100%;
+  min-height: 1.4em;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  outline: none;
+}
+
+.board-note-line {
+  min-height: 1.4em;
+}
+
+/* In the ink, underlined: the app's own link colour was made for its
+   panels, not for coloured paper. */
+.board .board-note .board-note-words a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+}
+
+/* A link in the words is the one part of a resting note that takes the
+   pointer, so it can be clicked; the rest of the note is the canvas's. */
+.board-note[data-editing="false"] .board-note-words a {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Being edited, the note takes the pointer and the keyboard — the whole
+   box, over the library's own switch, which is what a card overrides the
+   other way below. */
+.excalidraw__embeddable-container:has(.board-note[data-editing="true"]) .excalidraw__embeddable-container__inner {
+  pointer-events: auto !important;
+}
+
+.board-note[data-editing="true"] {
+  user-select: text;
+  cursor: text;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+/* The note picker: twelve swatches under the top-right button, the page
+   picker's box with a grid in it. */
+.board-note-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+}
+
+.board-note-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgb(0 0 0 / 0.12);
+  border-radius: var(--radius-sm);
+  background: var(--note-fill);
+  cursor: pointer;
+}
+
+.board-note-swatch:hover,
+.board-note-swatch:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+}
+
+.board-note-swatch[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+/* The colour button's own icon wears the selected note's colour. */
+.board-colour-button .board-colour-dot {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgb(0 0 0 / 0.15);
+  border-radius: 50%;
+  background: var(--note-fill);
+}
+
 /* The library's own link popup would show a selected card's raw address;
    the card's page is named by the top-right button instead. */
 .board[data-card-selected="true"] .excalidraw-hyperlinkContainer {
@@ -393,11 +542,11 @@
    (`!important` over the inline style it sets when woken), every click
    reaches the canvas, and a card selects, moves and opens like any shape.
    The "Click to interact" hint goes with it. */
-.excalidraw__embeddable-container:has(.board-card) .excalidraw__embeddable-container__inner {
+.excalidraw__embeddable-container:has(.board-card, .board-note[data-editing="false"]) .excalidraw__embeddable-container__inner {
   pointer-events: none !important;
 }
 
-.excalidraw__embeddable-container:has(.board-card) .excalidraw__embeddable-hint {
+.excalidraw__embeddable-container:has(.board-card, .board-note) .excalidraw__embeddable-hint {
   display: none;
 }
 

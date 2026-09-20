@@ -6877,3 +6877,45 @@ Found on the way: the description looked cut off in the first screenshot
 because the second card had been pasted on top of it — the words are
 fitted to the box by line count from the card itself, and the first
 version overflowed a two-line clamp into the site row.
+
+### Step 10 — Sticky notes ✅ Shipped 2026-09-20
+
+**What it delivered.** A *Note* button in the board's top-right row with
+twelve colours, and N for the next note in the last colour; a square that
+opens for writing at once, grows with its words and never shorter, and
+takes bold, italic and links — a page by name or a web address, through
+Ctrl+K or the *Link to Page* button while writing. Writing starts on a
+double-click, a second click in the middle, or Enter; ends on Escape or a
+click elsewhere; and is one undo step. A selected note has a *Colour*
+button; several recolour together. A link on a resting note opens.
+
+**How.** The page card's mechanism a third time: an embed with a note
+address and the colour and words as runs in `customData`, drawn and
+edited by `BoardNote`, with the editing state the app's own.
+`docs/handoff.md` § Boards has the rules, including the one about
+versions that undo depends on. One more section in the library patch, so
+a note wears no link icon.
+
+**Verified.** `e2e/a-board-notes.e2e.ts`: a note added in teal and written
+into with a bold word and a second line reaches `_board.json` as runs with
+the colour; one undo takes the whole edit back and one redo puts it back;
+eight more lines grow the note past 260 units on screen and on disk; a
+click on the empty canvas ends the writing with the words kept, undone
+and redone as one step, and a page opened mid-write keeps the words
+too; a first click on a resting note selects without opening it; a
+page link put in at the caret reaches the file with the page's id and,
+clicked on the resting note, opens the page; the Colour button recolours
+a selected note and N puts down the next in that colour; and everything
+draws the same after a restart. Looked at in the real app in both looks:
+the yellow note with its bold word and underlined link, a long note grown
+to its words, a violet note open for writing with the accent ring, and
+the twelve swatches. Found on the way: the first version lost every
+keystroke after the first (React rewrote the box on every render because
+the `dangerouslySetInnerHTML` object was new each time — one object per
+edit now), did not grow (the words were a flex item squeezed to the box),
+and could not be undone (versions bumped mid-edit — see handoff). The
+full suite then found two more: a deferred end-of-writing that ended
+whichever note was open by the time it ran, and a page change mid-write
+that lost the words — and, once committed from the library at unmount,
+wrote an empty board, because the library had emptied its scene first.
+Both in the handoff, both guarded by the scenario.

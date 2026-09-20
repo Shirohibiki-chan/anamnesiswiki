@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-20 — Sticky notes on a board
+
+### Additions
+
+- **A board has sticky notes.** The new *Note* button beside *Put a Page on It* offers twelve colours; pick one and a square note lands mid-view, ready to type into. Press **N** for another in the same colour. A note grows taller as you write and never cuts your words off — make it wider and the words need less height, but it never shrinks on its own.
+- **A note's words take bold, italic and links.** Ctrl+B and Ctrl+I while writing; Ctrl+K, or the *Link to Page* button, puts a link at the cursor — a page of yours by name, or a web address pasted into the box. Click a link on a note to follow it. Before, a "note" was a filled rectangle with plain text in it.
+- **Writing in a note is the library's own rhythm:** double-click it, or click a selected note again, or press Enter with it selected; Escape or a click elsewhere finishes. The whole edit is one undo step. A selected note shows a *Colour* button in the top-right row to recolour it, and several selected notes recolour together.
+- Notes keep their colour between the light and dark looks — the dark one dims the paper rather than swapping it — and their words are in the board's own hand.
+
 ## 2026-09-20 — Bookmark cards on a board
 
 ### Additions
@@ -225,15 +234,3 @@
 - **The card about a clicked page has a close button.** Clicking empty background still puts it away too, but nobody would guess that.
 - **A third *Lines* setting, *Only when pointed at*.** No lines are drawn until a page is pointed at, which on a very big world is the quietest picture there is. *Names when pointed at* is still the default.
 - **The name on a line is held back at the same zoom a page's name is.** Pointing at a page while zoomed far out used to write the reasons on its lines at a size that drew as short grey dashes.
-
-## 2026-09-13 — Board, a whiteboard page
-
-### Additions
-
-- **Board, a new template.** Pick it for a new page and the page's body is a whiteboard: rectangles, circles, arrows, freehand lines, text, pictures, in the hand-drawn style — drawn wherever you put them, with the drawing tool's own colours, stroke styles and undo. Expand fills the window; the same button shrinks it back. The drawing is saved on its own inside the page's folder as `_board.json`, the way a storyline's canvas is, so drawing on a board is never an edit to the page.
-- **Everything the board needs is inside the app.** The drawing's fonts ship with it and load off your disk, so a board works with no internet.
-
-### Notes
-
-- **This is a first cut — the spike that answers "does a real whiteboard library fit in a page here", and it does.** It is drawn by Excalidraw, which is MIT-licensed like the app. What it deliberately does not do yet: a picture dropped on a board is kept inside `_board.json` rather than in the world's picture library; a shape can't link to a page; a board doesn't appear in the Markdown, website or LegendKeeper exports; and the board's light/dark look is read from your theme when the page opens, not while it's open. The follow-ups are listed in `docs/ideas.md` § Canvas / board / whiteboard.
-- **It is the storyline's sibling, not its replacement.** A storyline knows its cards are pages and its arrows are the order of events; a board knows nothing about the world, and that's what it's for.

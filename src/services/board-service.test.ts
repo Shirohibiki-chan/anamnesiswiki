@@ -3,7 +3,7 @@
 // reads as, and what a save leaves out.
 import { describe, expect, it } from "vitest";
 import type { Node } from "../constants/schema";
-import { BOARD_CARD_CASCADE, BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH } from "../constants/board";
+import { BOARD_CARD_CASCADE, BOARD_CARD_HEIGHT, BOARD_CARD_WIDTH, BOARD_NOTE_LINK } from "../constants/board";
 import {
   boardFingerprint,
   boardFromScene,
@@ -125,9 +125,16 @@ describe("links", () => {
         { id: "c", link: "https://example.org" },
         { id: "d", link: "Sable" },
         { id: "e" },
+        // A note's words link to pages; its own link only says it is a note.
+        {
+          id: "f",
+          type: "embeddable",
+          link: BOARD_NOTE_LINK,
+          customData: { note: { colour: "yellow", lines: [[{ text: "Sable", link: pageLinkFor("sable1") }, { text: "gone", link: pageLinkFor("nobody") }]] } },
+        },
       ],
     };
-    expect(boardPageLinks(board, nodes, linkTargets(nodes))).toEqual(["grey"]);
+    expect(boardPageLinks(board, nodes, linkTargets(nodes))).toEqual(["grey", "sable1"]);
   });
 
   it("offers pages by name or alias, never the board itself or a universe", () => {
@@ -233,6 +240,8 @@ describe("lockedButtonAt", () => {
     expect(lockedButtonAt([{ ...card, isDeleted: true }], { x: 150, y: 150 })).toBeNull();
     expect(lockedButtonAt([{ ...card, link: null }], { x: 150, y: 150 })).toBeNull();
     expect(lockedButtonAt([{ ...card, link: "  " }], { x: 150, y: 150 })).toBeNull();
+    // A locked note is a note that stays put, not a button.
+    expect(lockedButtonAt([{ ...card, link: BOARD_NOTE_LINK }], { x: 150, y: 150 })).toBeNull();
   });
 
   it("takes the topmost when two overlap — the later one in the list — and says where it sits", () => {
