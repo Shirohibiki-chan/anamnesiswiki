@@ -11,7 +11,9 @@ import { READING_COLUMN_WIDTH } from "../constants/layout";
 import { IMAGE_MIN_PREVIEW_WIDTH } from "../constants/limits";
 import { COLOR_PALETTE } from "../constants/palette";
 import { ASSET_REF_PREFIX } from "../constants/paths";
-import { createTab, FOLDER_TEMPLATE_KEY, type CustomPropertySpec, type Node, type Tab } from "../constants/schema";
+import { createTab, FOLDER_TEMPLATE_KEY, MEDIA_EMBED_TYPE, type Block, type CustomPropertySpec, type Node, type Tab } from "../constants/schema";
+import { deriveBlocks } from "./block-service";
+import { defaultMediaWidth, mediaInfoFor, parseMediaLink } from "./media-service";
 import type { ImportPendingImage, ImportPlan, ImportPreviewNode } from "./import-plan";
 import { getPropertySchema, type TemplateKey } from "./template-registry";
 
@@ -498,9 +500,17 @@ function convertBlock(node: LkNode, ctx: ConvertCtx): BlockSeed[] {
       ];
     }
     case "extension": {
-      bump(ctx.lossy, "embeds");
       const params = (node.attrs?.parameters ?? {}) as Record<string, unknown>;
       const url = typeof params.embedUrl === "string" ? params.embedUrl : typeof params.url === "string" ? params.url : undefined;
+      // LK's YouTube and Spotify blocks become real players (Phase 31): the
+      // embed address is one of the forms `parseMediaLink` reads, so nothing
+      // is lost and nothing is counted. The service is asked for the title
+      // and still the first time the page is opened online.
+      const link = url ? parseMediaLink(url) : null;
+      if (link) {
+        return [{ type: MEDIA_EMBED_TYPE, props: { ...mediaInfoFor(link), caption: "", width: defaultMediaWidth(link) } }];
+      }
+      bump(ctx.lossy, "embeds");
       return [
         {
           type: "paragraph",
@@ -549,10 +559,15 @@ function convertProperties(
   resource: LkResource,
   templateKey: TemplateKey,
   ctx: ConvertCtx,
-): { properties: Record<string, unknown>; customProperties: CustomPropertySpec[]; imageUrl?: string } {
+): { properties: Record<string, unknown>; customProperties: CustomPropertySpec[]; imageUrl?: string; mediaBlocks: Block[] } {
   const properties: Record<string, unknown> = {};
   const customProperties: CustomPropertySpec[] = [];
   let imageUrl: string | undefined;
+  // LK's Spotify property, as a sidebar player block (Phase 31). Only one
+  // holding a link: her own export has these on most pages with nothing in
+  // them, and an empty box asking for a link on every character is not what
+  // an empty LK slot was.
+  const mediaBlocks: Block[] = [];
 
   // A LK property whose title matches one of the inferred template's own
   // fixed fields (e.g. Character's built-in "Friends") fills that field
@@ -588,12 +603,17 @@ function convertProperties(
       }
     } else if (prop.type === "IMAGE") {
       if (typeof prop.data?.url === "string" && prop.data.url) imageUrl = prop.data.url;
+    } else if (prop.type === "SPOTIFY_SINGLE") {
+      const link = typeof prop.data?.url === "string" ? parseMediaLink(prop.data.url) : null;
+      if (link) {
+        mediaBlocks.push({ id: crypto.randomUUID(), kind: "media", ...(prop.title ? { title: prop.title } : {}), media: mediaInfoFor(link) });
+      }
     }
-    // TAGS / SPOTIFY_SINGLE / SUBPAGE_INDEX and anything else: no equivalent
-    // field here, and in practice these ship empty/unused — silently skipped.
+    // TAGS / SUBPAGE_INDEX and anything else: no equivalent field here, and
+    // in practice these ship empty/unused — silently skipped.
   }
 
-  return { properties, customProperties, imageUrl };
+  return { properties, customProperties, imageUrl, mediaBlocks };
 }
 
 // ---- Top-level orchestration ----
@@ -667,8 +687,8 @@ export function buildImportPlan(raw: unknown): ImportPlan {
             }),
           );
 
-      const { properties, customProperties, imageUrl } = isFolder
-        ? { properties: {}, customProperties: [], imageUrl: undefined }
+      const { properties, customProperties, imageUrl, mediaBlocks } = isFolder
+        ? { properties: {}, customProperties: [], imageUrl: undefined, mediaBlocks: [] }
         : convertProperties(resource, templateKey, ctx);
 
       // Whatever the tabs just built found in the writing, claimed against
@@ -709,6 +729,11 @@ export function buildImportPlan(raw: unknown): ImportPlan {
         createdAt,
         updatedAt: createdAt,
       };
+      // A page with a player in its sidebar has to say so, and a block list
+      // is either absent (derived on read) or whole — so the derived list is
+      // written out with the players after it. Every other page keeps no
+      // list, exactly as before.
+      if (mediaBlocks.length > 0) node.blocks = [...deriveBlocks(node, getPropertySchema(templateKey)), ...mediaBlocks];
       nodes.push(node);
 
       return { id: newId, name: node.name, templateKey, children: walk(resource.id, newId) };

@@ -318,3 +318,30 @@ export function mediaLabel(info: Pick<MediaInfo, "service" | "kind">): string {
       return `${service} show`;
   }
 }
+
+/**
+ * The address LegendKeeper's own YouTube block stores — its `embedUrl` —
+ * for a link that is YouTube's. Null for the other services: LK's file has
+ * a YouTube block whose shape is known from a real export, and nothing
+ * else this app would only be guessing the key of.
+ */
+export function lkYoutubeEmbedUrl(link: MediaLink): string | null {
+  if (link.service !== "youtube" && link.service !== "youtube-music") return null;
+  return link.kind === "playlist" ? `https://www.youtube.com/embed/videoseries?list=${link.id}` : `https://www.youtube.com/embed/${link.id}`;
+}
+
+/** What a stored block's fields resolve to, or null when they are not a link the app knows — a file written by hand, say. */
+export function mediaInfoFrom(record: Record<string, unknown> | undefined): MediaInfo | null {
+  if (!record) return null;
+  const url = typeof record.url === "string" ? record.url : "";
+  const link = parseMediaLink(url);
+  if (!link) return null;
+  const text = (key: string) => (typeof record[key] === "string" ? (record[key] as string) : "");
+  return {
+    ...mediaInfoFor(link),
+    title: text("title"),
+    author: text("author"),
+    thumbnail: text("thumbnail"),
+    fetched: record.fetched === true,
+  };
+}

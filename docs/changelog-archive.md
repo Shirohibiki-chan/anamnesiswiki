@@ -2,6 +2,12 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-19 — Click inside a shape to pick it up
+
+### Fixes
+
+- **Clicking anywhere inside a shape on a board selects it, filled or not.** An empty rectangle, diamond or ellipse could only be picked up by clicking exactly on its outline; a click in the middle went straight through to the board. Now it selects, and dragging from inside moves it — the way Canva behaves. Lines, arrows and scribbles still take the click on the stroke itself. Like the selection box the day before, this is a change to the drawing library, kept as a patch.
+
 ## 2026-09-18 — A selection box takes what it touches
 
 ### Fixes

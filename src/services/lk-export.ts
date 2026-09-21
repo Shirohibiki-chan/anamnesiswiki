@@ -10,7 +10,8 @@ import { normalizeCodeLanguage } from "../constants/code-languages";
 import { READING_COLUMN_WIDTH } from "../constants/layout";
 import { getGlyph } from "../constants/glyphs";
 import { COLOR_PALETTE } from "../constants/palette";
-import { BOARD_TEMPLATE_KEY, FOLDER_TEMPLATE_KEY, ICON_INLINE_TYPE, type Node, type Project, type Tab } from "../constants/schema";
+import { BOARD_TEMPLATE_KEY, FOLDER_TEMPLATE_KEY, ICON_INLINE_TYPE, MEDIA_EMBED_TYPE, type Node, type Project, type Tab } from "../constants/schema";
+import { linkOf, lkYoutubeEmbedUrl, mediaInfoFrom } from "./media-service";
 import type { AssetSources } from "./asset-sources";
 import {
   bumpLossy,
@@ -154,6 +155,10 @@ function describeLossy(tally: LossyTally): string[] {
   const boards = lossyCount(tally, "boards");
   if (boards) {
     notes.push(`${plural(boards, "board")} ${boards === 1 ? "goes" : "go"} across as an empty page — LegendKeeper's file has no shape for a drawing. The board stays here as it is.`);
+  }
+  const players = lossyCount(tally, "players");
+  if (players) {
+    notes.push(`${plural(players, "Spotify or SoundCloud player")} in the writing ${players === 1 ? "goes" : "go"} across as a link — LegendKeeper's file only has a shape for a YouTube player in the page. The player stays here as it is.`);
   }
   return notes;
 }
@@ -437,6 +442,30 @@ function convertBlock(block: BlockNoteBlock, idMap: Map<string, string>, lossy: 
         .join("");
       return [{ type: "expand", attrs: { title }, content: childBlocks(block, idMap, lossy, pictures) }];
     }
+    case MEDIA_EMBED_TYPE: {
+      // A player (Phase 31). YouTube goes across as LK's own YouTube block —
+      // the one shape known from a real export, so a page that came in with
+      // one goes back out with the same one. The other services' blocks in
+      // LK are keys this app would only be guessing, so a Spotify or
+      // SoundCloud player goes as a paragraph holding its link, and is
+      // counted. The caption follows as its own paragraph either way.
+      const info = mediaInfoFrom(block.props);
+      const caption = captionRuns(block);
+      const after = caption.length > 0 ? [paragraphOf(caption)] : [];
+      if (!info) return after;
+      const embedUrl = lkYoutubeEmbedUrl(linkOf(info));
+      if (embedUrl) {
+        return [
+          {
+            type: "extension",
+            attrs: { extensionType: "com.algorific.legendkeeper.extensions", extensionKey: "block-youtube", parameters: { embedUrl }, text: "YoutubePlayer", layout: "default" },
+          },
+          ...after,
+        ];
+      }
+      bumpLossy(lossy, "players");
+      return [paragraphOf([{ type: "text", text: info.url, marks: [{ type: "link", attrs: { href: info.url } }] }]), ...after];
+    }
     default:
       // Unknown block types keep their text rather than vanishing — the same
       // principle import applies in the other direction.
@@ -639,6 +668,21 @@ export function buildExportFile(input: {
     return [{ id: crypto.randomUUID(), title: "Image", type: "IMAGE", data: { url } }];
   }
 
+  /**
+   * A Spotify player in the sidebar goes back as LK's own Spotify property
+   * (Phase 31), the shape it came in as. The sidebar's other players have no
+   * LK property to be — and no sidebar block but the properties goes across
+   * at all — so they stay here, like a text block or a meter does.
+   */
+  function spotifyProperties(node: Node): LkProperty[] {
+    const out: LkProperty[] = [];
+    for (const block of node.blocks ?? []) {
+      if (block.kind !== "media" || block.media?.service !== "spotify") continue;
+      out.push({ id: crypto.randomUUID(), title: block.title?.trim() || "Spotify", type: "SPOTIFY_SINGLE", data: { url: block.media.url } });
+    }
+    return out;
+  }
+
   function bannerFor(node: Node): LkResource["banner"] {
     if (!node.banner) return undefined;
     const url = addressForSlot(node.banner, node.bannerSource);
@@ -671,7 +715,7 @@ export function buildExportFile(input: {
       isHidden: Boolean(node.hidden),
       isLocked: false,
       documents,
-      properties: [...convertProperties(node, idMap), ...imageProperties(node)],
+      properties: [...convertProperties(node, idMap), ...imageProperties(node), ...spotifyProperties(node)],
       tags: node.tags ?? [],
       aliases: [],
       banner: bannerFor(node),

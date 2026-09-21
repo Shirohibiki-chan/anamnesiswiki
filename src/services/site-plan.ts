@@ -27,6 +27,7 @@ import fuseSource from "fuse.js/min-basic?raw";
 import type { LucideIcon } from "lucide-react";
 import { UNIVERSE_TEMPLATE_KEY, type Block, type Node } from "../constants/schema";
 import { SITE_SCRIPT } from "../constants/site-script";
+import type { PlayerLook } from "./media-service";
 import { SITE_STYLE } from "../constants/site-style";
 import { assetFileName } from "./asset-urls";
 import { boardPictureFileName, type BoardPictures } from "./board-export";
@@ -317,6 +318,25 @@ function describe(tally: LossyTally, hidden: number, assets: number, fonts: numb
 
 // ---- The whole site ----
 
+/** A CSS colour as `#rrggbb`, when it is written as hex or `rgb()`; null for anything else. */
+function hexColor(value: string | undefined): string | null {
+  if (!value) return null;
+  const hex = /^#([0-9a-f]{6})\b/i.exec(value.trim());
+  if (hex) return `#${hex[1].toLowerCase()}`;
+  const rgb = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(value.trim());
+  if (!rgb) return null;
+  const pair = (n: string) => Number(n).toString(16).padStart(2, "0");
+  return `#${pair(rgb[1])}${pair(rgb[2])}${pair(rgb[3])}`;
+}
+
+/** Light or dark, by the page background's luminance; dark when it cannot be read. */
+function surfaceTheme(background: string | undefined): "light" | "dark" {
+  const hex = hexColor(background);
+  if (!hex) return "dark";
+  const [r, g, b] = [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.5 ? "light" : "dark";
+}
+
 export function planSite(input: {
   nodes: Node[];
   rootIds: string[];
@@ -384,6 +404,11 @@ export function planSite(input: {
     return null;
   }
 
+  // Which look the players take, read once off the theme the site is written
+  // in: Spotify's dark card on a dark page, and the accent for SoundCloud's
+  // bar — the same two answers the app reads off its own surface.
+  const playerLook: PlayerLook = { theme: surfaceTheme(input.theme.tokens["--color-bg"]), accent: hexColor(input.theme.tokens["--color-accent-light"]) ?? "#5eead4" };
+
   function contextFor(dir: string): HtmlPageContext {
     return {
       hrefFor: (nodeId) => {
@@ -410,6 +435,7 @@ export function planSite(input: {
       databaseFor: input.databaseFor,
       renderIcon: input.renderIcon,
       childrenOf: (node) => (navEntryFor(node.id)?.children ?? []).map((child) => child.node),
+      playerLook,
       tally,
     };
   }

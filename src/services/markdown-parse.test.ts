@@ -280,6 +280,21 @@ describe("parseBlocks", () => {
     ]);
   });
 
+  // Phase 31: a player link alone on its line comes back as a player, with
+  // the italic line under it as its caption; a link among words is a link
+  // and a lone address from anywhere else is a paragraph.
+  it("reads a player link on its own line, and leaves other addresses alone", () => {
+    const out = blocks("https://www.youtube.com/watch?v=YJRIoy4Ugwc&t=4s\n*Valera's theme*\n\n<https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC>\n\nListen to https://youtu.be/YJRIoy4Ugwc tonight\n\nhttps://example.com/page");
+    expect(out[0]).toEqual({
+      type: "mediaEmbed",
+      props: { url: "https://www.youtube.com/watch?v=YJRIoy4Ugwc", service: "youtube", kind: "video", mediaId: "YJRIoy4Ugwc", title: "", author: "", thumbnail: "", fetched: false, caption: "Valera's theme", width: 100 },
+    });
+    expect(out[1]).toMatchObject({ type: "mediaEmbed", props: { service: "spotify", kind: "track", caption: "", width: 60 } });
+    expect(out[2].type).toBe("paragraph");
+    expect(out[3].type).toBe("paragraph");
+    expect(out).toHaveLength(4);
+  });
+
   it("keeps a web picture's address as it is", () => {
     expect(blocks("![](https://a.b/c.png)")).toEqual([{ type: "image", props: { url: "https://a.b/c.png" } }]);
   });

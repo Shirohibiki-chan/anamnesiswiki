@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createLossyTally, lossyCount } from "./export-walk";
-import { BLOCK_DROPPED, BLOCK_FLATTENED, blocksToMarkdown, frontMatterFor, inlineToMarkdown, pageToMarkdown, type MarkdownPageContext } from "./markdown-page";
+import { BLOCK_DROPPED, BLOCK_FLATTENED, blocksToMarkdown, panelBlockToMarkdown, frontMatterFor, inlineToMarkdown, pageToMarkdown, type MarkdownPageContext } from "./markdown-page";
 import { createNode, type Block, type Node, type Tab } from "../constants/schema";
 
 function ctx(overrides: Partial<MarkdownPageContext> = {}): MarkdownPageContext {
@@ -158,6 +158,25 @@ describe("blocksToMarkdown", () => {
   it("writes a picture that can travel, with the caption under it", () => {
     const blocks = [{ type: "image", props: { url: "anamnesis-asset:x.png", caption: "her sword" }, children: [] }];
     expect(blocksToMarkdown(blocks, ctx({ pictureAt: () => "../assets/x.png" }), 0, node)).toBe("![her sword](../assets/x.png)\n*her sword*");
+  });
+
+  // Phase 31: a player is its link on a line, the caption under it — the
+  // form the importer reads back — and nothing of what the service said.
+  it("writes a player as its link with the caption under it", () => {
+    const media = { url: "https://www.youtube.com/watch?v=YJRIoy4Ugwc", service: "youtube", kind: "video", mediaId: "YJRIoy4Ugwc", title: "Her theme (Official Video)", author: "Someone", thumbnail: "still.jpg", fetched: true };
+    const blocks = [{ type: "mediaEmbed", props: { ...media, caption: "Valera's theme", width: 100 }, children: [] }];
+    expect(blocksToMarkdown(blocks, ctx(), 0, node)).toBe("https://www.youtube.com/watch?v=YJRIoy4Ugwc\n*Valera's theme*");
+    expect(blocksToMarkdown([{ type: "mediaEmbed", props: { ...media, caption: "", width: 60 }, children: [] }], ctx(), 0, node)).toBe("https://www.youtube.com/watch?v=YJRIoy4Ugwc");
+    // A block whose link is not one of the four's — a file edited by hand — keeps only its caption.
+    expect(blocksToMarkdown([{ type: "mediaEmbed", props: { ...media, url: "https://example.com/x", caption: "still here" }, children: [] }], ctx(), 0, node)).toBe("still here");
+  });
+
+  it("writes a sidebar player under the heading the panel shows", () => {
+    const media = { url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC", service: "spotify" as const, kind: "track" as const, mediaId: "4uLU6hMCjMI75M1A2tKUQC", title: "", author: "", thumbnail: "", fetched: false };
+    expect(panelBlockToMarkdown({ id: "p", kind: "media", media }, node, ctx())).toBe("**Spotify track**\n\nhttps://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
+    expect(panelBlockToMarkdown({ id: "p", kind: "media", title: "Vibe", media: { ...media, caption: "loud" } }, node, ctx())).toBe("**Vibe**\n\nhttps://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC\n*loud*");
+    expect(panelBlockToMarkdown({ id: "p", kind: "media", showTitle: false, media }, node, ctx())).toBe("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
+    expect(panelBlockToMarkdown({ id: "q", kind: "media" }, node, ctx())).toBeNull();
   });
 
   it("escapes a pipe inside a table cell so it does not end the column", () => {

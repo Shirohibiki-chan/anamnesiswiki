@@ -122,5 +122,25 @@ export const SITE_SCRIPT = `
       input.focus();
     }
   });
+
+  // ---- Players (Phase 31)
+  // A YouTube still is a link to the video; with scripts on, the click loads
+  // the real player into the still's box instead, so nothing from YouTube
+  // reaches the page until the reader asks. The other services' players are
+  // in the page already.
+  var stills = document.querySelectorAll(".player-still[data-player]");
+  for (var s = 0; s < stills.length; s++) {
+    stills[s].addEventListener("click", function (event) {
+      event.preventDefault();
+      var still = event.currentTarget;
+      var frame = document.createElement("iframe");
+      frame.src = still.getAttribute("data-player");
+      frame.title = still.getAttribute("data-title") || "";
+      frame.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; clipboard-write; fullscreen");
+      frame.setAttribute("allowfullscreen", "");
+      frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+      still.parentNode.replaceChild(frame, still);
+    });
+  }
 })();
 `;

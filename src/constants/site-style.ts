@@ -242,6 +242,26 @@ html.js .tab.is-active { display: block; }
 .page-body figure { margin: 1.2em 0; }
 .page-body figure img { display: block; border-radius: 8px; }
 .page-body figcaption, .caption { font-size: 13px; color: var(--color-text-muted); margin-top: 6px; font-family: var(--font-ui); }
+/* Players (Phase 31): the same frame a picture gets, the player clipped inside
+   it. A YouTube still is a link until the script swaps the player in; the
+   words sit over a shade at its foot, white the way a photograph's caption is,
+   whatever the theme. */
+.player { margin: 1.2em 0; }
+.player-box { position: relative; width: 100%; overflow: hidden; border-radius: 8px; background: var(--color-panel-alt); }
+.player-box iframe { display: block; width: 100%; height: 100%; border: 0; }
+.player-still { position: absolute; inset: 0; display: block; color: #fff; text-decoration: none; overflow: hidden; }
+.player-still img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
+.player-still::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.1) 100%); }
+.player-words { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; padding: 12px 16px 12px 16px; padding-right: 72px; font-family: var(--font-ui); text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.player-service { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.85; }
+.player-title { font-size: 15px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.player-author { font-size: 13px; opacity: 0.85; }
+.player-play { position: absolute; right: 16px; bottom: 12px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.4); }
+.player-play::after { content: ""; position: absolute; left: 17px; top: 12px; border-style: solid; border-width: 10px 0 10px 16px; border-color: transparent transparent transparent #fff; }
+.player-still:hover .player-play { background: rgba(255,255,255,0.32); }
+.block-media .player { margin: 0; }
+.block-media .player-words { padding: 8px 12px; }
+.block-media .player-title { font-size: 13px; }
 .board-picture { margin: 0 0 24px; }
 .board-picture img { width: 100%; border: 1px solid var(--color-border); background: #fff; }
 .page-body table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 14px; }
