@@ -4522,7 +4522,6 @@ the marker showing what *could* be linked while she writes, and — found while
 checking the wrapping — that an infobox put inside a lane of columns lands
 outside the row instead.
 
-
 ## Phase 19.5 — New page, from inside the editor ✅ Shipped 2026-08-28
 
 The first *feature* of Phase 19.5, and the cheapest one on its list — everything
@@ -4783,7 +4782,6 @@ first block on it.
 **Not built:** a row's own menu, moving a lane left or right, and anything about
 how a row behaves nested inside another one.
 
-
 ## Phase 19.5 — The writing goes round an infobox ✅ Shipped 2026-09-04
 
 Wrap left and Wrap right, the last two items on the reference's Layout submenu,
@@ -4839,7 +4837,6 @@ drag of the left edge growing the frame by what the pointer moved.
 frame sit over the wrapped writing rather than in a gutter, since a float has no
 gutter beside it; and a frame is capped at the width of whatever holds it, which
 is what keeps one inside a column lane rather than hanging out of it.
-
 
 ## Phase 19.5 — Links to a spot on a page ✅ Shipped 2026-09-04
 
@@ -4907,7 +4904,6 @@ block it points at twelve paragraphs below. It is written after all the random
 content and takes fixed ids, so adding it shifted nothing else in the generated
 world — checked by diffing a world made either side of the change.
 
-
 ## Phase 19.5 — Link page names ✅ Shipped 2026-09-04
 
 The first of the two commands she named when the insert-menu list was written,
@@ -4965,7 +4961,6 @@ dialog answers most of the same question, since it lists what could be linked
 and closing it changes nothing, so this stayed unbuilt for being a nicety rather
 than for being blocked.
 
-
 ## Phase 19.5 — Contents, and the picker's Recent row ✅ Shipped 2026-09-04
 
 Two of the small things left on the phase's list, built together because
@@ -5007,7 +5002,6 @@ surviving a reload, and an icon picked, the picker closed, and the icon found in
 Recent when it reopens. Plus six unit tests over `headingsOf` and seven over
 `withRecentIcon` and its parsing.
 
-
 ## Phase 19.5 — A repeated pointer clones its block ✅ Shipped 2026-09-04
 
 The last piece of the pointer model the phase is built on: `node.blocks` holds
@@ -5045,7 +5039,6 @@ rather than asserted, and six over the planner. **Deliberately not an app-suite
 scenario:** driving copy and paste there uses the machine's real clipboard, so
 the test would depend on, and clobber, whatever the person running it had
 copied. Found by trying it.
-
 
 ## Phase 19.5 — The infobox's own menu ✅ Shipped 2026-09-04
 
@@ -5093,7 +5086,6 @@ and alignment.
 **Two of the reference's items are still not built** — Wrap left/right, which
 needs floating BlockNote does not do, and Pin to top, which has never been
 scoped past its name. Both are in `docs/plan.md` with what they would need.
-
 
 ## Phase 19.5 — A picture block holds its own picture ✅ Shipped 2026-09-03
 
@@ -5157,7 +5149,6 @@ held first.
 **Not done, and not asked for:** a cover per block. `node.banner` is still one
 per page, and there is nowhere on a page a second one would go.
 
-
 ## Phase 19.5 — Dragging a block wider ✅ Shipped 2026-09-02
 
 The page is wider than the sidebar, and this is where she says how much of that
@@ -5198,7 +5189,6 @@ stays empty — filling it is columns, which is the next piece and is a custom
 block because `@blocknote/xl-multi-column` is licensed out of reach. And the
 infobox's Auto-adapt / Fixed width menu items are still not built; they were
 waiting on this and are buildable now.
-
 
 ## Phase 19.5 — An icon in the writing, and the callout's own ✅ Shipped 2026-09-01
 
@@ -6158,6 +6148,29 @@ resulting size next to the switch; that's the whole reason it exists.
 Nothing here touches the network — a template is a file she hands over however
 she already hands over files.
 
+### Open questions — Phases 27 & 28, as a record
+
+Moved here from `docs/plan.md` 2026-09-21, when Phase 32 closed and the plan was tidied; nothing in it changed.
+
+**All closed 2026-08-14.** Kept as a record of what was decided and where the
+answer now lives, because several of these are rules rather than one-off calls.
+
+- **Q2** — JSON export → a zip of the world's folder, labelled as JSON. Phase 28.
+- **Q3** — printing → works; needs a print stylesheet, not a decision. Phase 28.
+- **Q4** — shared templates → carry their pictures. Phase 28.
+- **Q5 / sequencing** → Phase 27 runs next and promptly; the rest sits where it
+  makes sense, which is 28 after 20 so Markdown export and the Markdown importer
+  are built as one round trip. **Superseded on that last point 2026-09-10**:
+  Phase 20 was deferred on 2026-09-04, so 28 ran first and its Markdown export
+  carried the shared map alone — and 20 followed the same day, reading that map
+  back. See `docs/shipped.md` § Phase 28 and § Phase 20.
+- **Q8** — start screen direction → settled; see "The screen itself" in
+  `docs/shipped.md` § Phase 27.
+- **Q9** — the loud button → New world, centred and alone. Settled by the layout
+  rather than argued.
+- **Q11** — outside worlds → one list, marked. Shipped; see "The projects folder gets
+  read" above.
+
 ## Phase 20 — Markdown & Folder Import ✅ Shipped 2026-09-10 — phase closed
 
 Deferred 2026-09-04 in favour of Phase 21 and un-deferred by her on
@@ -6620,10 +6633,114 @@ to match its box. Scenario: six steps in `a-board-canvas.e2e.ts`, including
 that the file holds the id rather than the name and that following the
 link lands on the page.
 
-## Phase 32 — Boards, Full Pass
+## Phase 32 — Boards, Full Pass ✅ Shipped 2026-09-18 → 2026-09-21 — phase closed
 
-Scoped 2026-09-17 against LegendKeeper's board tutorial; the phase and its
-fourteen steps are in `docs/plan.md`. Steps are logged here as they land.
+### What the plan said
+
+Scoped 2026-09-17, from LegendKeeper's own board tutorial ("Board Bastion",
+nine panels). The ask: our boards have everything on it. The spike (shipped
+2026-09-13, `docs/shipped.md` § Board spike) put Excalidraw in a page; this
+phase was what sat between that and parity, audited panel by panel against
+the library at 0.18.1 rather than from memory. **Closed 2026-09-21** with
+step 14, the last of the fifteen; each step's entry is below, in number
+order, with the days' side-work between them where it happened.
+
+**Most of the tutorial is already there, because the library is.** Zoom on
+Ctrl+wheel and pan on the wheel; the right-click menu with copy, paste,
+select all, lock and unlock, unlock all, group, bring forward and back;
+locking with Ctrl+Shift+L; every style on LK's panel — colours, fill
+pattern, stroke width and style, font size S to XL — and several LK does
+not offer; freehand, arrows, lines, shapes, text; pictures by drop, paste or
+the tool, with cropping (double-click a picture; LK holds Ctrl while
+resizing, the library has its own gesture, and either is fine); frames on F
+with a label; grouping on Ctrl+G; save as PNG or SVG. A sticky note is a
+filled rectangle with words in it, which is what LK's is too. Nothing here
+is built; it is all checked as present and not switched off.
+
+**Five more, added 2026-09-17 after the second look.** LK's boards turned
+out to be built on tldraw rather than Excalidraw (the twelve-colour grid,
+S/M/L/XL, `/` for cursor chat, F for frames, Ctrl to crop — all tldraw's
+stock UI), and tldraw is out for Anamnesis on licence alone: v1 is MIT but
+dead since 2023, v2 is non-commercial and share-alike, v3 onward needs a
+licence key with a watermark or a fee. So the question became what tldraw
+gives LK that our library does not, and her answer was all of it, minus
+other people's cursors: sticky notes, a highlighter, video, several pages
+in one board, and bold, italic and links in ordinary text — steps 10 to
+14. Step 15, the Layers panel, was asked for two days later while step 2's
+chrome was being built.
+
+**Not in this phase, and why, so it is not re-asked:**
+
+- **A map on a board.** LK nests its interactive maps with clickable pins.
+  Anamnesis has no maps at all — not the template, not the pins — and a
+  map is its own phase before it can be anything's card. Left out rather
+  than deferred: nothing here is shaped for it.
+- **Cursor chat, other people's cursors, and permissions.** All about
+  several people on one board. This is one person's world on one disk;
+  her call 2026-09-17 to leave these out when everything else went in.
+- **Nesting a board in a board.** LK's tutorial says theirs cannot either.
+
+### How page cards and bookmark cards are built
+
+Decided up front so steps 1, 5 and 6 are one mechanism, not three. The
+library has an *embed* element — a rectangle that holds a web page, drawn
+by a host-supplied component when the host says the address is one it
+knows how to draw (`renderEmbeddable`, `validateEmbeddable`). A page card
+is an embed whose address is `anamnesis://page/<id>`, the link form the
+spike already writes, drawn by a small React card that reads the page live
+from the store; a bookmark is an embed holding the web address, drawn from
+the title, description and picture fetched once and kept on the element
+(`customData`), so it draws whole with the internet off — Phase 31's rule
+for players, applied here. The library owns the element's box, moving,
+resizing, locking, grouping, undo and the file on disk; the app owns only
+what is drawn inside it. That keeps `docs/handoff.md` § Boards' first rule
+— the app never reads inside an element — with one named exception: an
+embed's address and its `customData`, which are the app's own.
+
+**Putting a page on a board, two ways.** *Put a page on it* in the board's
+top-right slot, the storyline's search box exactly, staying open for
+several picks. And dragging a row out of the tree onto the board — the
+tree's rows already drag for reordering, so the drop side is what is new.
+The search box is the sure path and ships first; the drag is the one LK
+leads with and follows in the same step.
+
+**The card's three sizes are read off its box**, never stored: below one
+width it is the icon, below another it is icon and name, above that it is
+the picture with the name over it, in the style of the tree's own rows and
+the page's banner. So resizing changes the presentation with nothing to
+set, which is what LK's "resize the card" arrow means.
+
+**The question that was step 6's, answered 2026-09-20 on the running
+card.** A page shown editable inside a board is a second editor open on
+a second page while the board's page is also open, which is the
+situation Phase 21.5 (Split Panes) was deferred over. She checked LK: its
+page on a board has three buttons — edit in the box (a plain editor),
+*View* (a side panel with the full editor), and open in full — so the
+answer was all three, and all three shipped that day. The box is the
+real editor here rather than a plain one, because it already was one
+with the typing off. The one rule that keeps the two apart: a page the
+panel holds is never written in its box at the same time.
+
+**What is verified before step 1 is called done, because the library's
+embed has habits of its own:** an embed takes a first click to select and
+a second to wake; a page card has to open on the second click and a locked
+one on the first, or the "button" panel is not delivered. The library's
+own link popup still shows the raw `anamnesis://page/…` string on a linked
+shape (known since the spike); page cards make that popup a corner case
+rather than the way in, which is the fix available without forking.
+
+### Order
+
+1 → 2 → 3 → 4 → 5 → 10 → 6 → 11 → 12 → 13 → 15 → 7 → 8 → 9 → 14, each its
+own PR. Steps 1 and 2 are the tutorial's two big panels and ship first; step 3
+is the first patch on the library and proves that path before anything
+else leans on it; step 4 before step 5 so bookmark pictures never touch
+the data-URL path; step 10 right after 5 because notes are the third
+thing drawn by the app inside an embed and should be built while that
+mechanism is fresh; step 6 after the question above is answered on a
+running card. Steps 11 to 13 are independent of each other and of the
+patches. Steps 7 and 8 are small and can go in either order. Steps 9 and
+14 are the two remaining patches on the library and go last.
 
 ### Step 1 — Page cards ✅ Shipped 2026-09-18
 
@@ -6878,6 +6995,177 @@ because the second card had been pasted on top of it — the words are
 fitted to the box by line count from the card itself, and the first
 version overflowed a two-line clamp into the site row.
 
+### Step 6 — A page opened on the board, the reading half ✅ Shipped 2026-09-20
+
+**What it delivered.** A page card stretched past 400 by 300 units is
+the page: its icon and name across the top, its tabs beside them when it
+has more than one, an *Open* button, and its writing filling the box —
+drawn by the page's own editor with the typing off, so callouts, columns,
+pictures, mention chips and infoboxes all draw as the page's own tab
+draws them. Double-click, or a second click on a selected one, opens it
+for reading: the box takes the wheel and the keyboard, its words select,
+its links and mentions open; Escape or a click elsewhere hands the board
+back. Locked, it is read from the start and its button is the way out.
+Shrunk back, it is a picture card again; nothing is stored.
+
+**How.** The fourth presentation of the page card, off the box like the
+other three; `PageReader` over `usePageReader`; reading as a canvas-owned
+state on the note's pattern. `docs/handoff.md` § Boards has the rules.
+The editable half is the open question, put to her with this running.
+
+**Verified.** `e2e/a-board-open-pages.e2e.ts`: a card stretched past a
+page's worth shows the first line the page holds on disk; the first click
+selects only, the second opens it for reading with the keyboard in it and
+Escape ends that; the wheel scrolls the page and the board stays put; the
+Open button reaches the page in full; shrunk back it is a picture card and
+the file holds one embed with the page link and the new size; locked, it
+reads without being woken, a click on its middle stays on the board, and
+Open still opens. Looked at in the real app: the card with its head, the
+two tabs, the writing with an info callout and a quote, and the accent
+ring while being read. Found on the way: the "never takes the pointer"
+rule and the reading rule had the same specificity, and the never rule
+came later in the file, so the first wheel over a page being read panned
+the board instead — the card sailed up under the toolbar and every
+scenario after fell over on it; the never rule now excludes a card being
+read. And the scenario itself had to move the card up and left before
+growing it: a page's worth grows from the top-left corner, and from the
+middle of the view the far corner's handle was off the canvas.
+### Step 6 — A page opened on the board, the writing half ✅ Shipped 2026-09-20
+
+**What it delivered.** The opened page takes typing: the double-click
+or second click that opened it for reading now makes the box the page's
+real editor — slash menu, mentions, formatting bar, the lot — saving to
+the page as its own tab does. Escape or a click elsewhere puts it back
+to being drawn. Locked, it is open for writing from the start. She had
+checked LK meanwhile: its page on a board has edit-in-box (a plain
+editor), a *View* side panel with the full editor, and open-in-full; so
+the box got the full editor because it was already there, and the panel
+is the half still to come.
+
+**How.** `BoardOpenPage` swaps `PageReader` for `Editor` while
+`writing`; `useEditor` puts the drawing library's `wysiwyg` marker on
+the editor element; the body catches Escape on the way up. The three
+keyboard rules are in `docs/handoff.md` § Boards.
+
+**Verified.** `e2e/a-board-open-pages.e2e.ts`, seven scenarios: the
+earlier six re-pointed at writing, plus typing in the box that reaches
+the page's file, Backspace and Ctrl+Z inside the box that leave the card
+alone, and the typed words drawn again after Escape and shown on the
+page in full through Open. Notes and page-card scenarios and the unit
+suite green beside it. Looked at in the real app: the slash menu opening
+under the caret inside the box, at the default zoom and zoomed out.
+Found on the way: Escape with a menu up let the key through to the
+library, which took the keyboard to its container, and the next
+Backspace deleted the card — now stopped on the body after the editor
+has had it. And a note for anyone testing: Escape does not close a slash
+menu on the page either (BlockNote 0.52 has no handler for it); typing
+on, or deleting the trigger, does.
+
+### Step 6 — A page viewed beside the board, the View panel ✅ Shipped 2026-09-20
+
+**What it delivered.** LK's third way into a page card: a *View*
+button in the top-right row when a page card is selected, opening the
+page's whole view — title, tabs, writing, editable — in a panel on the
+left of the board, with Open and a close in its bar. Same place and
+size in the page and expanded. While a page is viewed, its opened box
+on the board stays drawn and follows the panel's typing; boards and
+storylines are not viewed beside a board.
+
+**How.** `PageView` given a `nodeId`; `BoardViewPanel` and
+`viewedPageId` in `PageBoard`; the one-editor rule in `BoardCanvas`.
+`docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-view-panel.e2e.ts`, four scenarios on the
+expanded board: View on a selected card opens the panel with the page's
+own title and the writing the page holds on disk; typing in the panel
+reaches the file and the page's stretched box on the board shows it;
+the box will not open for writing while its page is viewed and will
+again once the panel is closed; the panel's Open button is the page in
+full with the words typed beside the board. The other board files and
+the unit suite green beside it. Looked at in the real app, expanded:
+the panel with the page's banner slot, title, tab strip and writing,
+the box following, the top-right row wrapped to three lines. Found on
+the way: the row's Note and View buttons were squeezed to "N…" and
+"V…" when expanded (only two of the buttons had been given their width)
+and the row ran off the window; and the first fix, wrapping the row
+everywhere, made the library's toolbar island taller in the page's
+narrow layout and covered the top of the drawing — a page-card scenario
+that box-selects from there caught it. The row wraps only expanded.
+
+### Step 7 — Boards in the exports ✅ Shipped 2026-09-20
+
+**What it delivered.** The Markdown folder and the website carry a PNG of
+each board, drawn by the drawing library from the board as stored, with
+the app's embeds (page card, note, bookmark, video) swapped for labelled
+boxes in their places; the board's page shows the picture first. The one
+big Markdown file carries it as a `data:` address. Each export's summary
+counts the boards that went in as pictures. The LegendKeeper export
+counts boards in its lossy list — an empty page across, the board kept
+here. An empty board gets no picture and no note.
+
+**How.** `services/board-export.ts` (`exportSkeletonFor`,
+`exportableElements`, the picture's name and data address),
+`hooks/use-board-export.ts` (`renderBoardPictures`: the library loaded
+late, `exportToBlob`), `boardPictures` into the vault, single-file and
+site planners, `boardPictureAt` on the two page contexts, a `boards`
+tally in `lk-export.ts`, the modals drawing the pictures on open and
+awaiting them on save. `docs/handoff.md` § Exports in general has the
+rules.
+
+**Verified.** `e2e/a-board-export.e2e.ts` against the built app, with a
+board holding a rectangle, a page card and a note: the Markdown folder's
+note points at a PNG in `assets/` that is a real PNG well past a blank
+tile, and the summary says one board went in as a picture; the one big
+file carries `data:image/png;base64`; the site's page has the figure and
+the PNG; the LegendKeeper modal names the board as left out. Unit tests
+for the swaps (card, note, video, bookmark, the library's own shapes left
+alone), order and deletion in `exportableElements`, the picture's home,
+and each planner's picture, folder and note. Looked at: the exported PNG
+itself — the rectangle, the teal note with its words, the card's paper
+under it.
+
+### Step 8 — Theme follows while open ✅ Shipped 2026-09-20
+
+**What it delivered.** A theme switched — or edited — while a board is
+open reaches the board at once, the library's own chrome included.
+
+**How.** `useBoardTheme` in `hooks/use-board-view.ts`: the surface
+measured on mount and on every mutation of the root's `data-theme`,
+`style` or `class`, or of the head's style elements. `docs/handoff.md`
+§ Boards has the rule.
+
+**Verified.** `e2e/a-board-theme.e2e.ts`: a board open on the default
+theme is dark; picking Daylight in Settings turns it light without
+leaving the page; picking Midnight turns it dark again. Looked at in the
+real app: the drawing's toolbar and canvas in the light look beside the
+open Settings.
+
+### Step 9 — A moving GIF moves ✅ Shipped 2026-09-20
+
+**What it delivered.** An animated GIF on a board plays, and a GIF
+pasted or dropped onto a board keeps its frames rather than arriving as
+a still PNG.
+
+**How.** A section of `scripts/excalidraw-patch.mjs`, in both builds:
+frames decoded with `ImageDecoder` into bitmaps, the current one drawn
+in place of the `<img>`, the element canvas cache keyed on the frame
+index too, a timer loop redrawing the static scene on frame changes
+while a moving picture is drawn, and `resizeImageFile` leaving GIFs
+alone. `docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-gifs.e2e.ts`: a two-frame GIF built byte by
+byte in the test, pasted onto the board, shows both colours at its
+middle over 800ms of sampling, each held for more than one sample —
+which an unpatched build fails, standing on the first frame. Found on
+the way, by logging from inside the patched library: the frames decoded
+fine from the test's bytes but not from the board's, because the
+library had already re-encoded the pasted GIF as a PNG; that is the
+second half of the patch. Then on CI only, one colour seen: a
+diagnostics push showed `requestAnimationFrame` never fires in CI's
+window though it reports itself visible — the handoff's own rule, which
+the first cut had ignored — so the loop is a timer. Looked at in the
+real app: the picture drawn clean on the board.
+
 ### Step 10 — Sticky notes ✅ Shipped 2026-09-20
 
 **What it delivered.** A *Note* button in the board's top-right row with
@@ -6934,6 +7222,84 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 11 — A highlighter ✅ Shipped 2026-09-20
+
+**What it delivered.** A *Highlighter* button in the top-right row and
+Shift+P: the pen with a marker's preset — stroke width 6, opacity 50,
+yellow to start with — each stroke sunk under everything drawn before
+it. Stays in hand for the next stroke; Escape or any other tool puts it
+down and gives the pen its own style back; a colour picked while it is
+in hand is remembered for next time.
+
+**How.** No new element kind and no patch: the app holds a preset over
+the library's pen and sinks each finished stroke. `docs/handoff.md` §
+Boards has the rules, including why Shift+P and not H.
+
+**Verified.** `e2e/a-board-highlighter.e2e.ts`: a stroke drawn over a
+rectangle reaches `_board.json` first in the list — under the rectangle
+— as a pen stroke with the highlighter's width, opacity and colour and
+the highlight mark; a second stroke without picking the tool again; Escape
+puts it down and the library's own pen then draws a solid thin stroke on
+top with no mark; Shift+P picks it up and puts it down. Unit tests for
+`isHighlight` and `sunkUnderInk`. Looked at in the real app in the dark
+look: two highlights under a rectangle with a pen stroke over them — the
+yellow reads as a muted ochre there, since the library inverts the
+canvas's colours for its dark theme, which is what it does to every
+colour.
+
+### Step 12 — Video on the board ✅ Shipped 2026-09-20
+
+**What it delivered.** A video file dropped on the board goes into the
+world's library and lands where it was dropped as a wide-screen box —
+the first frame with a play mark; played, the window's own player with
+its controls; paused or finished, a still again that moves and locks like
+any shape. A video in the Library drags onto a board like a picture, no
+second copy made; the Library shows its first frame and counts the use.
+
+**How.** An embed with a video link and the file's name in `customData`,
+drawn by `BoardVideo`; the board's own drop handler for video files
+(the library's takes pictures only); the patch's iconless links now a
+list. `docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-videos.e2e.ts`: a WebM recorded off a canvas
+in the window and dropped on the board lands in `assets/` and in
+`_board.json` as an embed naming it, 480 by 270; it is a still with the
+mark until the mark is clicked, then playing with the player's controls
+up, then a still again when it ends; it drags as a still by the picture
+beside the mark; the same file dragged from the Assets tab lands with no
+second copy; both draw again after a restart. Unit tests for the file
+names, `videoOf` and the Library's usage count. Looked at in the real
+app: two boxes, one on its last frame and one on its first with the
+mark, and one playing with the controls. Found on the way: the scenario's
+first drag went by the middle of the box, which is the play mark, and
+moved nothing.
+
+### Step 13 — Several pages in one board ✅ Shipped 2026-09-20
+
+**What it delivered.** A tab strip along the bottom of every board: the
+board and the boards directly inside it, in the tree's order, with a +
+that makes one ("Board 2", "Board 3"…) and opens it. The strip reads the
+same from any sheet of the workbook; a tab opens its board. The new
+boards are ordinary pages in the tree, renamed there or by their title.
+
+**How.** `boardSheets` off the tree, `useBoardSheets`, `BoardSheets`
+under the drawing in a grid that also holds the View panel.
+`docs/handoff.md` § Boards has the rules.
+
+**Verified.** `e2e/a-board-sheets.e2e.ts`: a board is its own one sheet;
++ makes a board inside it, opens it, lists both, and the new board is a
+row in the tree; a tab opens its board and the strip reads the same from
+either; the next one is numbered past what is there; the strip reads the
+same after a restart. Unit tests for the workbook's shape and the
+numbering. Looked at in the real app: three tabs along the bottom, the
+third current, the three rows nested in the tree. Found on the way: two
+harness helpers had assumed the drawing filled the board to its bottom
+edge — see the handoff — and the second of those took most of an
+afternoon of logging to find, because the symptom (the library's link
+popup not appearing) was three steps from the cause (a strip 2rem tall
+under the drawing, a click that now landed differently, and an Escape
+that had never been reaching the library).
+
 ### Step 14 — Bold, italic and links in ordinary text ✅ Shipped 2026-09-21
 
 **What it delivered.** A text box on a board takes bold, italic and
@@ -6974,80 +7340,6 @@ there — the patch now exports it. Looked at in the real app: the
 toolbar over the box, bold and an underlined link drawn in free text,
 slanted wrapped words centred in a rectangle.
 
-### Step 9 — A moving GIF moves ✅ Shipped 2026-09-20
-
-**What it delivered.** An animated GIF on a board plays, and a GIF
-pasted or dropped onto a board keeps its frames rather than arriving as
-a still PNG.
-
-**How.** A section of `scripts/excalidraw-patch.mjs`, in both builds:
-frames decoded with `ImageDecoder` into bitmaps, the current one drawn
-in place of the `<img>`, the element canvas cache keyed on the frame
-index too, a timer loop redrawing the static scene on frame changes
-while a moving picture is drawn, and `resizeImageFile` leaving GIFs
-alone. `docs/handoff.md` § Boards has the rules.
-
-**Verified.** `e2e/a-board-gifs.e2e.ts`: a two-frame GIF built byte by
-byte in the test, pasted onto the board, shows both colours at its
-middle over 800ms of sampling, each held for more than one sample —
-which an unpatched build fails, standing on the first frame. Found on
-the way, by logging from inside the patched library: the frames decoded
-fine from the test's bytes but not from the board's, because the
-library had already re-encoded the pasted GIF as a PNG; that is the
-second half of the patch. Then on CI only, one colour seen: a
-diagnostics push showed `requestAnimationFrame` never fires in CI's
-window though it reports itself visible — the handoff's own rule, which
-the first cut had ignored — so the loop is a timer. Looked at in the
-real app: the picture drawn clean on the board.
-
-### Step 8 — Theme follows while open ✅ Shipped 2026-09-20
-
-**What it delivered.** A theme switched — or edited — while a board is
-open reaches the board at once, the library's own chrome included.
-
-**How.** `useBoardTheme` in `hooks/use-board-view.ts`: the surface
-measured on mount and on every mutation of the root's `data-theme`,
-`style` or `class`, or of the head's style elements. `docs/handoff.md`
-§ Boards has the rule.
-
-**Verified.** `e2e/a-board-theme.e2e.ts`: a board open on the default
-theme is dark; picking Daylight in Settings turns it light without
-leaving the page; picking Midnight turns it dark again. Looked at in the
-real app: the drawing's toolbar and canvas in the light look beside the
-open Settings.
-
-### Step 7 — Boards in the exports ✅ Shipped 2026-09-20
-
-**What it delivered.** The Markdown folder and the website carry a PNG of
-each board, drawn by the drawing library from the board as stored, with
-the app's embeds (page card, note, bookmark, video) swapped for labelled
-boxes in their places; the board's page shows the picture first. The one
-big Markdown file carries it as a `data:` address. Each export's summary
-counts the boards that went in as pictures. The LegendKeeper export
-counts boards in its lossy list — an empty page across, the board kept
-here. An empty board gets no picture and no note.
-
-**How.** `services/board-export.ts` (`exportSkeletonFor`,
-`exportableElements`, the picture's name and data address),
-`hooks/use-board-export.ts` (`renderBoardPictures`: the library loaded
-late, `exportToBlob`), `boardPictures` into the vault, single-file and
-site planners, `boardPictureAt` on the two page contexts, a `boards`
-tally in `lk-export.ts`, the modals drawing the pictures on open and
-awaiting them on save. `docs/handoff.md` § Exports in general has the
-rules.
-
-**Verified.** `e2e/a-board-export.e2e.ts` against the built app, with a
-board holding a rectangle, a page card and a note: the Markdown folder's
-note points at a PNG in `assets/` that is a real PNG well past a blank
-tile, and the summary says one board went in as a picture; the one big
-file carries `data:image/png;base64`; the site's page has the figure and
-the PNG; the LegendKeeper modal names the board as left out. Unit tests
-for the swaps (card, note, video, bookmark, the library's own shapes left
-alone), order and deletion in `exportableElements`, the picture's home,
-and each planner's picture, folder and note. Looked at: the exported PNG
-itself — the rectangle, the teal note with its words, the card's paper
-under it.
-
 ### Step 15 — A Layers panel ✅ Shipped 2026-09-20
 
 **What it delivered.** A **Layers** button in the board's top-right slot
@@ -7078,182 +7370,6 @@ follows a rename by the title; the panel is right of the canvas in the
 page and expanded. Unit tests for the rows' shape and names, the unit
 of a move, the moves refused, and the hidden fields. Looked at in the
 real app.
-
-### Step 13 — Several pages in one board ✅ Shipped 2026-09-20
-
-**What it delivered.** A tab strip along the bottom of every board: the
-board and the boards directly inside it, in the tree's order, with a +
-that makes one ("Board 2", "Board 3"…) and opens it. The strip reads the
-same from any sheet of the workbook; a tab opens its board. The new
-boards are ordinary pages in the tree, renamed there or by their title.
-
-**How.** `boardSheets` off the tree, `useBoardSheets`, `BoardSheets`
-under the drawing in a grid that also holds the View panel.
-`docs/handoff.md` § Boards has the rules.
-
-**Verified.** `e2e/a-board-sheets.e2e.ts`: a board is its own one sheet;
-+ makes a board inside it, opens it, lists both, and the new board is a
-row in the tree; a tab opens its board and the strip reads the same from
-either; the next one is numbered past what is there; the strip reads the
-same after a restart. Unit tests for the workbook's shape and the
-numbering. Looked at in the real app: three tabs along the bottom, the
-third current, the three rows nested in the tree. Found on the way: two
-harness helpers had assumed the drawing filled the board to its bottom
-edge — see the handoff — and the second of those took most of an
-afternoon of logging to find, because the symptom (the library's link
-popup not appearing) was three steps from the cause (a strip 2rem tall
-under the drawing, a click that now landed differently, and an Escape
-that had never been reaching the library).
-
-### Step 12 — Video on the board ✅ Shipped 2026-09-20
-
-**What it delivered.** A video file dropped on the board goes into the
-world's library and lands where it was dropped as a wide-screen box —
-the first frame with a play mark; played, the window's own player with
-its controls; paused or finished, a still again that moves and locks like
-any shape. A video in the Library drags onto a board like a picture, no
-second copy made; the Library shows its first frame and counts the use.
-
-**How.** An embed with a video link and the file's name in `customData`,
-drawn by `BoardVideo`; the board's own drop handler for video files
-(the library's takes pictures only); the patch's iconless links now a
-list. `docs/handoff.md` § Boards has the rules.
-
-**Verified.** `e2e/a-board-videos.e2e.ts`: a WebM recorded off a canvas
-in the window and dropped on the board lands in `assets/` and in
-`_board.json` as an embed naming it, 480 by 270; it is a still with the
-mark until the mark is clicked, then playing with the player's controls
-up, then a still again when it ends; it drags as a still by the picture
-beside the mark; the same file dragged from the Assets tab lands with no
-second copy; both draw again after a restart. Unit tests for the file
-names, `videoOf` and the Library's usage count. Looked at in the real
-app: two boxes, one on its last frame and one on its first with the
-mark, and one playing with the controls. Found on the way: the scenario's
-first drag went by the middle of the box, which is the play mark, and
-moved nothing.
-
-### Step 11 — A highlighter ✅ Shipped 2026-09-20
-
-**What it delivered.** A *Highlighter* button in the top-right row and
-Shift+P: the pen with a marker's preset — stroke width 6, opacity 50,
-yellow to start with — each stroke sunk under everything drawn before
-it. Stays in hand for the next stroke; Escape or any other tool puts it
-down and gives the pen its own style back; a colour picked while it is
-in hand is remembered for next time.
-
-**How.** No new element kind and no patch: the app holds a preset over
-the library's pen and sinks each finished stroke. `docs/handoff.md` §
-Boards has the rules, including why Shift+P and not H.
-
-**Verified.** `e2e/a-board-highlighter.e2e.ts`: a stroke drawn over a
-rectangle reaches `_board.json` first in the list — under the rectangle
-— as a pen stroke with the highlighter's width, opacity and colour and
-the highlight mark; a second stroke without picking the tool again; Escape
-puts it down and the library's own pen then draws a solid thin stroke on
-top with no mark; Shift+P picks it up and puts it down. Unit tests for
-`isHighlight` and `sunkUnderInk`. Looked at in the real app in the dark
-look: two highlights under a rectangle with a pen stroke over them — the
-yellow reads as a muted ochre there, since the library inverts the
-canvas's colours for its dark theme, which is what it does to every
-colour.
-
-### Step 6 — A page viewed beside the board, the View panel ✅ Shipped 2026-09-20
-
-**What it delivered.** LK's third way into a page card: a *View*
-button in the top-right row when a page card is selected, opening the
-page's whole view — title, tabs, writing, editable — in a panel on the
-left of the board, with Open and a close in its bar. Same place and
-size in the page and expanded. While a page is viewed, its opened box
-on the board stays drawn and follows the panel's typing; boards and
-storylines are not viewed beside a board.
-
-**How.** `PageView` given a `nodeId`; `BoardViewPanel` and
-`viewedPageId` in `PageBoard`; the one-editor rule in `BoardCanvas`.
-`docs/handoff.md` § Boards has the rules.
-
-**Verified.** `e2e/a-board-view-panel.e2e.ts`, four scenarios on the
-expanded board: View on a selected card opens the panel with the page's
-own title and the writing the page holds on disk; typing in the panel
-reaches the file and the page's stretched box on the board shows it;
-the box will not open for writing while its page is viewed and will
-again once the panel is closed; the panel's Open button is the page in
-full with the words typed beside the board. The other board files and
-the unit suite green beside it. Looked at in the real app, expanded:
-the panel with the page's banner slot, title, tab strip and writing,
-the box following, the top-right row wrapped to three lines. Found on
-the way: the row's Note and View buttons were squeezed to "N…" and
-"V…" when expanded (only two of the buttons had been given their width)
-and the row ran off the window; and the first fix, wrapping the row
-everywhere, made the library's toolbar island taller in the page's
-narrow layout and covered the top of the drawing — a page-card scenario
-that box-selects from there caught it. The row wraps only expanded.
-
-### Step 6 — A page opened on the board, the writing half ✅ Shipped 2026-09-20
-
-**What it delivered.** The opened page takes typing: the double-click
-or second click that opened it for reading now makes the box the page's
-real editor — slash menu, mentions, formatting bar, the lot — saving to
-the page as its own tab does. Escape or a click elsewhere puts it back
-to being drawn. Locked, it is open for writing from the start. She had
-checked LK meanwhile: its page on a board has edit-in-box (a plain
-editor), a *View* side panel with the full editor, and open-in-full; so
-the box got the full editor because it was already there, and the panel
-is the half still to come.
-
-**How.** `BoardOpenPage` swaps `PageReader` for `Editor` while
-`writing`; `useEditor` puts the drawing library's `wysiwyg` marker on
-the editor element; the body catches Escape on the way up. The three
-keyboard rules are in `docs/handoff.md` § Boards.
-
-**Verified.** `e2e/a-board-open-pages.e2e.ts`, seven scenarios: the
-earlier six re-pointed at writing, plus typing in the box that reaches
-the page's file, Backspace and Ctrl+Z inside the box that leave the card
-alone, and the typed words drawn again after Escape and shown on the
-page in full through Open. Notes and page-card scenarios and the unit
-suite green beside it. Looked at in the real app: the slash menu opening
-under the caret inside the box, at the default zoom and zoomed out.
-Found on the way: Escape with a menu up let the key through to the
-library, which took the keyboard to its container, and the next
-Backspace deleted the card — now stopped on the body after the editor
-has had it. And a note for anyone testing: Escape does not close a slash
-menu on the page either (BlockNote 0.52 has no handler for it); typing
-on, or deleting the trigger, does.
-
-### Step 6 — A page opened on the board, the reading half ✅ Shipped 2026-09-20
-
-**What it delivered.** A page card stretched past 400 by 300 units is
-the page: its icon and name across the top, its tabs beside them when it
-has more than one, an *Open* button, and its writing filling the box —
-drawn by the page's own editor with the typing off, so callouts, columns,
-pictures, mention chips and infoboxes all draw as the page's own tab
-draws them. Double-click, or a second click on a selected one, opens it
-for reading: the box takes the wheel and the keyboard, its words select,
-its links and mentions open; Escape or a click elsewhere hands the board
-back. Locked, it is read from the start and its button is the way out.
-Shrunk back, it is a picture card again; nothing is stored.
-
-**How.** The fourth presentation of the page card, off the box like the
-other three; `PageReader` over `usePageReader`; reading as a canvas-owned
-state on the note's pattern. `docs/handoff.md` § Boards has the rules.
-The editable half is the open question, put to her with this running.
-
-**Verified.** `e2e/a-board-open-pages.e2e.ts`: a card stretched past a
-page's worth shows the first line the page holds on disk; the first click
-selects only, the second opens it for reading with the keyboard in it and
-Escape ends that; the wheel scrolls the page and the board stays put; the
-Open button reaches the page in full; shrunk back it is a picture card and
-the file holds one embed with the page link and the new size; locked, it
-reads without being woken, a click on its middle stays on the board, and
-Open still opens. Looked at in the real app: the card with its head, the
-two tabs, the writing with an info callout and a quote, and the accent
-ring while being read. Found on the way: the "never takes the pointer"
-rule and the reading rule had the same specificity, and the never rule
-came later in the file, so the first wheel over a page being read panned
-the board instead — the card sailed up under the toolbar and every
-scenario after fell over on it; the never rule now excludes a card being
-read. And the scenario itself had to move the card up and left before
-growing it: a page's worth grows from the top-left corner, and from the
-middle of the view the far corner's handle was off the canvas.
 
 ## Phase 31 — Embedded Players
 

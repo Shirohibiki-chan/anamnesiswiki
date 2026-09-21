@@ -10,7 +10,7 @@ Work phases top-down. Do not start a phase until the previous one is complete an
 
 **The numbers ascend as you read down, and that is a rule now.** It used to be the opposite — position was the running order and the number was only a name — which meant 29 sat above 19 sat above 28, and the file read as chaos to the person who works from it. Her call, 2026-08-28. Two things follow. **A phase pulled forward gets a fractional number** (19.5, the way 1.5 already worked) rather than keeping a number that would put it out of order. **A number is never reused**: two different phases were both called 28 for a week, which made every reference to "Phase 28" in the other docs ambiguous, so check `grep '^## Phase' docs/plan.md` before writing a new section.
 
-Gaps in the sequence are phases that have shipped and moved to `docs/shipped.md` — 27 and 29 are gone from here for that reason, not lost. Phase 2 sits at the bottom out of order on purpose: it is deferred rather than queued, and its heading says so.
+Gaps in the sequence are phases that have shipped and moved to `docs/shipped.md` — 27 and 29 went first, and everything up to 32 has followed; nothing is lost. Phase 2 and Phase 21.5 sit at the bottom out of order on purpose: they are deferred rather than queued, and their headings say so.
 
 **Automate the repetitive parts wherever there is a choice.** The user's standing direction, 2026-08-31, and the same thing said by the botmaker whose folder-preset request sits at the top of Queued Adjustments: the reason to keep a world in a tool like this rather than in folders is not doing the same small job by hand for every character. Where a feature can either do a step for someone or ask them to repeat it, it does the step. **The rule that keeps that from becoming its own annoyance came with the same request** — automation is something offered and switched on, never something that happens to a page on its own, and anything a person typed themselves outranks it.
 
@@ -430,6 +430,7 @@ scoping it was built with are in `docs/shipped.md`.
 | 17 | Templates & Assets Tabs | 2026-08-18 |
 | 1.5 | Publish | 2026-09-10 |
 | 30 | Home Dashboards & Quick Capture | 2026-09-13 |
+| 32 | Boards, Full Pass | 2026-09-21 |
 
 Project home — the last Queued Adjustment standing before Phase 9 — shipped
 2026-07-31.
@@ -539,17 +540,25 @@ template with a snippet beside it. Detail in `docs/shipped.md`; what binds the
 code is in `docs/handoff.md` § Quick capture, § Style names and § Collection
 sources.
 
-**Phase 31 (Embedded players) is what comes next**, scoped 2026-09-13 the
-same day Phase 30 closed: YouTube, YouTube Music, Spotify and SoundCloud on a
-page and in the sidebar. It reverses a line this file held for two months —
-see the section for why, and for the condition it came with. After it, what
-remains is the deferred phases below (Cloud Sync and Split Panes) and Queued
-Adjustments.
+**Phase 32 (Boards, Full Pass) shipped 2026-09-21**, fifteen steps in fifteen
+PRs over four days, on top of the board spike of 2026-09-13: page cards that
+are buttons, a page read, written and viewed from inside its card, bookmark
+cards, sticky notes, a highlighter, video and moving GIFs, frames that nest
+and turn, bold, italic and links in ordinary text, a Layers panel, a strip
+of sheets along the bottom, pictures through the world's library, the theme
+followed while open, and boards in every export. Detail and the scoping it
+was built with are in `docs/shipped.md`; what binds the code is in
+`docs/handoff.md` § Boards.
+
+**Phase 31 (Embedded players) is the one scoped phase left**, scoped
+2026-09-13 the same day Phase 30 closed and passed over when the boards went
+first: YouTube, YouTube Music, Spotify and SoundCloud on a page and in the
+sidebar. It reverses a line this file held for two months — see the section
+for why, and for the condition it came with. After it, what remains is the
+deferred phases below (Cloud Sync and Split Panes) and Queued Adjustments.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
-
----
 
 ---
 
@@ -689,210 +698,6 @@ export with the page.
 1 → 2 → 3, each its own PR. The look is settled in step 1 and copied, not
 re-decided, in step 2; step 3 is small once the two blocks exist and is the
 step that touches her own world.
-
----
-
-## Phase 32 — Boards, Full Pass
-
-Scoped 2026-09-17, from LegendKeeper's own board tutorial ("Board Bastion",
-nine panels). The ask: our boards have everything on it. The spike (shipped
-2026-09-13, `docs/shipped.md` § Board spike) put Excalidraw in a page; this
-phase is what sits between that and parity, audited panel by panel against
-the library at 0.18.1 rather than from memory.
-
-**Most of the tutorial is already there, because the library is.** Zoom on
-Ctrl+wheel and pan on the wheel; the right-click menu with copy, paste,
-select all, lock and unlock, unlock all, group, bring forward and back;
-locking with Ctrl+Shift+L; every style on LK's panel — colours, fill
-pattern, stroke width and style, font size S to XL — and several LK does
-not offer; freehand, arrows, lines, shapes, text; pictures by drop, paste or
-the tool, with cropping (double-click a picture; LK holds Ctrl while
-resizing, the library has its own gesture, and either is fine); frames on F
-with a label; grouping on Ctrl+G; save as PNG or SVG. A sticky note is a
-filled rectangle with words in it, which is what LK's is too. Nothing here
-is built; it is all checked as present and not switched off.
-
-**What is not there, in the order it would matter to her:**
-
-1. ~~**Page cards.**~~ Shipped 2026-09-18 — `docs/shipped.md` § Phase 32,
-   step 1. A page put on the board, from the picker or dragged out of the
-   tree, is a live card in one of three presentations by its size, and a
-   second click on it opens the page.
-2. ~~**A card is a button.**~~ Shipped 2026-09-19 — `docs/shipped.md` §
-   Phase 32, step 2. A locked card, or any locked shape with a link, opens
-   on one click anywhere on it, with the pointer cursor saying so first.
-3. ~~**Frames that nest and turn.**~~ Shipped 2026-09-19 — `docs/shipped.md` §
-   Phase 32, step 3. A frame holds frames, at any depth, and moves,
-   duplicates, deletes and clips them with everything in them; a frame
-   turns by its grip with its contents and its name, and clips to its
-   turned box. The patching path the step was meant to prove had been
-   proven the day before, on selection.
-4. ~~**Pictures through the world's library.**~~ Shipped 2026-09-19 —
-   `docs/shipped.md` § Phase 32, step 4. A picture on a board is a file
-   in `assets/`; the board holds its name; the Assets tab drags onto the
-   board and counts the board as a use; the spike's boards migrate on
-   their first open.
-5. ~~**Bookmark cards.**~~ Shipped 2026-09-20 — `docs/shipped.md` § Phase
-   32, step 5. A pasted web address is a card with the page's title,
-   description, picture and site, kept on the element and drawn with the
-   internet off; the picture is a library picture; a click opens the
-   address the way a page card opens its page.
-6. ~~**A page opened on the board.**~~ Shipped 2026-09-20 in three
-   halves — `docs/shipped.md` § Phase 32, step 6. LK's page card has
-   three ways in and so does ours: past 400 by 300 the card is the page's
-   name, tabs and writing, and a double-click makes the box the page's
-   real editor; a *View* button opens the page's whole view in a panel
-   beside the board; *Open* is the page in full.
-7. ~~**Boards in the exports.**~~ Shipped 2026-09-20 — `docs/shipped.md`
-   § Phase 32, step 7. A PNG of each board in the Markdown folder and on
-   the site, inline in the one big file; the LK export names boards in
-   its lossy list.
-8. ~~**Theme follows while open.**~~ Shipped 2026-09-20 — `docs/shipped.md`
-   § Phase 32, step 8. The board measures its surface again whenever the
-   theme moves.
-9. ~~**A moving GIF moves.**~~ Shipped 2026-09-20 — `docs/shipped.md` §
-   Phase 32, step 9. Frames decoded with `ImageDecoder`, the static scene
-   drawn again on each frame change, and a GIF kept as it came on the way
-   in; all in the patch.
-
-**Five more, added 2026-09-17 after the second look.** LK's boards turned
-out to be built on tldraw rather than Excalidraw (the twelve-colour grid,
-S/M/L/XL, `/` for cursor chat, F for frames, Ctrl to crop — all tldraw's
-stock UI), and tldraw is out for Anamnesis on licence alone: v1 is MIT but
-dead since 2023, v2 is non-commercial and share-alike, v3 onward needs a
-licence key with a watermark or a fee. So the question became what tldraw
-gives LK that our library does not, and her answer was all of it, minus
-other people's cursors. In the order they would matter:
-
-10. ~~**Sticky notes are a real thing.**~~ Shipped 2026-09-20 —
-    `docs/shipped.md` § Phase 32, step 10. A *Note* button and N put down a
-    square in one of twelve colours, open for writing; the words take bold,
-    italic and links, a page link among them, and the note grows with them.
-    The third thing drawn by the app inside an embed, and the first written
-    in.
-11. ~~**A highlighter.**~~ Shipped 2026-09-20 — `docs/shipped.md` § Phase
-    32, step 11. The pen with a preset, on a *Highlighter* button and
-    Shift+P (H is the library's hand tool), each stroke sunk under the
-    ink. No multiply blend: the library has no per-shape blend and the
-    dark look inverts the canvas anyway; half-opacity under the ink does
-    the job.
-12. ~~**Video on the board.**~~ Shipped 2026-09-20 — `docs/shipped.md`
-    § Phase 32, step 12. A dropped video file goes into the library and
-    lands as an embed drawn by the app: a still with a play mark, the
-    window's own player once played. A YouTube address pasted on the
-    board already played through the library's own embed.
-13. ~~**Several pages in one board.**~~ Shipped 2026-09-20 —
-    `docs/shipped.md` § Phase 32, step 13. A strip along the bottom of
-    every board: the board and the boards inside it, read off the tree,
-    with a + that makes one; the same strip from any sheet of the
-    workbook. Nothing new on disk.
-14. ~~**Bold, italic and links in ordinary text.**~~ Shipped 2026-09-21 —
-    `docs/shipped.md` § Phase 32, step 14. Markdown's marks in the
-    library's own text string, hidden and drawn by the patch, measured
-    with the marks hidden through the library's own metrics hook; a
-    toolbar and Ctrl+B/I/K over the box being written in.
-
-15. ~~**A Layers panel.**~~ Shipped 2026-09-20 — `docs/shipped.md` §
-    Phase 32, step 15. The app's own list on the board's right of
-    everything on it, top to bottom, named; a row selects, a row dragged
-    reorders, the eye hides and the lock locks. One place, whether the
-    board is in the page or expanded.
-
-**Not in this phase, and why, so it is not re-asked:**
-
-- **A map on a board.** LK nests its interactive maps with clickable pins.
-  Anamnesis has no maps at all — not the template, not the pins — and a
-  map is its own phase before it can be anything's card. Left out rather
-  than deferred: nothing here is shaped for it.
-- **Cursor chat, other people's cursors, and permissions.** All about
-  several people on one board. This is one person's world on one disk;
-  her call 2026-09-17 to leave these out when everything else went in.
-- **Nesting a board in a board.** LK's tutorial says theirs cannot either.
-
-### How page cards and bookmark cards are built
-
-Decided up front so steps 1, 5 and 6 are one mechanism, not three. The
-library has an *embed* element — a rectangle that holds a web page, drawn
-by a host-supplied component when the host says the address is one it
-knows how to draw (`renderEmbeddable`, `validateEmbeddable`). A page card
-is an embed whose address is `anamnesis://page/<id>`, the link form the
-spike already writes, drawn by a small React card that reads the page live
-from the store; a bookmark is an embed holding the web address, drawn from
-the title, description and picture fetched once and kept on the element
-(`customData`), so it draws whole with the internet off — Phase 31's rule
-for players, applied here. The library owns the element's box, moving,
-resizing, locking, grouping, undo and the file on disk; the app owns only
-what is drawn inside it. That keeps `docs/handoff.md` § Boards' first rule
-— the app never reads inside an element — with one named exception: an
-embed's address and its `customData`, which are the app's own.
-
-**Putting a page on a board, two ways.** *Put a page on it* in the board's
-top-right slot, the storyline's search box exactly, staying open for
-several picks. And dragging a row out of the tree onto the board — the
-tree's rows already drag for reordering, so the drop side is what is new.
-The search box is the sure path and ships first; the drag is the one LK
-leads with and follows in the same step.
-
-**The card's three sizes are read off its box**, never stored: below one
-width it is the icon, below another it is icon and name, above that it is
-the picture with the name over it, in the style of the tree's own rows and
-the page's banner. So resizing changes the presentation with nothing to
-set, which is what LK's "resize the card" arrow means.
-
-**The question that was step 6's, answered 2026-09-20 on the running
-card.** A page shown editable inside a board is a second editor open on
-a second page while the board's page is also open, which is the
-situation Phase 21.5 (Split Panes) was deferred over. She checked LK: its
-page on a board has three buttons — edit in the box (a plain editor),
-*View* (a side panel with the full editor), and open in full — so the
-answer was all three, and all three shipped that day. The box is the
-real editor here rather than a plain one, because it already was one
-with the typing off. The one rule that keeps the two apart: a page the
-panel holds is never written in its box at the same time.
-
-**What is verified before step 1 is called done, because the library's
-embed has habits of its own:** an embed takes a first click to select and
-a second to wake; a page card has to open on the second click and a locked
-one on the first, or the "button" panel is not delivered. The library's
-own link popup still shows the raw `anamnesis://page/…` string on a linked
-shape (known since the spike); page cards make that popup a corner case
-rather than the way in, which is the fix available without forking.
-
-### Order
-
-1 → 2 → 3 → 4 → 5 → 10 → 6 → 11 → 12 → 13 → 15 → 7 → 8 → 9 → 14, each its
-own PR. Steps 1 and 2 are the tutorial's two big panels and ship first; step 3
-is the first patch on the library and proves that path before anything
-else leans on it; step 4 before step 5 so bookmark pictures never touch
-the data-URL path; step 10 right after 5 because notes are the third
-thing drawn by the app inside an embed and should be built while that
-mechanism is fresh; step 6 after the question above is answered on a
-running card. Steps 11 to 13 are independent of each other and of the
-patches. Steps 7 and 8 are small and can go in either order. Steps 9 and
-14 are the two remaining patches on the library and go last.
-
----
-
-## Open Questions — Phases 27 & 28
-
-**All closed 2026-08-14.** Kept as a record of what was decided and where the
-answer now lives, because several of these are rules rather than one-off calls.
-
-- **Q2** — JSON export → a zip of the world's folder, labelled as JSON. Phase 28.
-- **Q3** — printing → works; needs a print stylesheet, not a decision. Phase 28.
-- **Q4** — shared templates → carry their pictures. Phase 28.
-- **Q5 / sequencing** → Phase 27 runs next and promptly; the rest sits where it
-  makes sense, which is 28 after 20 so Markdown export and the Markdown importer
-  are built as one round trip. **Superseded on that last point 2026-09-10**:
-  Phase 20 was deferred on 2026-09-04, so 28 ran first and its Markdown export
-  carried the shared map alone — and 20 followed the same day, reading that map
-  back. See `docs/shipped.md` § Phase 28 and § Phase 20.
-- **Q8** — start screen direction → settled; see "The screen itself" in
-  `docs/shipped.md` § Phase 27.
-- **Q9** — the loud button → New world, centred and alone. Settled by the layout
-  rather than argued.
-- **Q11** — outside worlds → one list, marked. Shipped; see "The projects folder gets
-  read" above.
 
 ---
 
