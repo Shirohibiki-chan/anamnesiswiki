@@ -18,6 +18,7 @@ import {
   fieldLabel,
   filterableFields,
   operatorsFor,
+  takesTypedValue,
   takesValue,
   useDatabase,
   useUpdateDatabaseView,
@@ -157,12 +158,16 @@ export function DatabaseFilterMenu({ node }: { node: Node }) {
             </select>
 
             {takesValue(filter.operator) &&
-              // `contains` is the one that wants typing — it exists so she can
-              // match part of a name or a summary, which by definition is not
-              // in a list of the values that are already there.
-              (filter.operator === "contains" ? (
+              // `contains` and the number comparisons want typing — see
+              // takesTypedValue. A comparison's box takes numbers only, so
+              // the keyboard on a touch screen is the right one, but it is
+              // still a text box underneath: a number input's own value is
+              // "" for anything it cannot parse, which would silently drop a
+              // "-" on the way to "-3".
+              (takesTypedValue(filter.operator) ? (
                 <input
                   type="text"
+                  inputMode={filter.operator === "contains" ? undefined : "decimal"}
                   className="database-select"
                   aria-label="What to look for"
                   value={filter.value ?? ""}

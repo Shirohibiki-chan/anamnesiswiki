@@ -42,13 +42,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   So the job is as much deciding what a block's bar shows at its width as it is
   wiring the menus up, which is why it did not ride along with the rest.
 
-- **A number can only be filtered for an exact value.** `is` and `is-not` on a
-  number property compare the text of it, so there is no "more than 40" — which
-  is most of what a person wants a number filter for. The operator list in
-  `schema.ts` is where it goes, and the comment there already explains why the
-  operators are split by how many values a field holds, which is the rule a
-  `greater than` has to fit into.
-
 - **A marker on text that could be linked, while she is writing.** The other
   half of `/link page names`, which shipped in Phase 19.5; this is the half that
   shows what *could* be linked without being asked. It wants a ProseMirror

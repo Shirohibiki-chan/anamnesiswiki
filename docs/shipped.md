@@ -7702,3 +7702,28 @@ what it looks like it does.
 **Verified** with the scenario and by screenshots of the built app before and
 after typing: the sentence stays where it was typed, the offer is gone, the
 sidebar's prompt remains.
+
+## Queued Adjustments — comparing a number ✅ Shipped 2026-09-21
+
+`is` and `is-not` on a number compared the text of it, so there was no "more
+than 40" — which is most of what a number filter is for. Four operators
+added to `DATABASE_OPERATORS`: `more-than`, `less-than`, `at-least`,
+`at-most`, labelled "is more than" and so on. They fit the rule the list was
+built on — the two sets are split by how many values a page holds, and a
+number is one — so they are one-valued operators offered only on a number
+column (`operatorsFor` → `isNumeric`), and `contains` is dropped there for
+the same reason `is` is kept off tags.
+
+**Both sides read as numbers.** A line that is not a number yet ("forty",
+or "-" on the way to "-3") hides nothing, the same rule as an empty value; a
+row with no number, or one that is not a number, is on neither side and is
+left out. `is` still compares text, so `40` is not `40.0`. The value box for
+a comparison is a text input with `inputMode="decimal"` rather than
+`type="number"` — a number input reports `""` for anything it cannot parse,
+which would silently drop the "-" mid-typing.
+
+**Verified** by unit tests on `operatorsFor` and `matchesFilter`, and by
+`e2e/filters-a-number.e2e.ts`, which adds an Age to two Characters through
+the panel, turns the folder into a table, and checks the operators offered,
+the typed box, and the rows kept either side of the line. Screenshot of the
+built app with *Age is more than 20* open: one of nine rows kept.

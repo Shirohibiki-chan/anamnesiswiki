@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createNode, type CustomPropertySpec, type Node } from "../constants/schema";
+import { createNode, type CustomPropertySpec, type DatabaseOperator, type Node } from "../constants/schema";
 import {
   applyFilters,
   applySorts,
@@ -311,6 +311,54 @@ describe("operatorsFor", () => {
       "is-not-empty",
     ]);
     expect(operatorsFor({ kind: "template" }, columns2)).toContain("is");
+  });
+
+  it("offers the comparisons on a number, and not contains", () => {
+    expect(operatorsFor({ kind: "property", key: "age" }, columns2)).toEqual([
+      "is",
+      "is-not",
+      "more-than",
+      "less-than",
+      "at-least",
+      "at-most",
+      "is-empty",
+      "is-not-empty",
+    ]);
+    expect(operatorsFor({ kind: "name" }, columns2)).not.toContain("more-than");
+  });
+});
+
+describe("comparing a number", () => {
+  const age = { kind: "property", key: "age" } as const;
+  const aged = (name: string, value: number | string | undefined) =>
+    page({ name, customProperties: [{ key: "age", label: "Age", type: "number" }], properties: { age: value } });
+  const compare = (row: Node, operator: DatabaseOperator, value: string) =>
+    matchesFilter(row, { id: "f", field: age, operator, value }, columns2, {}, label);
+
+  it("draws the line as a number, not as text", () => {
+    // As text, "9" sorts after "40"; as a number it does not.
+    expect(compare(aged("Old", 40), "more-than", "9")).toBe(true);
+    expect(compare(aged("Young", 9), "more-than", "40")).toBe(false);
+    expect(compare(aged("Exact", 40), "more-than", "40")).toBe(false);
+    expect(compare(aged("Exact", 40), "at-least", "40")).toBe(true);
+    expect(compare(aged("Exact", 40), "at-most", "40")).toBe(true);
+    expect(compare(aged("Exact", 40), "less-than", "40")).toBe(false);
+    expect(compare(aged("Young", 9), "less-than", "40")).toBe(true);
+  });
+
+  it("leaves out a row with no number to compare", () => {
+    expect(compare(aged("Nobody", undefined), "more-than", "0")).toBe(false);
+    expect(compare(aged("Nobody", undefined), "less-than", "100")).toBe(false);
+  });
+
+  it("hides nothing while the line is not a number yet", () => {
+    expect(compare(aged("Old", 40), "more-than", "forty")).toBe(true);
+    expect(compare(aged("Old", 40), "more-than", "-")).toBe(true);
+  });
+
+  it("still compares is as text, so 40 is 40 and not 40.0", () => {
+    expect(compare(aged("Exact", 40), "is", "40")).toBe(true);
+    expect(compare(aged("Exact", 40), "is", "40.0")).toBe(false);
   });
 });
 
