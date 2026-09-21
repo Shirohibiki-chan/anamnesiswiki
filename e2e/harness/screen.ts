@@ -2078,6 +2078,18 @@ export async function boardIsExpanded(window: Page): Promise<boolean> {
  */
 export async function toggleBoardExpand(window: Page): Promise<void> {
   await window.locator(`${BOARD} .board-expand`).click();
+  await boardCanvasSettled(window);
+}
+
+/**
+ * Waits for the drawing surface to fill what the board leaves it: the
+ * board less the sheet strip along its bottom and the panels beside it.
+ * The library resizes its canvas a moment after its box changes, and
+ * anything measured or clicked before that is against the old size — a
+ * moment long enough on CI's machine to be the whole difference (a
+ * Layers panel opened and the canvas still measured past it, 2026-09-20).
+ */
+async function boardCanvasSettled(window: Page): Promise<void> {
   await window.waitForFunction(
     ([boardSelector, canvasSelector, sheetsSelector, panelSelector]) => {
       const board = document.querySelector(boardSelector)?.getBoundingClientRect();
@@ -3710,6 +3722,9 @@ export async function toggleBoardLayers(window: Page): Promise<void> {
   const open = (await window.locator(BOARD_LAYERS_PANEL).count()) > 0;
   await window.locator(BOARD_LAYERS_BUTTON).click();
   await window.locator(BOARD_LAYERS_PANEL).waitFor({ state: open ? "detached" : "visible", timeout: WAIT_MS });
+  // The drawing gives the panel its room a moment later; wait for that,
+  // or a measurement or a click lands on the old size.
+  await boardCanvasSettled(window);
 }
 
 export async function boardLayersIsOpen(window: Page): Promise<boolean> {
