@@ -6934,6 +6934,22 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 8 — Theme follows while open ✅ Shipped 2026-09-20
+
+**What it delivered.** A theme switched — or edited — while a board is
+open reaches the board at once, the library's own chrome included.
+
+**How.** `useBoardTheme` in `hooks/use-board-view.ts`: the surface
+measured on mount and on every mutation of the root's `data-theme`,
+`style` or `class`, or of the head's style elements. `docs/handoff.md`
+§ Boards has the rule.
+
+**Verified.** `e2e/a-board-theme.e2e.ts`: a board open on the default
+theme is dark; picking Daylight in Settings turns it light without
+leaving the page; picking Midnight turns it dark again. Looked at in the
+real app: the drawing's toolbar and canvas in the light look beside the
+open Settings.
+
 ### Step 7 — Boards in the exports ✅ Shipped 2026-09-20
 
 **What it delivered.** The Markdown folder and the website carry a PNG of

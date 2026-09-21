@@ -853,6 +853,17 @@ Board spike, closed 2026-09-13. What binds the code:
   invisible because frames are hollow. `e2e/a-board-frames.e2e.ts` fails
   against an unpatched build.
 
+- **The board's light-or-dark is measured off its own surface, and
+  measured again whenever the theme moves** (Phase 32, step 8). The app's
+  themes carry no light/dark flag, so `boardThemeFor` reads the surface's
+  computed background and `useBoardTheme` watches the three things a theme
+  is applied by — `data-theme` and `style` on the root, and the head's
+  `<style>` elements a custom theme or a snippet writes into — with a
+  `MutationObserver`, re-measuring on any of them rather than guessing
+  which change matters. Anything new that applies a theme some fourth way
+  has to be added to that watch, or a board open at the time keeps its old
+  look until the next visit.
+
 - **The library's chrome is dressed by remapping its CSS variables, not by
   restyling its classes.** `board.css` sets the library's own variables —
   `--island-bg-color`, `--color-primary`, `--color-surface-*` and the rest

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-20 — A board follows the theme
+
+### Fixes
+
+- **Switching the theme with a board open now switches the board too.** A board used to read light or dark once, when it was opened, so a theme picked while one was on screen only reached it on the next visit. It follows at once now — the drawing's own toolbar, panels and canvas included — and follows a theme edited in the Colours panel as well.
+
 ## 2026-09-20 — Boards in the exports
 
 ### Additions
@@ -155,20 +161,3 @@
 ### Additions
 
 - **Tab on a storyline card goes from the name to the description, and Shift+Tab goes back.** Double-click a scene's name, type it, press Tab, and the description box opens under it with what you typed already kept — the way two fields on a form work. Shift+Tab from the description reopens the name. Before, Tab only left the box: the card shows one box at a time, so leaving saved it and closed it, and there was nowhere for Tab to go. It still doesn't jump to another card — a canvas has no order for it to follow.
-
-## 2026-09-17 — Title Case, a panel that remembers, and special pages set apart
-
-### Additions
-
-- **Each page remembers whether the properties panel is showing.** Hide it on one page and only that page stays hidden; every other page keeps its own answer. Kept with the world, so it's the same after a restart. A new setting under Settings → Sidebar, *The Properties Panel*, picks what a page does before you've decided there: *Open by Default* or *Closed by Default*.
-- **Special pages are set apart from the templates.** On a new page, Storyline, Board, Folder, Dashboard and Note are wide cards under their own heading, each with a line saying what it is; the templates keep their grid below. The Templates panel in the sidebar lists them under *Special Pages* above *Built In* the same way.
-
-### Fixes
-
-- **The text and background colour menu shows its colours.** Every row was a white "A" with nothing to say which colour it was — the colours never reached the menu when it opened from the formatting bar kept at the top of the page. Each row has a coloured tile now: a text colour tints it, a background colour fills it.
-- **A callout's colour is on its six-dots menu** — *Callout Colour*, a submenu of the same swatches — instead of only on a dot in the callout's corner that appeared on hover. The dot's still there.
-- **A segmented meter's segments line up with its number.** A bar with a maximum of ten is cut into ten segments, so 7 of 10 is seven whole segments — it was cut into however many 13px pieces fit, and a value landed mid-segment every time. The pulsing preview drew a second set of segments out of step with the first, sliding over it; it's cut by the same segments now.
-
-### Changes
-
-- **Every button, menu row, tab and option in the app is Title Case.** *Add a Page*, *New Page Inside*, *Save as Template*, *Check for Updates*, *Choose Where to Save* — about two hundred labels that had drifted into sentence case. Tooltips and explanations stay sentences.

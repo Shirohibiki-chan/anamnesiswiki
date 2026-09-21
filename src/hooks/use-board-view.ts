@@ -32,9 +32,8 @@ const SETTLE_MS = 600;
  *
  * The app's themes carry no light/dark flag — a theme is a set of tokens and
  * nothing more — so the answer is read off the page background: a dark
- * surface gets the dark board. Measured once per board mount, which is
- * enough for a spike; a theme switched while a board is open redraws on the
- * next visit.
+ * surface gets the dark board. Measured when the board mounts and again
+ * whenever the theme moves — see `useBoardTheme`.
  */
 function boardThemeFor(element: Element | null): "light" | "dark" {
   if (!element) return "dark";
@@ -44,6 +43,30 @@ function boardThemeFor(element: Element | null): "light" | "dark" {
   const [r, g, b] = [Number(match[1]), Number(match[2]), Number(match[3])];
   const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
   return luminance > 0.5 ? "light" : "dark";
+}
+
+/**
+ * The look the board is drawn in, following the theme while the board is
+ * open (Phase 32, step 8). A theme is applied by three things and nothing
+ * else — `data-theme` on the root, tokens set in the root's own `style`
+ * (the theme editor, the font scale), and the `<style>` elements in the
+ * head that a custom theme or a snippet writes into — so those are what
+ * is watched, and the surface is measured again on any of them. Measuring
+ * is a computed style, which is cheap enough to do on every change
+ * without guessing which ones matter.
+ */
+function useBoardTheme(surface: Element | null): "light" | "dark" {
+  const [theme, setTheme] = useState<"light" | "dark">(() => boardThemeFor(surface));
+  useEffect(() => {
+    const measure = () => setTheme(boardThemeFor(surface));
+    measure();
+    if (!surface) return;
+    const observer = new MutationObserver(measure);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "style", "class"] });
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [surface]);
+  return theme;
 }
 
 export function useBoardView(boardId: string, surface: Element | null) {
@@ -240,7 +263,7 @@ export function useBoardView(boardId: string, surface: Element | null) {
     [boardId],
   );
 
-  const theme = useMemo(() => boardThemeFor(surface), [surface]);
+  const theme = useBoardTheme(surface);
 
   /**
    * A video file dropped on the board, put into the world's library (step
