@@ -7752,3 +7752,40 @@ written (BlockNote is MPL-2.0, Lucide ISC, Fuse.js Apache-2.0, the rest MIT).
 **Verified** by `e2e/says-what-it-is.e2e.ts` — the section opens, the
 version on screen is the one in `package.json`, the credits and the font
 licence line are there — and a screenshot of the built app.
+
+## Queued Adjustments — the shortcut sheet's other two tabs ✅ Shipped 2026-09-21
+
+The `?` sheet showed keys and nothing else; the reference's has a Slash
+Commands list and the markdown shortcuts as well. Both added, and the Keys
+tab gained the editor's own chords — which closes the 2026-08-27 loose end
+that said a cheat sheet leaving out the keys used while writing was half a
+cheat sheet.
+
+**The slash list is generated, the other two are written, and the sheet
+says which is which.** The menu's assembly moved out of `use-editor.ts`
+into `services/editor-blocks/slash-menu.tsx`, so the editor and the sheet
+read one list: the editor calls it with its real actions, the sheet calls it
+with none against a headless `BlockNoteEditor.create` on the app's schema
+and keeps the words (title, subtext, group, aliases). Built once per
+process. Each command also gets a *short form* — the first alias no earlier
+command has claimed, so Bullet List shows `/ul` and Check List, whose
+aliases start with the same word, shows the next one rather than `/ul`
+again. The markdown rules (`constants/markdown-shortcuts.ts`) and the editor
+chords (`EDITOR_KEYS` in `constants/shortcuts.ts`) are BlockNote's and
+tiptap's, which nothing in the app can read back out; they were taken from
+the installed 0.52 by grep — the `find:` patterns in its blocks bundle, the
+`inputRegex` in tiptap's mark extensions, the `Mod-` chords — and the sheet
+notes that they are written down rather than read.
+
+**Same height whichever tab is open.** The Markdown list is half the length
+of the keys, and a dialog sized to its content re-centred itself on every
+switch, moving the tab strip under the pointer. The sheet now takes the
+modal's full allowed height and scrolls inside.
+
+**Verified** by `slash-menu.test.ts` (the catalogue holds ours and
+BlockNote's, one Quote, no duplicate titles or short forms, built once), by
+the extended `shows-its-shortcuts.e2e.ts` (each tab's contents in the real
+app), and by the new `writes-with-shortcuts.e2e.ts`, which types `# `,
+`**loud**` and `*soft*` and presses Ctrl+B, Ctrl+I and Ctrl+Alt+2 to see the
+formatting arrive — the check that keeps the two written lists honest
+against a BlockNote upgrade. Screenshots of all three tabs checked.

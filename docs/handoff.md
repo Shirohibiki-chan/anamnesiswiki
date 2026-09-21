@@ -5781,6 +5781,17 @@ Phase 26, step 2. What binds the code:
   exists, so `AddBlockMenu` carries one too. Anything that hides the prompt has
   to keep that second route alive.
 
+- **The `/` menu is assembled in one place and listed from it.**
+  `services/editor-blocks/slash-menu.tsx` builds the list for the editor and
+  for the shortcut sheet's Slash Commands tab, so a command added anywhere
+  else — a new `get…SlashMenuItems` wired straight into `use-editor.ts` —
+  would be in the menu and missing from the sheet. Add it to `slashMenuItems`
+  and both have it. The Markdown tab and the editor's chords on the Keys tab
+  are the opposite: written lists (`constants/markdown-shortcuts.ts`,
+  `EDITOR_KEYS`) taken from the installed BlockNote, with
+  `e2e/writes-with-shortcuts.e2e.ts` pressing a few of them — re-check both
+  on a BlockNote upgrade.
+
 - **An unstarted page's first tab is drawn before it exists, under a fixed
   id.** PageView shows a blank, tabless page with a tab strip and an editor
   standing in for a tab the store does not hold yet, and the first keystroke

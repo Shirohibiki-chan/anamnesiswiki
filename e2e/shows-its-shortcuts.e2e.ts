@@ -39,6 +39,31 @@ describe("showing every shortcut", () => {
     expect(text.toLowerCase()).toContain("can't be changed");
   });
 
+  it("lists the editor's own keys too", async () => {
+    const text = await app.window.locator(SHEET).innerText();
+    expect(text).toContain("Bold");
+    expect(text).toContain("Ctrl+B");
+  });
+
+  // The slash list is the menu's own, read from the same code that draws it
+  // — so a command of ours and one of BlockNote's both have to be there.
+  it("lists the slash commands on their own tab", async () => {
+    await app.window.getByRole("tab", { name: "Slash Commands", exact: true }).click();
+    const text = await app.window.locator(SHEET).innerText();
+    expect(text).toContain("Info");
+    expect(text).toContain("Heading 1");
+    expect(text).toContain("YouTube");
+    expect(text).toContain("/");
+  });
+
+  it("lists the markdown that turns into formatting", async () => {
+    await app.window.getByRole("tab", { name: "Markdown", exact: true }).click();
+    const text = await app.window.locator(SHEET).innerText();
+    expect(text).toContain("**text**");
+    expect(text).toContain("Heading 1");
+    await app.window.getByRole("tab", { name: "Keys", exact: true }).click();
+  });
+
   it("closes on the same key, and on Escape", async () => {
     await app.window.keyboard.press("Shift+Slash");
     await app.window.locator(SHEET).waitFor({ state: "detached", timeout: 20_000 });

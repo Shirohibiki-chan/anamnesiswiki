@@ -1180,6 +1180,21 @@ export async function editorText(window: Page): Promise<string> {
   return normalize((await window.locator(EDITOR).first().textContent()) ?? "");
 }
 
+/** The headings in the open page, top to bottom. */
+export async function editorHeadings(window: Page): Promise<string[]> {
+  return (await window.locator(`${EDITOR} [data-content-type="heading"]`).allInnerTexts()).map(normalize);
+}
+
+/** Every run of bold text in the open page, in order. */
+export async function editorBoldText(window: Page): Promise<string[]> {
+  return (await window.locator(`${EDITOR} strong`).allInnerTexts()).map(normalize);
+}
+
+/** Every run of italic text in the open page, in order. */
+export async function editorItalicText(window: Page): Promise<string[]> {
+  return (await window.locator(`${EDITOR} em`).allInnerTexts()).map(normalize);
+}
+
 /** The page links written into the open page, in the order they appear in it. */
 export async function editorMentions(window: Page): Promise<string[]> {
   const chips = await window.locator(EDITOR_MENTION).allTextContents();
