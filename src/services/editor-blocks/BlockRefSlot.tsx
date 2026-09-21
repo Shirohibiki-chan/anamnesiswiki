@@ -11,7 +11,7 @@
 // `BlockRefRenderer`, on `InfoboxRenderer` and on the components themselves;
 // nothing here can enforce it.
 import { useContext } from "react";
-import { BlockRefRenderContext } from "./block-ref-context";
+import { BlockRefRenderContext, type MediaEmbedProps } from "./block-ref-context";
 
 export function BlockRefSlot({ blockId }: { blockId: string }) {
   const renderers = useContext(BlockRefRenderContext);
@@ -36,4 +36,11 @@ export function InfoboxSlot(props: {
   // An infobox with nothing in it still draws: the frame carries its own Add
   // Block, and an empty one is how every infobox starts.
   return <Infobox {...props} />;
+}
+
+export function MediaEmbedSlot({ editorBlockId, props }: { editorBlockId: string; props: MediaEmbedProps }) {
+  const renderers = useContext(BlockRefRenderContext);
+  if (!renderers) return null;
+  const { Media } = renderers;
+  return <Media editorBlockId={editorBlockId} props={props} />;
 }

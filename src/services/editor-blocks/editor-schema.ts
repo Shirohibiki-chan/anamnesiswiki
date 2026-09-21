@@ -7,6 +7,7 @@ import { columnListSpec, columnSpec } from "./columns";
 import { codeBlockSpec } from "./code-block";
 import { infoboxSpec } from "./infobox";
 import { pageContentsSpec } from "./table-of-contents";
+import { mediaEmbedSpec } from "./media-embed";
 import { infoBlockSpec } from "./info-block";
 import { quoteBlockSpec } from "./quote-block";
 import { secretBlockSpec } from "./secret-block";
@@ -39,6 +40,10 @@ export const editorSchema = BlockNoteSchema.create({
     // The page's own headings, listed. Phase 19.5 — it stores nothing and reads
     // the document each time it draws, so it cannot go stale.
     pageContents: pageContentsSpec,
+    // A YouTube, Spotify or SoundCloud player in the writing. Phase 31 — a
+    // link with a memory: the address, what the service said about it once,
+    // a caption and a width. The player is drawn from those and never stored.
+    mediaEmbed: mediaEmbedSpec,
   },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,

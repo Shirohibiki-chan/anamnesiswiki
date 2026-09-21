@@ -11,11 +11,12 @@ import { BlockNoteView } from "@blocknote/shadcn";
 import { BlockRefRenderContext, usePageReader } from "../../hooks/use-page-reader";
 import { Infobox } from "../blocks/Infobox";
 import { PageBlock } from "../blocks/PageBlock";
+import { MediaEmbedBlock } from "../blocks/MediaEmbedBlock";
 
 // Module-level for the reason Editor.tsx gives for its own copy: the context
 // hands these down as component types, and a value built during render would
 // be a new type every render, resetting every field in every block.
-const PAGE_BLOCK_RENDERERS = { Block: PageBlock, Infobox };
+const PAGE_BLOCK_RENDERERS = { Block: PageBlock, Infobox, Media: MediaEmbedBlock };
 
 type Props = {
   /** The writing of one of the page's tabs, as it is stored. */

@@ -52,7 +52,7 @@ export type AssetUsageIndex = Map<string, AssetUse[]>;
  * the schema has custom blocks in it, and a stricter type here would be a
  * second definition of the editor's shape that could drift from the real one.
  */
-type BlockLike = { props?: { url?: unknown }; children?: unknown };
+type BlockLike = { props?: { url?: unknown; thumbnail?: unknown }; children?: unknown };
 
 /**
  * Every asset filename referenced by an image block inside `content`,
@@ -74,6 +74,12 @@ export function assetRefsInContent(content: unknown): string[] {
       if (typeof url === "string" && url.startsWith(ASSET_REF_PREFIX)) {
         found.push(url.slice(ASSET_REF_PREFIX.length));
       }
+      // A player's thumbnail (Phase 31) is a file in `assets/` named on the
+      // block by its filename alone — the fifth route, and one that would
+      // otherwise have the Assets tab offering to delete a still that is
+      // drawn on a page.
+      const thumbnail = block.props?.thumbnail;
+      if (typeof thumbnail === "string" && thumbnail) found.push(thumbnail);
       walk(block.children);
     }
   };

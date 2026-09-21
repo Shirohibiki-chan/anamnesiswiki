@@ -16,7 +16,8 @@ import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/re
 import type { DefaultReactSuggestionItem, FloatingUIOptions } from "@blocknote/react";
 import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { isGlyph } from "../constants/glyphs";
-import { ICON_INLINE_TYPE } from "../constants/schema";
+import { ICON_INLINE_TYPE, MEDIA_EMBED_TYPE } from "../constants/schema";
+import { defaultMediaWidth, mediaInfoFor, mediaLinkIn } from "../services/media-service";
 import { extensionFor, resolveAssetUrl } from "../services/asset-urls";
 import { parseAnchorLink } from "../services/anchor-service";
 import { blockIdsInPage, withoutDanglingBlockRefs } from "../services/block-service";
@@ -36,6 +37,7 @@ import { applyColumnRepairs, type RepairableEditor } from "../services/editor-bl
 import { applyPointerClones, type PointerEditor } from "../services/editor-blocks/apply-pointer-clones";
 import { getAutoLinkSlashMenuItems } from "../services/editor-blocks/auto-link-slash-menu";
 import { getColumnSlashMenuItems } from "../services/editor-blocks/column-slash-menu";
+import { getMediaSlashMenuItems } from "../services/editor-blocks/media-slash-menu";
 import { selectAllExtension } from "../services/editor-blocks/select-all";
 import { getPageBlockSlashMenuItems } from "../services/editor-blocks/page-block-slash-menu";
 import { slashOpensCommandMenu } from "../services/editor-blocks/slash-trigger";
@@ -293,7 +295,13 @@ export function useEditor(
    * pasted.
    */
   function onPasteCapture(event: ReactClipboardEvent<HTMLDivElement>) {
-    const anchor = parseAnchorLink(event.clipboardData.getData("text/plain"));
+    const text = event.clipboardData.getData("text/plain");
+    if (pasteMediaLink(text)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    const anchor = parseAnchorLink(text);
     const target = anchor && nodes[anchor.nodeId];
     if (!anchor || !target) return;
     event.preventDefault();
@@ -302,6 +310,40 @@ export function useEditor(
       { type: "mention", props: { nodeId: anchor.nodeId, label: target.name, text: "", blockId: anchor.blockId } },
       " ",
     ]);
+  }
+
+  /**
+   * A YouTube, Spotify or SoundCloud link pasted on an empty line becomes a
+   * player (Phase 31). Returns whether it did.
+   *
+   * **On an empty line only.** A link pasted into the middle of a sentence
+   * stays a link, because the sentence is what she was writing — and a link
+   * pasted with other words around it is left to the editor for the same
+   * reason (`mediaLinkIn` refuses anything that is not the address alone).
+   * Undo gives the empty line back, since the whole thing is one edit.
+   */
+  function pasteMediaLink(text: string): boolean {
+    const link = mediaLinkIn(text);
+    if (!link) return false;
+    const { block } = editor.getTextCursorPosition();
+    if (block.type !== "paragraph" || !Array.isArray(block.content) || block.content.length > 0) return false;
+    const info = mediaInfoFor(link);
+    editor.transact(() => {
+      // Put in front of the empty line rather than in its place: a paragraph
+      // holds text and a player holds none, and asking the editor to turn
+      // one into the other is asking it to join two shapes of node ("cannot
+      // join blockGroup onto blockContainer"). The empty line then stays as
+      // the line after the player — which every block of ours wants when it
+      // is last, since a block with no text has nothing to write past — and
+      // is taken out when it is not last, so a paste mid-page leaves no gap.
+      const [player] = editor.insertBlocks([{ type: MEDIA_EMBED_TYPE, props: { ...info, width: defaultMediaWidth(link) } }] as never, block.id, "before");
+      if (!player) return;
+      const document = editor.document;
+      if (document[document.length - 1]?.id !== block.id) editor.removeBlocks([block.id]);
+      const next = editor.getNextBlock(player.id);
+      if (next) editor.setTextCursorPosition(next.id, "start");
+    });
+    return true;
   }
 
   /**
@@ -458,6 +500,9 @@ export function useEditor(
         // Side-by-side lanes. Nothing to make first — a row is made of blocks
         // the editor already knows how to draw. See column-slash-menu.tsx.
         ...getColumnSlashMenuItems(editor),
+        // A player, for a link not on the clipboard yet. Phase 31. Pasting
+        // the link on an empty line is the other way in — see onPasteCapture.
+        ...getMediaSlashMenuItems(editor),
         // The one entry that inserts nothing: it acts on prose already written.
         // See auto-link-slash-menu.tsx.
         ...getAutoLinkSlashMenuItems(() => void linkPageNames()),

@@ -2209,8 +2209,10 @@
    is the rule above. */
 .ProseMirror-selectednode > .page-block,
 .ProseMirror-selectednode > .page-infobox,
+.ProseMirror-selectednode > .media-embed-row,
 .ProseMirror-selectednode > .bn-block-content > .page-block,
-.ProseMirror-selectednode > .bn-block-content > .page-infobox {
+.ProseMirror-selectednode > .bn-block-content > .page-infobox,
+.ProseMirror-selectednode > .bn-block-content > .media-embed-row {
   outline: none;
 }
 
@@ -2512,4 +2514,296 @@
 .block-menu-limits button.tree-context-menu-checked {
   border-color: var(--color-accent-faint-border);
   background: var(--color-accent-faint);
+}
+
+/* ============================================================================
+   Players — Phase 31. A YouTube, YouTube Music, Spotify or SoundCloud link,
+   drawn as its service's player inside the same frame every other block gets,
+   so it takes the page's theme and a snippet that restyles blocks restyles it.
+   The rounded corners are clipped on the player itself, not drawn around it.
+   ============================================================================ */
+
+/* The row is the whole writing column, the way `.page-block` is, so the frame
+   inside it has something to be a percentage of. Same flex reasoning. */
+.media-embed-row {
+  flex: 1;
+  min-width: 0;
+  cursor: default;
+}
+
+.media-embed {
+  margin: var(--space-md) 0;
+}
+
+.media-player-box {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-panel-edge);
+}
+
+.media-player-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+/* **The still.** The video's own picture with the words over it and a play
+   mark, and the same card without the mark when nothing will play. It fills
+   the box whatever its shape — a 16:9 still for a video, the audio players'
+   own heights for the rest — so the card is the size the player will be, and
+   nothing on the page moves when it is played. */
+.media-still {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--color-panel-edge);
+  color: #fff;
+  text-align: left;
+  font: inherit;
+  overflow: hidden;
+}
+
+.media-still-playable {
+  cursor: pointer;
+}
+
+.media-still-picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.media-still-blank {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, var(--color-panel-edge), var(--color-panel));
+}
+
+/* Dark from the bottom up so the words read on any picture. Drawn over the
+   picture and under the words, whatever theme the page has: the still is a
+   photograph and its words are white the way a photograph's caption is. */
+.media-still-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.35) 45%, rgba(0, 0, 0, 0.1) 100%);
+  pointer-events: none;
+}
+
+.media-still-words {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-md) var(--space-lg);
+  /* Room for the play mark on a short box, so a title never sits under it. */
+  padding-right: 64px;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.media-still-service {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.media-still-title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.media-still-author {
+  font-size: var(--fs-sm);
+  opacity: 0.85;
+}
+
+/* The play mark: a disc that brightens under the pointer, the one thing on
+   the still that says it is a button. */
+.media-still-play {
+  position: absolute;
+  right: var(--space-lg);
+  bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(4px);
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.media-still-playable:hover .media-still-play,
+.media-still-playable:focus-visible .media-still-play {
+  background: rgba(255, 255, 255, 0.32);
+  transform: scale(1.06);
+}
+
+.media-still-playable:focus-visible {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: -2px;
+}
+
+/* Said in the corner where the player would be, with the internet off. Not a
+   grey hole and not a broken-picture glyph: the card is whole, and this is the
+   one line that is different. */
+.media-still-offline {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: var(--fs-xs);
+}
+
+/* The audio players' stills have less height to spread over: smaller words,
+   tighter padding, the play mark gone (nothing on them plays from a still). */
+.media-player-spotify .media-still-words,
+.media-player-soundcloud .media-still-words {
+  padding: var(--space-sm) var(--space-md);
+  padding-right: var(--space-md);
+}
+
+.media-player-spotify .media-still-title,
+.media-player-soundcloud .media-still-title {
+  font-size: var(--fs-sm);
+}
+
+/* **The caption line under it, the way a picture has.** Folded away until it
+   has words, the pointer or the focus, so an uncaptioned player is a player
+   with nothing under it rather than a frame with an empty strip along the
+   bottom — which is what the first cut drew, and what read as a box with a
+   hole in it. `:placeholder-shown` is how CSS knows the box is empty. */
+.media-caption {
+  display: block;
+  width: 100%;
+  height: 0;
+  padding: 0 var(--space-md);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: center;
+  opacity: 0;
+  overflow: hidden;
+  transition: height 120ms ease, padding 120ms ease, opacity 120ms ease;
+}
+
+.media-caption::placeholder {
+  color: var(--color-text-muted);
+}
+
+.media-embed:hover .media-caption,
+.media-caption:focus,
+.media-caption:not(:placeholder-shown) {
+  height: calc(var(--fs-sm) * 1.5 + 2 * var(--space-xs));
+  padding: var(--space-xs) var(--space-md);
+  opacity: 1;
+}
+
+.media-caption:focus {
+  outline: none;
+  color: var(--color-text-primary);
+}
+
+.media-caption:read-only {
+  cursor: default;
+}
+
+/* The `⋯` in the frame's corner, shown when the pointer is over the block —
+   the same button every sidebar block wears in its bar, put where a block
+   with no bar can carry it. Right-clicking the block opens the same menu. */
+.media-embed-menu-button {
+  position: absolute;
+  top: var(--space-sm);
+  left: var(--space-sm);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.media-embed:hover > .media-embed-menu-button,
+.media-embed-menu-button:focus-visible {
+  opacity: 1;
+}
+
+.media-embed-menu-button:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+/* **The box an empty block is** — the slash menu's `/YouTube` before a link
+   has been given. A titled frame with the one field, so it reads as a block
+   waiting for its link rather than a search field that wandered in. */
+.media-link-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.media-link-box-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.media-link-box-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-edge);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+
+.media-link-box-input:focus {
+  outline: none;
+  border-color: var(--color-accent-faint-border);
+}
+
+.media-link-box-refused {
+  margin: 0;
+  color: var(--color-destructive);
+  font-size: var(--fs-xs);
+}
+
+.media-service-mark {
+  flex: none;
 }

@@ -3956,3 +3956,104 @@ export async function boardInkExtent(window: Page): Promise<{ left: number; righ
   if (!extent) throw new Error("the board has no drawn canvas");
   return extent;
 }
+
+// ---- Players (Phase 31) ----
+
+const MEDIA_EMBED = ".media-embed";
+
+/**
+ * Pastes text into the open page's writing where the caret is, as Ctrl+V
+ * with it on the clipboard would — the editor's own paste, so a lone player
+ * link on an empty line becomes a player and a link among words stays a
+ * link. The caller puts the caret where it wants it first; `typeInEditor`
+ * with an empty string and Enter is a fresh empty line at the end.
+ */
+export async function pasteTextInEditor(window: Page, text: string): Promise<void> {
+  await window.locator(EDITOR).first().evaluate((editor, pasted) => {
+    const carried = new DataTransfer();
+    carried.setData("text/plain", pasted);
+    editor.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: carried }));
+  }, text);
+}
+
+/**
+ * Puts the caret on the last line of the open page — clicked directly, because
+ * `typeInEditor`'s top-corner click lands on whatever the first block is, and
+ * when that is a player (a node, not text) Ctrl+End has no caret to move.
+ */
+export async function clickLastLineInEditor(window: Page): Promise<void> {
+  const lines = window.locator(`${EDITOR} > .bn-block-group > ${EDITOR_BLOCK}`);
+  const last = lines.last();
+  const box = await last.boundingBox();
+  if (!box) throw new Error("the page has no last line");
+  await last.click({ position: { x: 8, y: Math.min(8, box.height / 2) } });
+  await window.keyboard.press("End");
+}
+
+/** The players on the open page, top to bottom: which service, and the words on the still (or none, while a player is loaded). */
+export async function mediaPlayersShown(window: Page): Promise<{ service: string; still: string | null; playing: boolean }[]> {
+  const frames = window.locator(`${MEDIA_EMBED} .media-player`);
+  const count = await frames.count();
+  const out: { service: string; still: string | null; playing: boolean }[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const frame = frames.nth(i);
+    const still = frame.locator(".media-still-words");
+    out.push({
+      service: (await frame.getAttribute("data-service")) ?? "",
+      // `textContent`, not `innerText`: the service's name is drawn in capitals
+      // by CSS, and `innerText` reports it that way.
+      still: (await still.count()) > 0 ? normalize((await still.textContent()) ?? "") : null,
+      playing: (await frame.locator("iframe").count()) > 0,
+    });
+  }
+  return out;
+}
+
+/** The address the player at `index` is loaded from, or null while it is a still. */
+export async function mediaPlayerSource(window: Page, index: number): Promise<string | null> {
+  const frame = window.locator(`${MEDIA_EMBED} iframe`).nth(index);
+  return (await frame.count()) > 0 ? frame.getAttribute("src") : null;
+}
+
+/** Clicks the still of the player at `index`, which loads the real player. */
+export async function playMedia(window: Page, index: number): Promise<void> {
+  await window.locator(`${MEDIA_EMBED} .media-still-playable`).nth(index).click();
+}
+
+/** Whether the box a `/YouTube` puts down — the one asking for a link — is on the page. */
+export async function mediaLinkBoxShown(window: Page): Promise<boolean> {
+  return (await window.locator(".media-link-box").count()) > 0;
+}
+
+/** Types a link into the box and presses Add. */
+export async function giveMediaLink(window: Page, url: string): Promise<void> {
+  const box = window.locator(".media-link-box").first();
+  await box.locator("input").fill(url);
+  await box.getByRole("button", { name: "Add", exact: true }).click();
+}
+
+/** What the link box says when it refused a link, or null. */
+export async function mediaLinkBoxRefusal(window: Page): Promise<string | null> {
+  const note = window.locator(".media-link-box-refused");
+  return (await note.count()) > 0 ? normalize(await note.innerText()) : null;
+}
+
+/** Writes a caption under the player at `index`. The line is folded away until the pointer is over the block. */
+export async function captionMedia(window: Page, index: number, caption: string): Promise<void> {
+  const frame = window.locator(MEDIA_EMBED).nth(index);
+  await frame.hover({ position: { x: 4, y: 4 } });
+  const box = frame.locator(".media-caption");
+  await box.click();
+  await box.fill(caption);
+  await window.keyboard.press("Enter");
+}
+
+/** Opens the player's own menu from its `⋯` and says what it offers. */
+export async function mediaMenuItems(window: Page, index: number): Promise<string[]> {
+  const frame = window.locator(MEDIA_EMBED).nth(index);
+  await frame.hover();
+  await frame.locator(".media-embed-menu-button").click();
+  const items = (await window.locator(`${BLOCK_MENU} button`).allTextContents()).map(normalize);
+  await window.keyboard.press("Escape");
+  return items;
+}

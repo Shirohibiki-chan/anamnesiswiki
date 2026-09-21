@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-21 — Music and video in the page
+
+### Additions
+
+- **A YouTube, YouTube Music, Spotify or SoundCloud link becomes a player in the page.** Paste the link on an empty line and it turns into the player — a link pasted in the middle of a sentence stays a link, since the sentence is what you were writing. `/YouTube`, `/Spotify`, `/SoundCloud` and `/Embed` in the slash menu put down a box for the link instead, for when it isn't on the clipboard yet; a link from anywhere else is turned away with a line saying which four play here. Every form of link the services hand out works: `youtu.be`, watch, shorts, live and playlist links, YouTube Music, Spotify's tracks, albums, playlists, artists, episodes and shows, and SoundCloud tracks and sets.
+- **Each one looks like it belongs.** The player sits in the same frame every block gets, so it takes the theme. A YouTube video is a still until it is played — the video's own picture with its title over it and a play mark — and only a click loads the real player, so a page with five videos doesn't start five players and nothing from YouTube loads into your page until you ask. YouTube Music plays through the same player, since its links share YouTube's ids. Spotify's own card is shown as it is, in its dark look on a dark theme, compact for a track and tall for an album or playlist; SoundCloud's player takes the theme's accent for its buttons and bar. A video is the width of the page; a single track is not, and either can be dragged to another width by its edges, the way a block can.
+- **A caption line under each player, the way a picture has** — hover to find it — and a menu on right-click or the `⋯` in the corner: Open on the service, Copy Link, Fetch Again, Remove.
+- **A player draws whole with the internet off.** When a link is pasted the service is asked once what it is — the title, who made it, and a thumbnail that goes into the world's library — and that is what the card draws, with a "needs the internet to play" note where the player would be. A link the service wouldn't answer for keeps its address and is asked again the next time the page is opened online.
+
 ## 2026-09-21 — Bold, italic and links in a board's text
 
 ### Additions
@@ -145,13 +154,3 @@
 ### Fixes
 
 - **Dragging a selection box on a board selects everything the box touches.** It used to take only what the box swallowed whole — a box drawn across five things picked up the one that fitted inside it. Now a shape is selected the moment the box crosses its outline, a line or arrow where the box crosses it or holds one of its points, and text, pictures and cards wherever the box overlaps them. A box drawn *inside* a big empty rectangle still leaves the rectangle alone, so things inside one can be picked out on their own. This is a change to the drawing library itself, kept as a patch in the repo.
-
-## 2026-09-18 — Dots on the board, and cards that select like anything else
-
-### Additions
-
-- **Boards have a dotted background.** On for every board, old ones included, and it moves with the drawing as you pan and zoom rather than sitting still behind it; zoomed far out, every other dot drops away so it never turns into a haze. *Hide the Dots* and *Show the Dots* are in the board's menu (the ☰ in the bottom-left corner), and each board remembers its own answer. A board's canvas is see-through now so the dots show; picking a canvas colour from the same menu still works and covers them.
-
-### Fixes
-
-- **Selecting on a board with page cards on it works properly.** Clicking the middle of a card used to "wake" it the way the drawing library wakes a web embed, and a woken card swallowed every click after that — it couldn't be dragged, a selection box couldn't be drawn through it, and clicking it did nothing. A card never takes the mouse now: click to select, click again to open, drag to move, and a box drawn around cards selects them like any other shape.

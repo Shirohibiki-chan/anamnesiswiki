@@ -2,6 +2,16 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-18 — Dots on the board, and cards that select like anything else
+
+### Additions
+
+- **Boards have a dotted background.** On for every board, old ones included, and it moves with the drawing as you pan and zoom rather than sitting still behind it; zoomed far out, every other dot drops away so it never turns into a haze. *Hide the Dots* and *Show the Dots* are in the board's menu (the ☰ in the bottom-left corner), and each board remembers its own answer. A board's canvas is see-through now so the dots show; picking a canvas colour from the same menu still works and covers them.
+
+### Fixes
+
+- **Selecting on a board with page cards on it works properly.** Clicking the middle of a card used to "wake" it the way the drawing library wakes a web embed, and a woken card swallowed every click after that — it couldn't be dragged, a selection box couldn't be drawn through it, and clicking it did nothing. A card never takes the mouse now: click to select, click again to open, drag to move, and a box drawn around cards selects them like any other shape.
+
 ## 2026-09-18 — Pages on a board
 
 ### Additions
