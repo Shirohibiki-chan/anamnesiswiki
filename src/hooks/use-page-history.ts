@@ -8,7 +8,7 @@
 // its own history of getting it wrong. The two are folded into one undo entry,
 // the way making a page from a template is.
 import { useCallback, useEffect, useState } from "react";
-import { listSnapshots, readSnapshot, snapshotNode } from "../services/filesystem-service";
+import { labelSnapshot, listSnapshots, readSnapshot, snapshotNode } from "../services/filesystem-service";
 import { restorePatch, type Snapshot } from "../services/snapshot-service";
 import { useHistoryStore } from "../state/history-store";
 import { useProjectStore } from "../state/project-store";
@@ -32,6 +32,14 @@ export type PageHistory = {
   restore: () => Promise<boolean>;
   /** True while a restore is being written. */
   isRestoring: boolean;
+  /**
+   * Names a copy, which keeps it: the automatic clearing-out never touches a
+   * named one. Null takes the name away again. Both are a rename of the file,
+   * since the name is where the label lives (`snapshotName`).
+   */
+  keep: (snapshot: Snapshot, label: string | null) => Promise<void>;
+  /** A copy of the page as it is right now, named — "mark this state". */
+  keepNow: (label: string) => Promise<void>;
 };
 
 export function usePageHistory(nodeId: string | null): PageHistory {
@@ -104,7 +112,37 @@ export function usePageHistory(nodeId: string | null): PageHistory {
     }
   }, [bumpContentRevision, node, nodeId, renameNode, rootPath, selected, updateNode]);
 
-  return { snapshots, listedAt: loaded?.at ?? 0, selected, select, restore, isRestoring };
+  const relist = useCallback(async () => {
+    if (!rootPath || !nodeId) return;
+    setLoaded({ forNodeId: nodeId, snapshots: await listSnapshots(rootPath, nodeId), at: Date.now() });
+  }, [nodeId, rootPath]);
+
+  const keep = useCallback(
+    async (snapshot: Snapshot, label: string | null) => {
+      if (!rootPath || !nodeId) return;
+      const renamed = await labelSnapshot(rootPath, nodeId, snapshot.name, label);
+      if (renamed === null) return;
+      await relist();
+      // The row being looked at is the same copy under its new name.
+      setSelected((current) =>
+        current && current.snapshot.name === snapshot.name
+          ? { ...current, snapshot: { ...current.snapshot, name: renamed, label } }
+          : current,
+      );
+    },
+    [nodeId, relist, rootPath],
+  );
+
+  const keepNow = useCallback(
+    async (label: string) => {
+      if (!rootPath || !node) return;
+      await snapshotNode(rootPath, node, Object.values(useProjectStore.getState().nodes), label);
+      await relist();
+    },
+    [node, relist, rootPath],
+  );
+
+  return { snapshots, listedAt: loaded?.at ?? 0, selected, select, restore, isRestoring, keep, keepNow };
 }
 
 /**

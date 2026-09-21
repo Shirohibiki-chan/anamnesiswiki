@@ -135,11 +135,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
     goes through. The `build` box prefills by matching a field id; if that ever
     silently stops working, the only sign is reports arriving with an empty
     box.
-  - **Named checkpoints, with pinning, were on her list and are not built.**
-    Phase 19 shipped the automatic kind: copies taken on a timer, listed by
-    when. "Mark this state, name it, come back to it" is a different feature
-    and is nowhere in this document. It is the last unbuilt item from the six
-    raised on 2026-08-27.
   - **A property value orphaned before the template fix is still invisible.**
     New ones cannot happen, but a page that already went through a template
     swap may have a value in its file with nothing able to draw it. She judged

@@ -1259,6 +1259,16 @@
   border-color: var(--color-accent-faint-border);
 }
 
+/* The name she gave a kept version, above its time. */
+.page-history-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--color-accent-light);
+}
+
 .page-history-when {
   font-size: var(--fs-sm);
   color: var(--color-text-primary);

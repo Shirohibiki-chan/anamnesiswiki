@@ -5,9 +5,11 @@ import {
   historyReadme,
   isSnapshotDue,
   nextSnapshotAt,
+  readSnapshotName,
   readSnapshots,
   restorePatch,
   restoreProjectPatch,
+  snapshotLabel,
   snapshotName,
   snapshotsToPrune,
   snapshotTime,
@@ -30,7 +32,7 @@ describe("naming a copy", () => {
   // The whole reason the timestamp is written this way: sorting the names is
   // sorting by time, so a directory listing is the index.
   it("sorts by name in the same order as by time", () => {
-    const times = [AT, AT + 60_000, AT + 3 * 60_000].map(snapshotName);
+    const times = [AT, AT + 60_000, AT + 3 * 60_000].map((at) => snapshotName(at));
     expect([...times].sort()).toEqual(times);
   });
 
@@ -89,8 +91,8 @@ describe("deciding a copy is due", () => {
   });
 });
 
-function at(offsetMs: number): Snapshot {
-  return { name: snapshotName(AT + offsetMs), at: AT + offsetMs };
+function at(offsetMs: number, label: string | null = null): Snapshot {
+  return { name: snapshotName(AT + offsetMs, label), at: AT + offsetMs, label };
 }
 
 describe("pruning", () => {
@@ -125,6 +127,39 @@ describe("pruning", () => {
     const ancient = [at(-SNAPSHOT_MAX_AGE_MS), at(-SNAPSHOT_MAX_AGE_MS - 60_000)];
     const pruned = snapshotsToPrune([...recent, ...ancient], AT + 1000, { maxPerNode: 3 });
     expect(pruned.map((snapshot) => snapshot.at).sort()).toEqual(ancient.map((snapshot) => snapshot.at).sort());
+  });
+});
+
+describe("a kept copy", () => {
+  it("carries its name after the stamp, and reads it back", () => {
+    const name = snapshotName(AT, "before the rewrite");
+    expect(name).toBe("2026-08-27T05-12-03-123Z ~ before the rewrite.json");
+    expect(snapshotTime(name)).toBe(AT);
+    expect(readSnapshotName(name)).toEqual({ at: AT, label: "before the rewrite" });
+    expect(readSnapshots([name, snapshotName(AT - 1)])).toEqual([
+      { name, at: AT, label: "before the rewrite" },
+      { name: snapshotName(AT - 1), at: AT - 1, label: null },
+    ]);
+  });
+
+  it("makes the name safe for a file name, and drops one that leaves nothing", () => {
+    expect(snapshotLabel('  what: "Kalla" / rewrite?  ')).toBe("what Kalla rewrite");
+    expect(snapshotLabel("///")).toBe("");
+    expect(snapshotName(AT, "///")).toBe(snapshotName(AT));
+    expect(snapshotLabel("x".repeat(100))).toHaveLength(60);
+  });
+
+  it("still sorts by time among the rest", () => {
+    const names = [snapshotName(AT + 5, "later"), snapshotName(AT), snapshotName(AT - 5, "earlier")];
+    expect(readSnapshots(names).map((snapshot) => snapshot.at)).toEqual([AT + 5, AT, AT - 5]);
+  });
+
+  it("is never pruned, however old, and does not count towards the limit", () => {
+    const kept = at(-10 * SNAPSHOT_MAX_AGE_MS, "the first draft");
+    const many = Array.from({ length: 5 }, (_, index) => at(-index * 60_000));
+    const pruned = snapshotsToPrune([kept, ...many], AT + 60_000, { maxPerNode: 4 });
+    expect(pruned).toEqual([many[4]]);
+    expect(pruned).not.toContain(kept);
   });
 });
 

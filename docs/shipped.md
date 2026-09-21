@@ -8035,3 +8035,35 @@ under `CENTER_MIN_WIDTH`) joined the layout harness, both at an allowance of
 zero on every screen from the day they were written. Settings is now swept
 at both widths, one section at a time, with its counts recorded from the
 first run the way every other screen's were.
+
+---
+
+## Queued Adjustments — named checkpoints ✅ Shipped 2026-09-21
+
+The last of the six things raised on 2026-08-27: "mark this state, name it,
+come back to it". Phase 19 had the automatic kind — copies on a timer, aged
+out on a timer — and this puts a name on one and takes it off the timer.
+
+**The name lives in the file name.** A kept copy is
+`<stamp> ~ <label>.json` in the same history folder as the rest
+(`snapshotName(at, label)`, `readSnapshotName`), so it still sorts by time,
+still says when it was taken, and needs no index to keep in step — the
+scheme Phase 19 chose for exactly this reason. `snapshotLabel` makes the
+label safe for a file name (Windows-refused characters and controls
+dropped, whitespace collapsed, cut at 60) and an empty result means no
+label. `snapshotsToPrune` filters labelled copies out before it counts or
+ages anything, so a kept one never goes and never crowds the unnamed ones
+out of the limit. The folder's README says what the ` ~ ` means.
+
+**Naming is a rename.** `labelSnapshot(rootPath, nodeId, name, label|null)`
+renames the file and returns its new name; `snapshotNode(..., label)` takes
+a fresh copy under a name. The page-history hook has `keep(snapshot, label)`
+and `keepNow(label)`, both relisting afterwards and keeping the selected
+row pointed at the same copy under its new name.
+
+**In the panel.** *Keep a Copy Now* always; *Keep This Version* for the
+highlighted row, or *Stop Keeping* when it already has a name. Both ask
+through the name prompt the template naming uses (`requestName`). A named
+row shows a bookmark and the name above its time (`.page-history-label`).
+Scenario `keeps-a-named-version.e2e.ts` checks the panel and what lands on
+disk.
