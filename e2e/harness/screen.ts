@@ -3073,6 +3073,11 @@ export async function dropAssetOntoBoard(window: Page, fileName: string): Promis
  * listens for one.
  */
 export async function pasteImageOnBoard(window: Page, png: Uint8Array): Promise<void> {
+  await pasteFileOnBoard(window, png, "pasted.png", "image/png");
+}
+
+/** Pastes any picture file onto the board, as `pasteImageOnBoard` does a PNG. */
+export async function pasteFileOnBoard(window: Page, bytes: Uint8Array, name: string, type: string): Promise<void> {
   // The library takes a paste only with the keyboard on the board and the
   // mouse over its canvas — the picture lands under the mouse.
   const canvas = window.locator(BOARD_CANVAS).first();
@@ -3080,11 +3085,38 @@ export async function pasteImageOnBoard(window: Page, png: Uint8Array): Promise<
   if (!box) throw new Error("the board's canvas has no size");
   await canvas.click({ position: { x: box.width / 2, y: box.height - 8 } });
   await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await canvas.evaluate((board, bytes) => {
+  await canvas.evaluate((board, [raw, fileName, mime]) => {
     const carried = new DataTransfer();
-    carried.items.add(new File([new Uint8Array(bytes)], "pasted.png", { type: "image/png" }));
+    carried.items.add(new File([new Uint8Array(raw as number[])], fileName as string, { type: mime as string }));
     board.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: carried }));
-  }, Array.from(png));
+  }, [Array.from(bytes), name, type] as const);
+}
+
+/**
+ * The colour drawn at the middle of the board's static canvas, sampled
+ * every `everyMs` for `forMs`, as `r,g,b` strings — for telling a picture
+ * that moves from one that stands still.
+ */
+export async function boardCentreColours(window: Page, forMs: number, everyMs: number): Promise<string[]> {
+  return window.evaluate(
+    ([selector, total, step]) =>
+      new Promise<string[]>((done) => {
+        const drawn = document.querySelector<HTMLCanvasElement>(selector as string);
+        const context = drawn?.getContext("2d", { willReadFrequently: true });
+        const seen: string[] = [];
+        const started = performance.now();
+        const sample = () => {
+          if (drawn && context) {
+            const pixel = context.getImageData(Math.floor(drawn.width / 2), Math.floor(drawn.height / 2), 1, 1).data;
+            seen.push(`${pixel[0]},${pixel[1]},${pixel[2]}`);
+          }
+          if (performance.now() - started < (total as number)) setTimeout(sample, step as number);
+          else done(seen);
+        };
+        sample();
+      }),
+    [".board .excalidraw__canvas.static", forMs, everyMs] as const,
+  );
 }
 
 /**

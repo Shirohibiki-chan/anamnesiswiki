@@ -2,12 +2,12 @@
 //
 // **Why a patch at all**: a board has to work the way her hands expect
 // from Canva and from LegendKeeper's boards, and the library's rules do
-// not, in five places it has no switch for: a selection box takes only
+// not, in six places it has no switch for: a selection box takes only
 // what it swallows whole; a click inside an unfilled shape picks up
 // nothing; its labels are sentence case; a frame can neither hold a
-// frame nor turn; and every embed wears a link icon, which a sticky note
-// and a video must not. Each is written into its two builds, in its own
-// section below.
+// frame nor turn; every embed wears a link icon, which a sticky note
+// and a video must not; and a moving GIF stands still. Each is written
+// into its two builds, in its own section below.
 //
 // **Why this script exists beside the patch**: the patch file is enormous
 // because the library's built files are single minified lines, so nobody
@@ -893,3 +893,211 @@ for (const file of ["dist/dev/chunk-LMHBUWQS.js", "dist/prod/chunk-6U3AYISY.js"]
     retitled.map(([from, to]) => [`"${from}"`, `"${to}"`]),
   );
 }
+
+// ---- A moving GIF moves (Phase 32, step 9) ----
+//
+// The library draws a picture with `drawImage` from an `<img>`, and a
+// canvas takes an animated picture's first frame only, so a GIF on a
+// board stood still. The frames are decoded once per file with the
+// engine's own `ImageDecoder` (Chromium has it; where it is missing the
+// still is what shows, as before), and while a moving picture is on
+// screen the static scene is drawn again on every frame change: a
+// `requestAnimationFrame` loop advances each GIF's frame from the clock,
+// and the picture's cached element canvas is regenerated when its frame
+// index has moved — the cache is keyed on version and zoom, which a frame
+// does not change. The loop ends by itself when a render draws no moving
+// picture (scrolled away, deleted, the board closed) and starts again on
+// the next render that does. Exports draw whichever frame is current.
+//
+// **A GIF is also kept as it came.** The library re-encodes every pasted
+// or dropped picture but an SVG through the browser's own encoder to fit
+// it in, and the browser cannot write a GIF, so a GIF came back as a PNG
+// of its first frame before it ever reached the board — `resizeImageFile`
+// now leaves a GIF alone, as it leaves an SVG. (A picture from the Assets
+// tab never went through that; the app reads the file itself.)
+const gifHelpers = (isInitializedImage) => [
+  ["anamnesisGifs", "new Map()"],
+  ["anamnesisGifsDrawn", "false"],
+  ["anamnesisGifRedraw", "null"],
+  ["anamnesisGifLast", "null"],
+  ["anamnesisGifCanvas", "null"],
+  ["anamnesisGifLoop", "0"],
+  [
+    "anamnesisDecodeGif",
+    `async (gif, src) => {
+  try {
+    const bytes = await (await fetch(src)).arrayBuffer();
+    const decoder = new ImageDecoder({ data: bytes, type: "image/gif" });
+    await decoder.tracks.ready;
+    const track = decoder.tracks.selectedTrack;
+    const count = track ? track.frameCount : 0;
+    const frames = [];
+    for (let i = 0; i < count; i++) {
+      const { image } = await decoder.decode({ frameIndex: i });
+      let duration = (image.duration || 0) / 1000;
+      if (duration < 20) duration = 100;
+      frames.push({ bitmap: await createImageBitmap(image), duration });
+      image.close();
+    }
+    decoder.close();
+    if (frames.length > 1) {
+      gif.frames = frames;
+      gif.total = frames.reduce((sum, frame) => sum + frame.duration, 0);
+      gif.at = performance.now();
+      // Drawn again now the frames are here: the render that asked for
+      // them drew the still, and nothing else may come for a while.
+      if (anamnesisGifLast && anamnesisGifCanvas && anamnesisGifCanvas.isConnected) anamnesisGifLast();
+    }
+  } catch (error) {
+    // Not decodable here: the still shows, as it did before.
+  }
+}`,
+  ],
+  [
+    "anamnesisGifOf",
+    `(fileId, cached) => {
+  if (!cached || cached.mimeType !== "image/gif" || !cached.image || cached.image instanceof Promise || typeof ImageDecoder === "undefined") return null;
+  let gif = anamnesisGifs.get(fileId);
+  if (!gif) {
+    gif = { frames: [], index: 0, at: 0, total: 0 };
+    anamnesisGifs.set(fileId, gif);
+    anamnesisDecodeGif(gif, cached.image.src);
+  }
+  return gif.frames.length > 1 ? gif : null;
+}`,
+  ],
+  [
+    "anamnesisGifKey",
+    `(element, renderConfig) => {
+  if (!renderConfig || !renderConfig.imageCache || !${isInitializedImage}(element)) return null;
+  const gif = anamnesisGifOf(element.fileId, renderConfig.imageCache.get(element.fileId));
+  if (!gif) return null;
+  anamnesisGifsDrawn = true;
+  return gif.index;
+}`,
+  ],
+  [
+    "anamnesisGifAdvance",
+    `(gif, now) => {
+  let elapsed = (now - gif.at) % gif.total;
+  let index = 0;
+  while (index < gif.frames.length - 1 && elapsed >= gif.frames[index].duration) {
+    elapsed -= gif.frames[index].duration;
+    index += 1;
+  }
+  if (index === gif.index) return false;
+  gif.index = index;
+  return true;
+}`,
+  ],
+  [
+    "anamnesisGifTick",
+    `() => {
+  anamnesisGifLoop = 0;
+  if (!anamnesisGifRedraw || !anamnesisGifCanvas || !anamnesisGifCanvas.isConnected) {
+    anamnesisGifRedraw = null;
+    return;
+  }
+  const now = performance.now();
+  let changed = false;
+  for (const gif of anamnesisGifs.values()) if (gif.frames.length > 1 && anamnesisGifAdvance(gif, now)) changed = true;
+  if (changed) anamnesisGifRedraw();
+  anamnesisGifLoop = requestAnimationFrame(anamnesisGifTick);
+}`,
+  ],
+  [
+    "anamnesisGifAfterRender",
+    `(config, render) => {
+  const drawn = anamnesisGifsDrawn;
+  anamnesisGifsDrawn = false;
+  if (config.renderConfig.isExporting || !config.canvas) return;
+  anamnesisGifCanvas = config.canvas;
+  anamnesisGifLast = () => render(config);
+  if (drawn) {
+    anamnesisGifRedraw = anamnesisGifLast;
+    if (!anamnesisGifLoop) anamnesisGifLoop = requestAnimationFrame(anamnesisGifTick);
+  } else {
+    anamnesisGifRedraw = null;
+  }
+}`,
+  ],
+];
+
+edit("dist/dev/chunk-4FTI6OG3.js", [
+  [
+    `  if (file2.type === MIME_TYPES.svg) {
+    return file2;
+  }
+  const [pica, imageBlobReduce]`,
+    `  if (file2.type === MIME_TYPES.svg || file2.type === MIME_TYPES.gif) {
+    return file2; // Anamnesis patch: a GIF is kept as it came, or it would lose its frames
+  }
+  const [pica, imageBlobReduce]`,
+  ],
+  [
+    `var elementWithCanvasCache = /* @__PURE__ */ new WeakMap();`,
+    `// Anamnesis patch: a moving GIF moves — see scripts/excalidraw-patch.mjs.\n` +
+      gifHelpers("isInitializedImageElement")
+        .map(([name, expr]) => `var ${name} = ${expr};`)
+        .join("\n") +
+      `\nvar anamnesisGifRender = (config) => renderStaticScene(config, true);\nvar elementWithCanvasCache = /* @__PURE__ */ new WeakMap();`,
+  ],
+  [
+    `  isArrowElement(element) && boundTextElement && element.angle !== prevElementWithCanvas.angle) {`,
+    `  prevElementWithCanvas.anamnesisGif !== anamnesisGifKey(element, renderConfig) || // Anamnesis patch: a GIF's frame moved
+  isArrowElement(element) && boundTextElement && element.angle !== prevElementWithCanvas.angle) {`,
+  ],
+  [
+    `    elementWithCanvasCache.set(element, elementWithCanvas);`,
+    `    elementWithCanvas.anamnesisGif = anamnesisGifKey(element, renderConfig);
+    elementWithCanvasCache.set(element, elementWithCanvas);`,
+  ],
+  [
+    `      const img = isInitializedImageElement(element) ? renderConfig.imageCache.get(element.fileId)?.image : void 0;`,
+    `      const anamnesisGif = isInitializedImageElement(element) ? anamnesisGifOf(element.fileId, renderConfig.imageCache.get(element.fileId)) : null;
+      const img = anamnesisGif ? anamnesisGif.frames[anamnesisGif.index].bitmap : isInitializedImageElement(element) ? renderConfig.imageCache.get(element.fileId)?.image : void 0;`,
+  ],
+  [
+    `          width: img.naturalWidth,
+          height: img.naturalHeight`,
+    `          width: img.naturalWidth ?? img.width,
+          height: img.naturalHeight ?? img.height`,
+  ],
+  [
+    `    _renderStaticScene(config);`,
+    `    _renderStaticScene(config);
+    anamnesisGifAfterRender(config, anamnesisGifRender);`,
+  ],
+  [
+    `  _renderStaticScene(renderConfig);`,
+    `  _renderStaticScene(renderConfig);
+  anamnesisGifAfterRender(renderConfig, anamnesisGifRender);`,
+  ],
+]);
+
+// The same, minified: At = isInitializedImageElement, F1 = generateElementWithCanvas
+// (its `n` is renderConfig), Jo = elementWithCanvasCache, K1 = generateElementCanvas,
+// dp = _renderStaticScene, x7 = renderStaticSceneThrottled, cp = renderStaticScene,
+// _Y = resizeImageFile, H = MIME_TYPES.
+edit("dist/prod/chunk-K2UTITRG.js", [
+  [`_Y=async(e,t)=>{if(e.type===H.svg)return e;`, `_Y=async(e,t)=>{if(e.type===H.svg||e.type===H.gif)return e;`],
+  [
+    `F1=(e,t,n,r)=>{let o=n?r.zoom`,
+    gifHelpers("At")
+      .map(([name, expr]) => `${name}=${expr},`)
+      .join("") + `anamnesisGifRender=e=>cp(e,!0),F1=(e,t,n,r)=>{let o=n?r.zoom`,
+  ],
+  [
+    `||ee(e)&&s&&e.angle!==i.angle){let U=K1(e,t,o,n,r);return U?(Jo.set(e,U),U):null}return i}`,
+    `||i.anamnesisGif!==anamnesisGifKey(e,n)||ee(e)&&s&&e.angle!==i.angle){let U=K1(e,t,o,n,r);return U?(U.anamnesisGif=anamnesisGifKey(e,n),Jo.set(e,U),U):null}return i}`,
+  ],
+  [
+    `case"image":{let i=At(e)?r.imageCache.get(e.fileId)?.image:void 0;`,
+    `case"image":{let anamnesisGif=At(e)?anamnesisGifOf(e.fileId,r.imageCache.get(e.fileId)):null,i=anamnesisGif?anamnesisGif.frames[anamnesisGif.index].bitmap:At(e)?r.imageCache.get(e.fileId)?.image:void 0;`,
+  ],
+  [`width:i.naturalWidth,height:i.naturalHeight}`, `width:i.naturalWidth??i.width,height:i.naturalHeight??i.height}`],
+  [
+    `x7=pd(e=>{dp(e)},{trailing:!0}),cp=(e,t)=>{if(t){x7(e);return}dp(e)}`,
+    `x7=pd(e=>{dp(e),anamnesisGifAfterRender(e,anamnesisGifRender)},{trailing:!0}),cp=(e,t)=>{if(t){x7(e);return}dp(e),anamnesisGifAfterRender(e,anamnesisGifRender)}`,
+  ],
+]);

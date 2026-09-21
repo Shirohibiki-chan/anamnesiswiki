@@ -689,8 +689,22 @@ Board spike, closed 2026-09-13. What binds the code:
   inside an empty rectangle moves the rectangle rather than drawing a
   selection box — Canva's behaviour too, and what frames are for. Later
   sections of the script add frames that nest and turn (step 3), Title
-  Case on the library's own labels, and a sticky note that wears no link
-  icon (step 10). Upgrading
+  Case on the library's own labels, a sticky note that wears no link
+  icon (step 10), and a moving GIF that moves (step 9): the library
+  draws a picture from an `<img>`, and a canvas takes an animated
+  picture's first frame only, so the patch decodes a GIF's frames once
+  with `ImageDecoder`, draws the current one, and runs a
+  `requestAnimationFrame` loop that redraws the static scene on each
+  frame change while a moving picture is on screen — the element's
+  cached canvas is keyed on version and zoom, so the patch adds the
+  frame index to that key. The loop starts from a render that drew a
+  moving picture and ends from one that did not; a decode finishing
+  after the render that asked for it redraws once itself, since nothing
+  else may. The same section keeps a GIF as it came on the way in: the
+  library re-encodes every pasted or dropped picture but an SVG through
+  the browser's encoder, which cannot write a GIF, so a GIF arrived as a
+  PNG of its first frame — `resizeImageFile` now leaves GIFs alone.
+  `e2e/a-board-gifs.e2e.ts` fails against an unpatched build. Upgrading
   the library means re-running the
   script against the new version (the how-to is at its top); every
   replacement asserts its target once, so a moved or renamed line stops the

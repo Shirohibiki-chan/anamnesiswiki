@@ -2,6 +2,12 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-17 — Tab between a scene's name and its description
+
+### Additions
+
+- **Tab on a storyline card goes from the name to the description, and Shift+Tab goes back.** Double-click a scene's name, type it, press Tab, and the description box opens under it with what you typed already kept — the way two fields on a form work. Shift+Tab from the description reopens the name. Before, Tab only left the box: the card shows one box at a time, so leaving saved it and closed it, and there was nowhere for Tab to go. It still doesn't jump to another card — a canvas has no order for it to follow.
+
 ## 2026-09-17 — Title Case, a panel that remembers, and special pages set apart
 
 ### Additions

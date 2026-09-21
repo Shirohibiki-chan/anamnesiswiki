@@ -733,12 +733,10 @@ is built; it is all checked as present and not switched off.
 8. ~~**Theme follows while open.**~~ Shipped 2026-09-20 — `docs/shipped.md`
    § Phase 32, step 8. The board measures its surface again whenever the
    theme moves.
-9. **A moving GIF moves.** The library draws pictures to a canvas, so an
-   animated one shows its first frame; LK's tutorial has one playing. The
-   same kind of change as step 3 — the library's drawing, not the app —
-   decoding the frames (Electron's engine has `ImageDecoder`) and
-   redrawing while one is on screen. Rides on step 3's patching path;
-   nothing rides on it.
+9. ~~**A moving GIF moves.**~~ Shipped 2026-09-20 — `docs/shipped.md` §
+   Phase 32, step 9. Frames decoded with `ImageDecoder`, the static scene
+   drawn again on each frame change, and a GIF kept as it came on the way
+   in; all in the patch.
 
 **Five more, added 2026-09-17 after the second look.** LK's boards turned
 out to be built on tldraw rather than Excalidraw (the twelve-colour grid,
