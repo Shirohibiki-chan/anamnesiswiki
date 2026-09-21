@@ -8,6 +8,10 @@
 - **Add Pages From Template, on a page's right-click menu.** The pages saved inside one of your templates, put inside a page that already exists — its own writing and fields left alone. A page of that name already there is skipped and the rest are still made, and a line says how many, so running it on a character twice is safe.
 - **A page still called Untitled is asked for its name first** when a template like this is picked for it, so nothing is ever named after nothing.
 
+### Fixes
+
+- **Pages arriving from a template land in the template's own order.** They used to land in a random order that changed from one page to the next, because every copy was stamped with the same instant and the tie was broken by a fresh id.
+
 ## 2026-09-21 — The shortcut sheet knows the slash commands and the markdown
 
 ### Additions

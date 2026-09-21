@@ -68,6 +68,14 @@ describe("collectSubtree", () => {
 });
 
 describe("cloneSubtree", () => {
+  it("keeps the sources' order in the clones' creation times, so siblings land in the same order", () => {
+    const first = node({ id: "a", name: "First", parentId: null, templateKey: "blank", createdAt: 100 });
+    const second = node({ id: "b", name: "Second", parentId: null, templateKey: "blank", createdAt: 200 });
+    const { clones } = cloneSubtree([second, first], null, counter());
+    const byName = Object.fromEntries(clones.map((clone) => [clone.name, clone.createdAt]));
+    expect(byName.First).toBeLessThan(byName.Second);
+  });
+
   it("gives every copy a new id and leaves the originals alone", () => {
     const sources = collectSubtree("valera", graph, true);
     const { clones } = cloneSubtree(sources, null, counter());
