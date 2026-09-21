@@ -24,7 +24,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, MIN_WINDOW, resizeWindow, type RunningApp } from "./harness/launch-app";
 import { countByRule, describeFindings, findLayoutProblems, type LayoutRule } from "./harness/layout";
-import { openPage, treeRow, waitForWorld } from "./harness/screen";
+import { openPage, openSettings, openSettingsSection, treeRow, waitForWorld } from "./harness/screen";
 
 /**
  * The window as it opens, and as narrow as the app will let anyone drag it.
@@ -45,6 +45,12 @@ const RULES: LayoutRule[] = [
   "sideways-scroll",
   "covered-control",
   "tiny-target",
+  // Both from 2026-09-21, and both rules rather than counts from the day they
+  // were written: a field that clips its own text and a centre column under
+  // its minimum were each verified by hand on 2026-08-27 and nothing stopped
+  // either regressing until now.
+  "clipped-field",
+  "narrow-centre",
 ];
 
 /**
@@ -79,8 +85,14 @@ const ALLOWED: Record<string, Partial<Record<LayoutRule, number>>> = {
   // was this screen's block title, ellipsised with nothing behind it; it wraps
   // now (blocks.css). What is left is a meter's 8px drag track and an 11×11 ×
   // for removing one.
-  "every meter at once @1364": { "tiny-target": 7 },
-  "every meter at once @984": { "tiny-target": 7 },
+  // **`clipped-field` is 1 here and nowhere else, and it is the generator's
+  // doing.** This page exists to have labels too long for the row, and a
+  // meter's name is a one-line box that cannot wrap; its 380px of label in a
+  // 174px box is the thing the page was written to have. A meter name that
+  // wraps would take this to zero, and would be a design change rather than
+  // a fix.
+  "every meter at once @1364": { "tiny-target": 7, "clipped-field": 1 },
+  "every meter at once @984": { "tiny-target": 7, "clipped-field": 1 },
   "a name too long for a filename @1364": { "tiny-target": 8 },
   // The second of this screen's two was never a bug: the page tab strip
   // scrolls sideways, and its add-tab button was simply scrolled out of it
@@ -93,6 +105,30 @@ const ALLOWED: Record<string, Partial<Record<LayoutRule, number>>> = {
   // ever sees, so keeping this at nothing is worth more than it looks.
   "the start screen @1364": {},
   "the start screen @984": {},
+  // **Settings, swept at last (2026-09-21) — the densest screen in the app
+  // and the one that had never been.** Recorded from the first run, as the
+  // rest were; each section is its own screen because the panel changes
+  // wholesale between them. Two of every count are the tree's 20×20 icon
+  // button and 14×14 toggle showing behind the dialog; the rest are the
+  // section's own 13×13 checkboxes and radios, and Fonts' 16px-tall slider.
+  "settings theme @1364": { "tiny-target": 3 },
+  "settings theme @984": { "tiny-target": 3 },
+  "settings colours @1364": { "tiny-target": 2 },
+  "settings colours @984": { "tiny-target": 2 },
+  "settings fonts and text @1364": { "tiny-target": 4 },
+  "settings fonts and text @984": { "tiny-target": 4 },
+  "settings snippets @1364": { "tiny-target": 3 },
+  "settings snippets @984": { "tiny-target": 3 },
+  "settings sidebar @1364": { "tiny-target": 3 },
+  "settings sidebar @984": { "tiny-target": 3 },
+  "settings writing @1364": { "tiny-target": 3 },
+  "settings writing @984": { "tiny-target": 3 },
+  "settings keyboard @1364": { "tiny-target": 2 },
+  "settings keyboard @984": { "tiny-target": 2 },
+  "settings report a bug @1364": { "tiny-target": 2 },
+  "settings report a bug @984": { "tiny-target": 2 },
+  "settings about @1364": { "tiny-target": 2 },
+  "settings about @984": { "tiny-target": 2 },
 };
 
 /** Sweeps what is on screen at both widths and checks each against its allowance. */
@@ -163,6 +199,32 @@ describe("layout, inside a world", () => {
 
 // A separate app, because the start screen is only reachable by not opening a
 // world — and it is the first thing anyone ever sees.
+describe("layout, in Settings", () => {
+  let app: RunningApp;
+
+  beforeAll(async () => {
+    app = await launchApp();
+    await waitForWorld(app.window);
+    await openSettings(app.window);
+  });
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  for (const section of ["Theme", "Colours", "Fonts and Text", "Snippets", "Sidebar", "Writing", "Keyboard", "Report a Bug", "About"]) {
+    it(`settings — ${section}`, async () => {
+      await openSettingsSection(app.window, section);
+      await app.window.waitForTimeout(200);
+      await sweep(app, `settings ${section.toLowerCase()}`);
+    });
+  }
+
+  it("threw nothing at the console while being measured", () => {
+    expect(app.errors).toEqual([]);
+  });
+});
+
 describe("layout, before a world is open", () => {
   let app: RunningApp;
 

@@ -84,6 +84,10 @@ export function ShortcutSheet({ onClose }: { onClose: () => void }) {
         onMouseDown={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
           if (event.key !== "Escape") return;
+          // Settings open from the footnote takes the Escape itself, through
+          // a window listener this handler would otherwise cut off; the sheet
+          // takes the next one.
+          if (reporting) return;
           event.stopPropagation();
           onClose();
         }}
@@ -197,14 +201,7 @@ export function ShortcutSheet({ onClose }: { onClose: () => void }) {
         {/* The help key is where somebody goes when something has gone wrong,
             which made this the second place to put a way to the bug report
             from — the first is the save warning. */}
-        {reporting && (
-          // Portaled to the body but a child of this dialog in React's tree,
-          // so its keystrokes would bubble here and an Escape in Settings
-          // would close both. The wrapper keeps Settings' keys its own.
-          <div onKeyDown={(event) => event.stopPropagation()}>
-            <SettingsModal initialTab="report" onClose={() => setReporting(false)} />
-          </div>
-        )}
+        {reporting && <SettingsModal initialTab="report" onClose={() => setReporting(false)} />}
       </div>
     </div>,
     document.body,

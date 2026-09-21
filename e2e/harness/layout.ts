@@ -25,7 +25,9 @@ export type LayoutRule =
   | "off-the-edge"
   | "sideways-scroll"
   | "covered-control"
-  | "tiny-target";
+  | "tiny-target"
+  | "clipped-field"
+  | "narrow-centre";
 
 export type LayoutFinding = {
   rule: LayoutRule;
@@ -46,6 +48,9 @@ export type LayoutFinding = {
  */
 const MIN_TARGET_PX = 24;
 
+/** `src/constants/layout.ts`'s CENTER_MIN_WIDTH, repeated because the suite is outside the app. */
+const CENTER_MIN_WIDTH = 420;
+
 /** Everything a person can click, press, drag or focus. */
 const INTERACTIVE_SELECTOR = [
   "a[href]",
@@ -65,7 +70,7 @@ const INTERACTIVE_SELECTOR = [
 /** Sweeps whatever is currently on screen and says what is wrong with it. */
 export async function findLayoutProblems(window: Page): Promise<LayoutFinding[]> {
   return window.evaluate(
-    ({ minTarget, interactiveSelector }) => {
+    ({ minTarget, interactiveSelector, centreMinWidth }) => {
       const findings: LayoutFinding[] = [];
       const alreadySaid = new Set<string>();
 
@@ -232,6 +237,14 @@ export async function findLayoutProblems(window: Page): Promise<LayoutFinding[]>
         // Off-screen is the previous rule's business, not this one's.
         if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue;
         if (style.pointerEvents === "none") continue;
+        // **Behind an open dialog is not covered.** A modal's backdrop lies
+        // over the whole window on purpose, and the title bar's buttons or
+        // the properties toggle behind it are exactly where they should be.
+        // Only what is inside the topmost backdrop is asked about while one
+        // is up — found the day Settings was first swept (2026-09-21).
+        const backdrops = document.querySelectorAll(".ui-backdrop");
+        const topmost = backdrops[backdrops.length - 1];
+        if (topmost && !topmost.contains(element)) continue;
 
         // **Scrolled out of its own strip is not the same as covered.** A tab
         // strip with `overflow-x: auto` lays its children out past its own edge
@@ -297,9 +310,41 @@ export async function findLayoutProblems(window: Page): Promise<LayoutFinding[]>
         } as LayoutFinding);
       }
 
+      // **A text field never clips its own text.** Verified by hand on
+      // 2026-08-27 and a rule since 2026-09-21: a one-line box whose contents
+      // are wider than the box scrolls them out of sight, and a multi-line
+      // box whose contents are taller than it hides the rest, with nothing on
+      // screen to say so. Empty fields have nothing to clip and are skipped;
+      // so is a box that shows a scrollbar of its own, which is a choice.
+      for (const field of document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")) {
+        if (!isVisible(field) || !field.value) continue;
+        if (field instanceof HTMLInputElement && !/^(text|search|url|email|number|)$/.test(field.type)) continue;
+        const style = getComputedStyle(field);
+        if (field instanceof HTMLTextAreaElement) {
+          if (/auto|scroll/.test(style.overflowY)) continue;
+          if (field.scrollHeight > field.clientHeight + 1) {
+            record("clipped-field", field, `${field.scrollHeight}px of text in a ${field.clientHeight}px box`);
+          }
+        } else if (field.scrollWidth > field.clientWidth + 1) {
+          record("clipped-field", field, `${field.scrollWidth}px of text in a ${field.clientWidth}px box`);
+        }
+      }
+
+      // **The centre column never goes below its minimum.** The other hand
+      // measurement from 2026-08-27, against `CENTER_MIN_WIDTH` in
+      // constants/layout.ts — the number is repeated here rather than
+      // imported because this runs inside the page.
+      const centre = document.querySelector<HTMLElement>(".app-layout-center");
+      if (centre && isVisible(centre)) {
+        const width = centre.getBoundingClientRect().width;
+        if (width < centreMinWidth - 0.5) {
+          record("narrow-centre", centre, `${Math.round(width)}px wide, wants ${centreMinWidth}px`);
+        }
+      }
+
       return findings;
     },
-    { minTarget: MIN_TARGET_PX, interactiveSelector: INTERACTIVE_SELECTOR },
+    { minTarget: MIN_TARGET_PX, interactiveSelector: INTERACTIVE_SELECTOR, centreMinWidth: CENTER_MIN_WIDTH },
   );
 }
 
@@ -311,6 +356,8 @@ export function countByRule(findings: LayoutFinding[]): Record<LayoutRule, numbe
     "sideways-scroll": 0,
     "covered-control": 0,
     "tiny-target": 0,
+    "clipped-field": 0,
+    "narrow-centre": 0,
   } satisfies Record<LayoutRule, number>;
   for (const finding of findings) counts[finding.rule] += 1;
   return counts;
