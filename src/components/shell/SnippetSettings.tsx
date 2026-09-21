@@ -5,8 +5,8 @@ import { useTheme } from "../../hooks/use-theme";
 import { BlockedNotice, FolderErrorNotice } from "./StylesheetNotices";
 
 export function SnippetSettings() {
-  const { snippets, enabledSnippets, folderError, toggleSnippet, openSnippetsFolder } = useTheme();
-  const blocked = snippets.filter((sheet) => sheet.blocked.length > 0);
+  const { snippets, enabledSnippets, folderError, toggleSnippet, openSnippetsFolder, blockedSnippets, acknowledgeStylesheetNotice } =
+    useTheme();
 
   return (
     <div className="appearance-settings">
@@ -38,8 +38,8 @@ export function SnippetSettings() {
       </p>
 
       <FolderErrorNotice error={folderError} folder="snippets" />
-      {blocked.map((sheet) => (
-        <BlockedNotice key={sheet.file} sheet={sheet} />
+      {blockedSnippets.map((sheet) => (
+        <BlockedNotice key={sheet.file} sheet={sheet} onAcknowledge={() => void acknowledgeStylesheetNotice("snippets", sheet)} />
       ))}
     </div>
   );

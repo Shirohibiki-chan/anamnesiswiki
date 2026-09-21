@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { FONT_LIBRARY, type FontCategory, type LibraryFont } from "../constants/font-library";
 import { BUILT_IN_THEMES, FONT_SLOTS, type FontSlot, type FontSlotKey } from "../constants/themes";
 import { useThemeStore } from "../state/theme-store";
+import { stylesheetNoticeAcknowledged } from "../services/acknowledgements";
 import { familyFromStack, fontStackFor } from "../services/theme-service";
 
 /**
@@ -87,6 +88,8 @@ export function useTheme() {
   const setContentScale = useThemeStore((state) => state.setContentScale);
   const setMutedCovers = useThemeStore((state) => state.setMutedCovers);
   const toggleSnippet = useThemeStore((state) => state.toggleSnippet);
+  const acknowledgedNotices = useThemeStore((state) => state.acknowledgedNotices);
+  const acknowledgeStylesheetNotice = useThemeStore((state) => state.acknowledgeStylesheetNotice);
   const scanFolders = useThemeStore((state) => state.scanFolders);
   const resetAppearance = useThemeStore((state) => state.resetAppearance);
   const openThemesFolder = useThemeStore((state) => state.openThemesFolder);
@@ -180,6 +183,14 @@ export function useTheme() {
     setContentScale,
     setMutedCovers,
     toggleSnippet,
+    acknowledgeStylesheetNotice,
+    /** The stylesheets whose notice is still worth showing — see acknowledgements.ts. */
+    blockedThemes: customThemes.filter(
+      (sheet) => sheet.blocked.length > 0 && !stylesheetNoticeAcknowledged(acknowledgedNotices, "themes", sheet),
+    ),
+    blockedSnippets: snippets.filter(
+      (sheet) => sheet.blocked.length > 0 && !stylesheetNoticeAcknowledged(acknowledgedNotices, "snippets", sheet),
+    ),
     scanFolders,
     resetAppearance,
     openThemesFolder,

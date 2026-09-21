@@ -2,6 +2,16 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-20 — A page on a board can be written in
+
+### Additions
+
+- **A page opened on a board takes typing.** Double-click it, or click it again once it is selected, and the box becomes the page's real editor — the same one as the page's own tab, with the slash menu, mentions, callouts, columns and the formatting bar — and what you type is saved to the page as it would be there. Escape or a click elsewhere puts the page back to being drawn. Undo inside the box is the page's; outside it, the board's. Earlier today the box was read-only; now it is where the page is written, and *Open* is still the way to the page in full.
+
+### Changes
+
+- A locked opened page is open for writing from the start rather than for reading, since a locked page cannot be moved anyway.
+
 ## 2026-09-20 — A page opened on a board
 
 ### Additions

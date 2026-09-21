@@ -71,3 +71,67 @@ export function parseAcknowledgements(raw: unknown): Acknowledgements {
   }
   return parsed;
 }
+
+/**
+ * The record's key for a file inside a world: its path *relative to the
+ * world's folder*, with the folder's own name in front.
+ *
+ * Relative rather than absolute (the record was keyed by absolute path until
+ * 2026-09-21) so that a world moved or renamed keeps what was acknowledged
+ * inside it — a move on the same disk keeps a file's size and modified
+ * time, which is the mark, so the only thing that changed was the key. Two
+ * worlds could in principle share a key; they would also have to share the
+ * mark, which is the file's size and its modified time to the millisecond.
+ */
+export function keyWithin(rootPath: string, path: string): string {
+  const root = rootPath.replace(/[\\/]+$/, "");
+  const name = root.split(/[\\/]/).pop() ?? root;
+  if (path.startsWith(root)) {
+    const rest = path.slice(root.length).replace(/^[\\/]+/, "");
+    return `${name}/${rest.replace(/\\/g, "/")}`;
+  }
+  return path;
+}
+
+/**
+ * A mark for text the app holds in memory rather than a file it could stat —
+ * a stylesheet already read. Short and cheap; it only has to change when the
+ * text does.
+ */
+export function contentMark(text: string): string {
+  let hash = 5381;
+  for (let i = 0; i < text.length; i += 1) hash = ((hash * 33) ^ text.charCodeAt(i)) >>> 0;
+  return `${text.length}:${hash.toString(36)}`;
+}
+
+/**
+ * The record without the entries for things that are gone.
+ *
+ * It only ever grew: a few dozen bytes each and nothing reads a stale one,
+ * but a world deleted years ago would still be in it. Pruned at the moment
+ * something new is acknowledged — the one time the record is written anyway
+ * — against the keys the caller can still vouch for. **Keys the caller
+ * cannot see are kept**, not dropped: a drive that is not plugged in is not
+ * a file that is gone.
+ */
+export function pruned(acknowledged: Acknowledgements, stillPresent: (key: string) => boolean | undefined): Acknowledgements {
+  const next: Acknowledgements = {};
+  for (const [key, mark] of Object.entries(acknowledged)) {
+    if (stillPresent(key) !== false) next[key] = mark;
+  }
+  return next;
+}
+
+/** The record's key for a stylesheet's "asked to load something" notice. */
+export function stylesheetNoticeKey(kind: "themes" | "snippets", file: string): string {
+  return `stylesheet:${kind}:${file}`;
+}
+
+/** Whether one stylesheet's notice has been acknowledged in its current state. */
+export function stylesheetNoticeAcknowledged(
+  acknowledged: Acknowledgements,
+  kind: "themes" | "snippets",
+  sheet: { file: string; raw: string },
+): boolean {
+  return acknowledged[stylesheetNoticeKey(kind, sheet.file)] === contentMark(sheet.raw);
+}
