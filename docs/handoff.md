@@ -5791,11 +5791,77 @@ Phase 26, step 2. What binds the code:
   meter that does not fall back to the block's — eight wedges in one accent is a
   solid disc. A reading's own colour still wins.
 
-- **No YouTube, Spotify or map embeds in the sidebar.** Phase 18's scope, hers,
-  and aesthetic rather than a consequence of the offline policy she has never
-  personally agreed with. If an embed block is ever wanted it is a conversation
-  to have with her first, because `CLAUDE.md` draws that boundary strict at her
-  request — not a judgement call to make while building something else.
+- **YouTube, YouTube Music, Spotify and SoundCloud play in the sidebar and
+  the page as of Phase 31 (2026-09-21), and the list is closed.** The line
+  "no YouTube, Spotify or map embeds" stood here from Phase 18's scope until
+  she lifted it on 2026-09-13, with the condition still attached: they have
+  to look like they belong. Her reason for the line had always been
+  aesthetic, never the offline policy. A fifth service is a conversation
+  first — see § Players.
+
+## Players
+
+- **A player block is a link with a memory, and the player is never stored.**
+  Phase 31. The block — `mediaEmbed` in the writing, `kind: "media"` in the
+  sidebar — holds the address, what it resolved to (service, kind, id), what
+  the service said once (title, author, a thumbnail as a file in `assets/`),
+  a caption and a width. `services/media-service.ts` is the only thing that
+  knows what a service's player address looks like (`playerUrl`) and which
+  links are the four services' (`parseMediaLink`). Anything that draws a
+  player from a stored address of its own is a second copy of that knowledge
+  and will drift the day a service changes its embed.
+
+- **The four services are the list, and a fifth is a conversation, not a
+  row.** Her call 2026-09-13: YouTube, YouTube Music, Spotify, SoundCloud.
+  `parseMediaLink` refuses everything else on purpose, and the link box says
+  which four play here. Do not add a service to `parseMediaLink` while
+  building something else.
+
+- **YouTube is a still until clicked, everywhere.** In the app, in the
+  reader, on the published site. A page with five videos must not start five
+  players, and nothing from YouTube loads until she asks — which is also
+  what keeps the page's own bar of buttons off the screen until something
+  is playing. Spotify and SoundCloud load with the block; their embeds are
+  cards, and that is the look she accepted.
+
+- **What the service said is written outside the undo history.** The
+  writing's block records the fetched title and thumbnail through a
+  transaction with `addToHistory: false` (`MediaEmbedBlock.record`); the
+  sidebar's merges it into the link's own undo entry (`setBlockMedia`'s
+  merge key). Either way Ctrl+Z after pasting a link takes the link out
+  rather than first forgetting its title. A fetch that fails leaves
+  `fetched` false, which is the block's cue to ask again next time it is
+  drawn online — once per mount, guarded by a ref, never in a loop.
+
+- **The thumbnail is a library picture and counts as a use.** In the
+  writing it is `props.thumbnail` on the block — `assetRefsInContent`
+  reads that prop as well as `url` — and in the sidebar it is
+  `block.media.thumbnail`, which `blockImageFiles` and
+  `withCopiedBlockImages` both know, so the Assets tab, duplicating a page,
+  saving a template and restoring a deleted page all treat it as the
+  picture it is. A new place a thumbnail can live has to be taught to those.
+
+- **A pasted link goes in front of the empty line, never in its place.**
+  `pasteMediaLink` in `use-editor.ts`. Retyping a paragraph as a block with
+  no content — `updateBlock` with a new `type`, which is what the slash
+  menu's helper does — throws "cannot join blockGroup onto blockContainer"
+  from a paste handler. So the player is inserted before the line, and the
+  line is kept when it is last (every block of ours wants a line after it)
+  and removed when it is not.
+
+- **The theme is read off the block's own surface, by the hook the board
+  lifted out.** `hooks/use-surface-theme.ts`: light or dark by the
+  background's luminance, and the accent by resolving `--color-accent-light`
+  — not `--color-accent`, which is the 15% tint. The site's planner does
+  the same sum on the site theme's tokens and hands it down as
+  `HtmlPageContext.playerLook`.
+
+- **LK's file gets a YouTube block and a Spotify property, and nothing
+  guessed.** The `block-youtube` extension and `SPOTIFY_SINGLE` are the two
+  shapes known from her real export; a Spotify or SoundCloud player in the
+  writing goes out as a link and is counted, because LK's keys for those are
+  not known and a wrong key is a file LK may refuse. `docs/lk-format.md`
+  has the table.
 
 ## Quick capture
 

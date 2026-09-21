@@ -25,7 +25,9 @@ import type { LucideIcon } from "lucide-react";
 import { getGlyph } from "../constants/glyphs";
 import { getTemplateIcon } from "../constants/icons";
 import { getPaletteHex } from "../constants/palette";
-import { ICON_INLINE_TYPE, type Block, type Node } from "../constants/schema";
+import { ICON_INLINE_TYPE, MEDIA_EMBED_TYPE, type Block, type Node } from "../constants/schema";
+import { ASSET_REF_PREFIX } from "../constants/paths";
+import { linkOf, mediaInfoFrom, mediaLabel, playerShape, playerUrl, playsFromStill, serviceLabel, type MediaInfo, type PlayerLook } from "./media-service";
 import type { DatabaseCell } from "./database-service";
 import { bumpLossy, type LossyTally } from "./export-walk";
 import { isPipMeter, isSpectrum, meterColor, meterFraction, meterMax, meterReadout, meterStyleOf, metersOf, meterValue, showsMax, spectrumReadout } from "./meter-service";
@@ -78,8 +80,50 @@ export type HtmlPageContext = {
   renderIcon: (icon: LucideIcon, className: string) => string;
   /** The pages directly inside this one that are on the site, in tree order. */
   childrenOf: (node: Node) => Node[];
+  /**
+   * Which of the services' two looks a player takes, and the accent
+   * SoundCloud's bar wears — the site's theme, read once by the planner
+   * (Phase 31). Absent means the dark look and the app's own teal.
+   */
+  playerLook?: PlayerLook;
   tally: LossyTally;
 };
+
+const DEFAULT_PLAYER_LOOK: PlayerLook = { theme: "dark", accent: "#5eead4" };
+
+/**
+ * A player, on the site (Phase 31). The rule the page keeps: YouTube is a
+ * still until it is played — the thumbnail with the title over it and a
+ * play mark, the click swapping in the real player (site-script.ts) — and a
+ * reader with scripts off gets a link to the video instead. Spotify's and
+ * SoundCloud's players load with the page, the site being online by
+ * definition. The frame is a `figure`, so the caption sits where a
+ * picture's does.
+ */
+function playerHtml(info: MediaInfo, caption: string, width: number | undefined, ctx: HtmlPageContext): string {
+  const link = linkOf(info);
+  const look = ctx.playerLook ?? DEFAULT_PLAYER_LOOK;
+  const src = playerUrl(link, look);
+  const shape = playerShape(link);
+  const box = "ratio" in shape ? `aspect-ratio:${shape.ratio}` : `height:${shape.height}px`;
+  const style = width && width < 100 ? ` style=${attr(`width:${width}%`)}` : "";
+  const title = info.title || info.url;
+  const figcaption = caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : "";
+  const service = serviceLabel(info.service);
+  let body: string;
+  if (playsFromStill(link)) {
+    const still = ctx.pictureAt(info.thumbnail ? `${ASSET_REF_PREFIX}${info.thumbnail}` : "");
+    const picture = still ? `<img src=${attr(still)} alt="" loading="lazy">` : "";
+    const author = info.author ? `<span class="player-author">${escapeHtml(info.author)}</span>` : "";
+    body =
+      `<a class="player-still" href=${attr(info.url)} data-player=${attr(src)} data-title=${attr(title)} rel="noopener">${picture}` +
+      `<span class="player-words"><span class="player-service">${escapeHtml(service)}</span><span class="player-title">${escapeHtml(title)}</span>${author}</span>` +
+      `<span class="player-play" aria-hidden="true"></span></a>`;
+  } else {
+    body = `<iframe src=${attr(src)} title=${attr(title)} allow="autoplay; encrypted-media; picture-in-picture; clipboard-write; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  }
+  return `<figure class=${attr(`player player-${info.service}`)}${style}><div class="player-box" style=${attr(box)}>${body}</div>${figcaption}</figure>`;
+}
 
 // ---- Text ----
 
@@ -352,6 +396,14 @@ function blockToHtml(block: BlockNoteBlock, ctx: HtmlPageContext, node: Node, st
       return `<figure${blockStyle(block)}><img src=${attr(src)} alt=${attr(alt || caption)} loading="lazy"${width}>${figcaption}</figure>`;
     }
 
+    case MEDIA_EMBED_TYPE: {
+      const info = mediaInfoFrom(block.props);
+      const caption = captionOf(block);
+      if (!info) return caption ? `<p class="caption">${escapeHtml(caption)}</p>` : null;
+      const width = typeof block.props?.width === "number" ? block.props.width : undefined;
+      return playerHtml(info, caption, width, ctx);
+    }
+
     case "video":
     case "audio": {
       const src = ctx.pictureAt(block.props?.url);
@@ -612,6 +664,15 @@ export function panelBlockToHtml(block: Block, node: Node, ctx: HtmlPageContext)
       const focus = block.image ? block.imageFocusY : node.imageFocusY;
       const position = typeof focus === "number" ? ` style=${attr(`object-position:50% ${Math.round(focus)}%`)}` : "";
       return wrap("image", title, `<img src=${attr(src)} alt=${attr(alt)} loading="lazy"${position}>`);
+    }
+
+    case "media": {
+      // The sidebar's player, drawn exactly as the writing's — at the
+      // sidebar's width, which the site's stylesheet gives every block there.
+      const info = block.media ? mediaInfoFrom(block.media as unknown as Record<string, unknown>) : null;
+      if (!info) return null;
+      const shown = block.showTitle === false ? "" : title || mediaLabel(info);
+      return wrap("media", shown, playerHtml(info, block.media?.caption?.trim() ?? "", undefined, ctx));
     }
 
     case "meter": {

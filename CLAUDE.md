@@ -41,6 +41,10 @@ Notes that outlived the section they were in:
 - **LK integration is file-based** — import and export of `.lk` files she
   provides. That's what exists and what the format docs describe, not a
   prohibition on anything.
+- **Four services play in a page: YouTube, YouTube Music, Spotify and
+  SoundCloud** (Phase 31, 2026-09-21), and that list is closed — a fifth is a
+  conversation with her first, not a row added to `media-service.ts`. See
+  `docs/handoff.md` § Players.
 - **No LLM/AI features in the editor.** Unrelated to the network policy and
   still standing: this is a writing tool for a human writer.
 

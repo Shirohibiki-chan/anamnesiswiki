@@ -125,6 +125,29 @@ describe("blocksToHtml", () => {
     expect(blocksToHtml([{ type: "image", props: { url: "asset://gone.png", caption: "Her" }, children: [] }], ctx(), page(), state())).toBe('<p class="caption">Her</p>');
   });
 
+  // Phase 31: YouTube is a still that links to the video and carries the
+  // player's address for the script to swap in; Spotify's card is loaded with
+  // the page in the look the site's theme asks for.
+  it("draws a YouTube player as a still that waits, and a Spotify one as its card", () => {
+    const media = { url: "https://www.youtube.com/watch?v=YJRIoy4Ugwc", service: "youtube", kind: "video", mediaId: "YJRIoy4Ugwc", title: "Her theme (Official Video)", author: "Someone", thumbnail: "still.jpg", fetched: true };
+    const carried = ctx({ pictureAt: (url) => (url === "anamnesis-asset:still.jpg" ? "../assets/still.jpg" : null), playerLook: { theme: "light", accent: "#c084fc" } });
+    const html = blocksToHtml([{ type: "mediaEmbed", props: { ...media, caption: "Her theme", width: 100 }, children: [] }], carried, page(), state());
+    expect(html).toBe(
+      '<figure class="player player-youtube"><div class="player-box" style="aspect-ratio:1.7777777777777777">' +
+        '<a class="player-still" href="https://www.youtube.com/watch?v=YJRIoy4Ugwc" data-player="https://www.youtube-nocookie.com/embed/YJRIoy4Ugwc?autoplay=1&amp;rel=0" data-title="Her theme (Official Video)" rel="noopener">' +
+        '<img src="../assets/still.jpg" alt="" loading="lazy">' +
+        '<span class="player-words"><span class="player-service">YouTube</span><span class="player-title">Her theme (Official Video)</span><span class="player-author">Someone</span></span>' +
+        '<span class="player-play" aria-hidden="true"></span></a></div><figcaption>Her theme</figcaption></figure>',
+    );
+    const spotify = blocksToHtml(
+      [{ type: "mediaEmbed", props: { ...media, service: "spotify", kind: "track", mediaId: "4uLU6hMCjMI75M1A2tKUQC", url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC", caption: "", width: 60 }, children: [] }],
+      carried,
+      page(),
+      state(),
+    );
+    expect(spotify).toContain('<figure class="player player-spotify" style="width:60%"><div class="player-box" style="height:152px"><iframe src="https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC" ');
+  });
+
   it("draws a block placed in the writing where it was placed", () => {
     const meter: Block = { id: "m", kind: "meter", title: "Health", meter: "bar", meters: [{ id: "e", label: "HP", value: 30, max: 100 }] };
     const html = blocksToHtml([{ type: "blockRef", props: { blockId: "m" }, children: [] }], ctx(), page({ blocks: [meter] }), state());
@@ -134,6 +157,14 @@ describe("blocksToHtml", () => {
 });
 
 describe("panelBlockToHtml", () => {
+  it("draws a sidebar player as the page's player, under the block's title", () => {
+    const block: Block = { id: "p", kind: "media", title: "Vibe", media: { url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC", service: "spotify", kind: "track", mediaId: "4uLU6hMCjMI75M1A2tKUQC", title: "", author: "", thumbnail: "", fetched: false } };
+    const html = panelBlockToHtml(block, page({ templateKey: "blank" }), ctx());
+    expect(html).toContain('<section class="block block-media"><h3 class="block-title">Vibe</h3><figure class="player player-spotify">');
+    expect(html).toContain('src="https://open.spotify.com/embed/track/4uLU6hMCjMI75M1A2tKUQC?theme=0"');
+    expect(panelBlockToHtml({ id: "q", kind: "media" }, page({ templateKey: "blank" }), ctx())).toBeNull();
+  });
+
   it("prints a property with its label and a select as a coloured chip", () => {
     const node = page({
       templateKey: "blank",

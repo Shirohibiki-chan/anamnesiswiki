@@ -21,6 +21,8 @@
 // testable from a string — the same split `markdown-page.ts` makes from the
 // other direction. `markdown-import.ts` is the half that knows the vault.
 import { normalizeCodeLanguage } from "../constants/code-languages";
+import { MEDIA_EMBED_TYPE } from "../constants/schema";
+import { defaultMediaWidth, mediaInfoFor, parseMediaLink } from "./media-service";
 
 export type BlockSeed = Record<string, unknown>;
 export type InlineSeed = Record<string, unknown>;
@@ -468,6 +470,8 @@ const TASK = /^\[([ xX])\]\s+(.*)$/;
 const TABLE_DELIMITER = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 const IMAGE_LINE = /^\s*(?:!\[\[([^\]]+)\]\]|!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\))\s*$/;
 const CAPTION_LINE = /^\s*[*_]([^*_].*?)[*_]\s*$/;
+/** A web address alone on its line, bare or in angle brackets — a player, when one of the four services' (Phase 31). */
+const ADDRESS_LINE = /^\s*<?(https?:\/\/\S+?)>?\s*$/;
 const CALLOUT = /^\[!([A-Za-z0-9_-]+)\]([-+]?)\s*(.*)$/;
 const SETEXT = /^\s{0,3}(=+|-+)\s*$/;
 
@@ -511,6 +515,12 @@ function isBlank(line: string): boolean {
 }
 
 /** Whether this line starts something other than a paragraph. */
+/** The player link a line is, or null. */
+function mediaLine(line: string): ReturnType<typeof parseMediaLink> {
+  const address = ADDRESS_LINE.exec(line);
+  return address ? parseMediaLink(address[1]) : null;
+}
+
 function startsBlock(line: string, next: string | undefined): boolean {
   return (
     FENCE.test(line) ||
@@ -519,6 +529,7 @@ function startsBlock(line: string, next: string | undefined): boolean {
     LIST_ITEM.test(line) ||
     /^\s{0,3}>/.test(line) ||
     IMAGE_LINE.test(line) ||
+    mediaLine(line) !== null ||
     (line.trimStart().startsWith("|") && next !== undefined && TABLE_DELIMITER.test(next))
   );
 }
@@ -615,6 +626,21 @@ export function parseBlocks(rawLines: string[], ctx: MarkdownParseContext): Bloc
       }
       out.push(parseTable(rows, ctx));
       i = j;
+      continue;
+    }
+
+    // A YouTube, Spotify or SoundCloud link alone on its line is a player
+    // (Phase 31), with an italic caption under it the way a picture has one
+    // — the form the export writes. Any other lone address is a paragraph,
+    // and a link among words is a link.
+    const media = mediaLine(line);
+    if (media) {
+      const caption = i + 1 < lines.length ? CAPTION_LINE.exec(lines[i + 1]) : null;
+      out.push({
+        type: MEDIA_EMBED_TYPE,
+        props: { ...mediaInfoFor(media), caption: caption ? unescapeMarkdown(caption[1]) : "", width: defaultMediaWidth(media) },
+      });
+      i += caption ? 2 : 1;
       continue;
     }
 

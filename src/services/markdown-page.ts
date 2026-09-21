@@ -12,7 +12,8 @@
 // `[[wikilinks]]` — which are already the syntax the editor accepts for
 // writing them, so nothing is being translated there, only unwrapped.
 import { getGlyph } from "../constants/glyphs";
-import { ICON_INLINE_TYPE, type Block, type Node } from "../constants/schema";
+import { ICON_INLINE_TYPE, MEDIA_EMBED_TYPE, type Block, type Node } from "../constants/schema";
+import { mediaInfoFrom, mediaLabel } from "./media-service";
 import { bumpLossy, type LossyTally } from "./export-walk";
 import { isSpectrum, meterReadout, meterStyleOf, metersOf, showsMax, spectrumReadout } from "./meter-service";
 import type { RenderableProperty } from "./property-service";
@@ -260,6 +261,18 @@ function blockToMarkdown(block: BlockNoteBlock, ctx: MarkdownPageContext, headin
       return caption ? `${image}\n*${escapeText(caption)}*` : image;
     }
 
+    case MEDIA_EMBED_TYPE: {
+      // A player (Phase 31) is its link on a line of its own, with the caption
+      // in italics under it the way a picture's is — the form the importer
+      // turns back into a player, so the round trip is whole. Nothing else
+      // of the block's memory goes out: the title and the still are the
+      // service's to say again.
+      const info = mediaInfoFrom(block.props);
+      const caption = captionOf(block);
+      if (!info) return caption || null;
+      return caption ? `${info.url}\n*${escapeText(caption)}*` : info.url;
+    }
+
     case "video":
     case "audio":
     case "file": {
@@ -431,6 +444,22 @@ export function panelBlockToMarkdown(block: Block, node: Node, ctx: MarkdownPage
       // has at least a name worth saying.
       const alt = block.imageAlt || node.imageAlt || heading || node.name;
       return withHeading(`![${escapeText(alt)}](${encodePath(path)})`);
+    }
+
+    case "media": {
+      // The sidebar's player: its link under the block's heading, the caption
+      // after, like the one in the writing. Not counted as flattened — a
+      // reader of the Markdown gets exactly the link, which is the whole of
+      // what the block is.
+      const info = block.media ? mediaInfoFrom(block.media as unknown as Record<string, unknown>) : null;
+      if (!info) return null;
+      const caption = block.media?.caption?.trim();
+      const body = caption ? `${info.url}\n*${escapeText(caption)}*` : info.url;
+      // The heading the panel shows — "Spotify track" — when she has not
+      // named the block, since a bare link under nothing says less than the
+      // panel does.
+      const shown = block.showTitle === false ? "" : heading || mediaLabel(info);
+      return shown ? `**${escapeText(shown)}**\n\n${body}` : body;
     }
 
     case "meter": {

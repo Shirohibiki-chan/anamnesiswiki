@@ -449,6 +449,36 @@ describe("buildExportFile", () => {
       });
     });
 
+    // Phase 31: a YouTube player goes back as LK's own YouTube block, in the
+    // shape a real export holds; the other services' players have no known
+    // LK block and go as a link, counted.
+    it("maps a YouTube player back to LK's YouTube block, and the others to a counted link", () => {
+      const media = { service: "youtube", kind: "video", mediaId: "YJRIoy4Ugwc", url: "https://www.youtube.com/watch?v=YJRIoy4Ugwc", title: "", author: "", thumbnail: "", fetched: false };
+      const nodes = [
+        node({
+          id: "a",
+          name: "Page",
+          parentId: null,
+          templateKey: "note",
+          tabs: [
+            tab("Main", [
+              { type: "mediaEmbed", props: { ...media, caption: "Her theme", width: 100 } },
+              { type: "mediaEmbed", props: { ...media, service: "spotify", kind: "track", mediaId: "4uLU6hMCjMI75M1A2tKUQC", url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC", caption: "", width: 60 } },
+            ]),
+          ],
+        }),
+      ];
+      const plan = exportOf(nodes, ["a"]);
+      const out = firstDocContent(plan, "Page");
+      expect(out[0]).toEqual({
+        type: "extension",
+        attrs: { extensionType: "com.algorific.legendkeeper.extensions", extensionKey: "block-youtube", parameters: { embedUrl: "https://www.youtube.com/embed/YJRIoy4Ugwc" }, text: "YoutubePlayer", layout: "default" },
+      });
+      expect(out[1]).toEqual({ type: "paragraph", content: [{ type: "text", text: "Her theme" }] });
+      expect(out[2]).toMatchObject({ type: "paragraph", content: [{ type: "text", text: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC", marks: [{ type: "link", attrs: { href: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC" } }] }] });
+      expect(plan.lossyNotes.some((n) => n.includes("1 Spotify or SoundCloud player"))).toBe(true);
+    });
+
     it("splits an embedded newline back into a hardBreak", () => {
       const out = blocksOf([{ type: "paragraph", content: [{ type: "text", text: "one\ntwo", styles: {} }] }]);
       expect(out[0].content).toEqual([
@@ -510,6 +540,29 @@ describe("buildExportFile", () => {
 
       // Nothing empty makes the trip — LK's own unfilled fields don't either.
       expect(properties.every((p) => p.type === "IMAGE" || p.data.fragment || p.data.items)).toBe(true);
+    });
+
+    // Phase 31: a Spotify player in the sidebar goes back as LK's Spotify
+    // property; a YouTube one has no property to be and stays here.
+    it("exports a sidebar Spotify player as SPOTIFY_SINGLE and leaves the others behind", () => {
+      const nodes = [
+        node({
+          id: "a",
+          name: "Valera",
+          parentId: null,
+          templateKey: "character",
+          tabs: [tab("Overview")],
+          blocks: [
+            { id: "p", kind: "media", title: "Vibe", media: { url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC", service: "spotify", kind: "track", mediaId: "4uLU6hMCjMI75M1A2tKUQC", title: "", author: "", thumbnail: "", fetched: false } },
+            { id: "q", kind: "media", media: { url: "https://www.youtube.com/watch?v=YJRIoy4Ugwc", service: "youtube", kind: "video", mediaId: "YJRIoy4Ugwc", title: "", author: "", thumbnail: "", fetched: false } },
+            { id: "r", kind: "media" },
+          ],
+        }),
+      ];
+      const properties = findResource(exportOf(nodes, ["a"]), "Valera").properties;
+      const players = properties.filter((p) => p.type === "SPOTIFY_SINGLE");
+      expect(players).toHaveLength(1);
+      expect(players[0]).toMatchObject({ title: "Vibe", data: { url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC" } });
     });
   });
 });

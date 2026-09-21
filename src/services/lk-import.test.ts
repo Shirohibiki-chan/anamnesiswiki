@@ -487,14 +487,14 @@ describe("buildImportPlan", () => {
       expect(plan.lossyNotes.some((n) => n.includes("LegendKeeper feature"))).toBe(false);
     });
 
-    it("flags an unrecognized bodiedExtension and an embed extension as lossy", () => {
+    it("flags an unrecognized bodiedExtension and an embed of something unknown as lossy", () => {
       const plan = buildImportPlan(
         withRoot([
           resource("a", "Page", "A", {
             documents: [
               doc("d1", "Main", "A", [
                 { type: "bodiedExtension", attrs: { extensionKey: "block-poll" }, content: [paragraph([text("vote")])] },
-                { type: "extension", attrs: { extensionKey: "block-youtube", parameters: { embedUrl: "https://youtu.be/x" } } },
+                { type: "extension", attrs: { extensionKey: "block-map", parameters: { embedUrl: "https://maps.example/x" } } },
               ]),
             ],
           }),
@@ -502,6 +502,26 @@ describe("buildImportPlan", () => {
       );
       expect(plan.lossyNotes.some((n) => n.includes("LegendKeeper feature"))).toBe(true);
       expect(plan.lossyNotes.some((n) => n.includes("embedded video"))).toBe(true);
+    });
+
+    // Phase 31: LK's YouTube block is the shape her own export holds — an
+    // `embed/<id>?si=` address — and it comes in as a real player, uncounted.
+    it("turns LK's YouTube block into a player, losslessly", () => {
+      const plan = buildImportPlan(
+        withRoot([
+          resource("a", "Page", "A", {
+            documents: [
+              doc("d1", "Main", "A", [
+                { type: "extension", attrs: { extensionKey: "block-youtube", parameters: { embedUrl: "https://www.youtube.com/embed/YJRIoy4Ugwc?si=jMD1i4LY45KsVHYB" }, text: "YoutubePlayer" } },
+              ]),
+            ],
+          }),
+        ]),
+      );
+      const blocks = plan.nodes[0].tabs[0].content as Record<string, unknown>[];
+      expect(blocks[0].type).toBe("mediaEmbed");
+      expect(blocks[0].props).toMatchObject({ url: "https://www.youtube.com/watch?v=YJRIoy4Ugwc", service: "youtube", kind: "video", mediaId: "YJRIoy4Ugwc", fetched: false, width: 100 });
+      expect(plan.lossyNotes.some((n) => n.includes("embedded video"))).toBe(false);
     });
 
     it("maps an expand block to a real toggleListItem, title and content intact, losslessly", () => {
@@ -534,6 +554,30 @@ describe("buildImportPlan", () => {
       expect(node.customProperties).toEqual([{ key: expect.any(String), label: "SUMMARY", type: "longtext" }]);
       const key = node.customProperties![0].key;
       expect(node.properties[key]).toBe("A conman.");
+    });
+
+    // Phase 31: the Spotify property becomes a sidebar player, but only when
+    // it holds a link — her export has empty ones on most pages.
+    it("imports a filled SPOTIFY_SINGLE as a sidebar player and skips an empty one", () => {
+      const plan = buildImportPlan(
+        withRoot([
+          resource("a", "Valera", "A", {
+            properties: [
+              { title: "AMBIENCE", type: "SPOTIFY_SINGLE", data: { url: "" } },
+              { title: "VIBE", type: "SPOTIFY_SINGLE", data: { url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC?si=x" } },
+            ],
+          }),
+          resource("b", "Nobody", "B", { properties: [{ title: "AMBIENCE", type: "SPOTIFY_SINGLE", data: { url: "" } }] }),
+        ]),
+      );
+      const [valera, nobody] = plan.nodes;
+      const players = (valera.blocks ?? []).filter((block) => block.kind === "media");
+      expect(players).toHaveLength(1);
+      expect(players[0].title).toBe("VIBE");
+      expect(players[0].media).toMatchObject({ service: "spotify", kind: "track", mediaId: "4uLU6hMCjMI75M1A2tKUQC", url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC" });
+      // The list is whole — the derived blocks first, so nothing the page would have shown is lost by writing one.
+      expect((valera.blocks ?? []).some((block) => block.kind === "image")).toBe(true);
+      expect(nobody.blocks).toBeUndefined();
     });
 
     it("imports a RESOURCE_LINK as a refs custom property, resolved via the id-map", () => {

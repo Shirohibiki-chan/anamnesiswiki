@@ -3541,10 +3541,11 @@ presentation over them.
   Rating exists the two are one widget differing by a single click rule, and
   counting whole units is ordinary worldbuilding: spell charges, rations,
   favours owed, ammunition.
-- **No YouTube, Spotify or map embeds**, carried from the Phase 18 scope and
-  still standing. Her reason on 2026-07-31 was aesthetic rather than the
-  offline policy, which she has never personally agreed with — so if embeds
-  come back it is a conversation to have with her, not a line to quietly cross.
+- **No YouTube, Spotify or map embeds**, carried from the Phase 18 scope.
+  Her reason on 2026-07-31 was aesthetic rather than the offline policy,
+  which she has never personally agreed with. **Lifted 2026-09-13 for
+  YouTube, YouTube Music, Spotify and SoundCloud, on the condition that they
+  look like they belong** — Phase 31, shipped 2026-09-21. Maps stay out.
 
 ### Verification
 
@@ -7371,11 +7372,149 @@ page and expanded. Unit tests for the rows' shape and names, the unit
 of a move, the moves refused, and the hidden fields. Looked at in the
 real app.
 
-## Phase 31 — Embedded Players
+## Phase 31 — Embedded Players ✅ Shipped 2026-09-21 — phase closed
 
-Scoped 2026-09-13 — the scoping and the condition it came with are in
-`docs/plan.md` § Phase 31 until the phase closes. Steps are logged here as
-they land.
+### What the plan said
+
+Scoped 2026-09-13. Her call, and a reversal: "no YouTube, Spotify or map
+embeds" has stood since Phase 18's scope (2026-07-31), recorded in
+`docs/handoff.md` § Meters and in `docs/shipped.md` under Phase 18 as hers and
+aesthetic — the concern was never the network, which is ordinary now, but
+that a video dropped into a page looks like a video dropped into a page. She
+lifted it 2026-09-13 with the condition still attached: **YouTube, YouTube
+Music, Spotify and SoundCloud, and they have to look like they belong.** That
+condition is the phase. The list is closed; a fifth service is a conversation
+first, not a line added to a table.
+
+**What "belongs" means, decided up front so it is not decided per block.**
+Each of the four services publishes an official embed — the player YouTube,
+Spotify and SoundCloud hand out on their own Share buttons — and a raw one is
+what looks wrong: a black rectangle with somebody else's chrome on it,
+sitting at whatever size the site chose, in a page that is otherwise all
+tokens and frames. So:
+
+- **The player sits inside the same frame every other block gets** — the
+  `block-frame` border, radius and panel colour — so it takes the theme the
+  page has, and a snippet that restyles blocks restyles it too. Rounded
+  corners are clipped on the player itself, not drawn around it.
+- **YouTube is a still until it is played.** The block draws the video's own
+  thumbnail at 16:9 with the title over it and a play mark, and only when
+  that is clicked does the real player load into the frame. Three reasons: a
+  page with five videos on it does not start five players when it opens;
+  nothing from YouTube loads into her page until she asks for it, which is
+  the first of the two promises kept without a rule; and the player's own bar
+  of buttons is not on the page until something is playing. The player is
+  the `youtube-nocookie` one. A playlist link plays as a playlist.
+- **YouTube Music is YouTube wearing a different coat.** It has no embed of
+  its own, but a `music.youtube.com` link shares its id with the same
+  recording on `youtube.com`, so it plays through the same player. The card
+  says YouTube Music and its link goes back to YouTube Music, because that
+  is what she pasted.
+- **Spotify's own embed is already a card** — album art, and a background
+  colour taken from it — so it is shown as-is inside the frame, compact for a
+  track and tall for an album, playlist, artist or episode, with the dark or
+  light variant matched to the theme.
+- **SoundCloud's player takes a colour, and gets the accent**, so its
+  progress bar and buttons are the page's colour rather than orange. The
+  artwork variant for a track, the list variant for a playlist.
+- **Every block has a caption line under it, the way a picture does**, and
+  resizes the way a picture does — drag the edge, aspect kept. A video is
+  full-width by default; a track is not, because a bar the width of the page
+  looks like a page-wide bar.
+- **A block draws whole with the internet off.** Title, author and thumbnail
+  are fetched once, when the link is pasted, through the service's oEmbed
+  endpoint — the public "describe this link" call each of the four offers —
+  and stored on the block. So offline the card is still the card: frame,
+  service mark, title, author, thumbnail, and a *needs the internet to play*
+  line where the player would be. Not a grey hole, and not a broken-image
+  glyph. If the fetch fails at paste time the block keeps the link and says
+  what it is by its address, and tries the fetch again next time it is drawn
+  online.
+
+### 1. ~~The body block, with every way in~~ Shipped 2026-09-21
+
+Shipped 2026-09-21 — `docs/shipped.md` § Phase 31, step 1. Built as
+scoped below, with two things learnt on the way: the thumbnail is a file in
+the world's library rather than a data URL on the block (the board's
+bookmark cards had settled that), and a link pasted on an empty line is put
+in *front* of the line rather than in its place — the editor refuses to
+turn a text block into one with no text — so the empty line stays as the
+line after the player when it is last, and is taken out when it is not.
+
+A `mediaEmbed` block in the page editor, ours in the way `pageColumns` and
+the callouts are ours, holding the pasted link, the service and kind it
+resolved to, the fetched title/author/thumbnail, a caption and a width.
+Nothing else: the block is a link with a memory, and the player is drawn
+from it each time.
+
+- **Paste a link on an empty line and it becomes the block.** The four
+  services' links in every form they hand out — `youtu.be`, `watch?v=`,
+  `shorts/`, `playlist?list=`, `music.youtube.com`, `open.spotify.com`
+  (track, album, playlist, artist, episode, show), `soundcloud.com` tracks
+  and sets. Undo gives the link back as text. A link pasted into the middle
+  of a sentence stays a link, because the sentence is what she was writing.
+- **`/YouTube`, `/Spotify`, `/SoundCloud` and `/Embed` in the slash menu**
+  each put down an empty block with a box for the link, for the case where
+  the link is not on the clipboard yet.
+- **The block's own menu**: open on the service's site, copy the link, retry
+  the fetch, remove. Alignment is not offered; a player is full-width or
+  centred and the width handle covers both.
+- **The picture panel's Embed tab is untouched.** It is for pictures by URL
+  (`CLAUDE.md`, decided 2026-08-11) and stays that.
+
+### 2. ~~The sidebar block — a character's theme~~ Shipped 2026-09-21
+
+Shipped 2026-09-21 — `docs/shipped.md` § Phase 31, step 2. Built as scoped
+below; the one thing decided on the way is that the slash menu does *not*
+gain a "Music or video block" entry beside `/Spotify`, since two Spotify
+rows — one making a sidebar record and one not — would be a coin toss.
+The sidebar block drags into the writing like any block, where it draws
+the same player.
+
+A `media` block kind in `node.blocks`, alongside `image`, holding the same
+fields, drawn by the same renderer at sidebar width. This is the half that
+turns the feature from "videos in a page" into worldbuilding: a character's
+theme song in the infobox, a location's ambience beside its description, a
+faction's anthem. The precedent is the picture — a BlockNote image in the
+body and an `image` kind in the sidebar, two records because they sit in two
+places — and the block gets everything a sidebar block already has: title,
+colour, drag between sidebar and body and infobox, a place in a template,
+export with the page.
+
+- **At sidebar width the YouTube still is the whole block**, playing in
+  place when clicked; Spotify at its compact height; SoundCloud in its
+  smallest form. Nothing in the sidebar auto-plays or auto-loads, same as
+  the body.
+- **The Add Block menu offers it as *Music or video*** with the link box
+  right there, and the block's menu is the body block's.
+
+### 3. ~~Import, export, and the record~~ Shipped 2026-09-21
+
+Shipped 2026-09-21 — `docs/shipped.md` § Phase 31, step 3, which closes the
+phase. One line drawn on the way: the `.lk` export writes only the two
+shapes known from a real export (LK's YouTube block and its Spotify
+property); a Spotify or SoundCloud player in the writing goes across as a
+link and is counted, rather than under a block key this app would only be
+guessing.
+
+- **`.lk` import turns LegendKeeper's YouTube and Spotify blocks into real
+  embeds** instead of the plain link and the lossy note it makes of them now
+  (`lk-import.ts`, the `extension` case), and its `SPOTIFY_SINGLE` property
+  into a sidebar media block. Her 75-page world is the reason this phase has
+  a step 3 at all.
+- **Publish and HTML export carry the player** — the site is online by
+  definition, and the still-until-played rule holds there too. Markdown
+  export writes the link on its own line, with the caption after it, which is
+  the form the importer turns back into a block.
+- **The docs stop saying no.** `handoff.md` § Meters and the Phase 18 note in
+  `shipped.md` get the reversal with the date and the condition;
+  `CLAUDE.md` gets one line that the four services are the list.
+
+### Order
+
+1 → 2 → 3, each its own PR. The look is settled in step 1 and copied, not
+re-decided, in step 2; step 3 is small once the two blocks exist and is the
+step that touches her own world.
 
 ### Step 1 — The body block, with every way in ✅ Shipped 2026-09-21
 
@@ -7475,3 +7614,50 @@ page file's block; the menu carries the three link rows; it all comes back
 after Ctrl+R. Looked at in the running app: the still's words step down a
 size at sidebar width, where the page's sizes drew the title across the
 whole picture.
+
+### Step 3 — Import, export, and the record ✅ Shipped 2026-09-21 — phase closed
+
+**What it delivered.** `lk-import.ts` turns an `extension` whose
+`embedUrl` is one of the four services' into a `mediaEmbed` (her own
+export's YouTube block holds `embed/<id>?si=…`, which `parseMediaLink`
+reads) and a filled `SPOTIFY_SINGLE` into a sidebar `media` block titled
+by the property — writing the page's block list out whole, derived blocks
+first, since a list is absent or complete. Empty Spotify slots stay
+skipped. `lk-export.ts` writes a YouTube player back as LK's `block-youtube`
+with the attrs copied from the real file, a sidebar Spotify player as
+`SPOTIFY_SINGLE`, and a Spotify or SoundCloud player in the writing as a
+link, counted under a new lossy note. `markdown-page.ts` writes a player as
+its link on its own line with the caption in italics under it, the
+sidebar's under the heading the panel shows; `markdown-parse.ts` reads a
+lone address that is one of the four's back into a player, caption and
+all, and leaves any other lone address as a paragraph. `html-page.ts`
+draws the player on the site — a YouTube still that is a link to the
+video and carries the player's address for `site-script.ts` to swap in on
+click, Spotify's and SoundCloud's players loaded with the page — in the
+look the planner reads off the site theme's tokens
+(`HtmlPageContext.playerLook`). The docs stop saying no: `handoff.md` §
+Meters and `shipped.md` § Phase 18 carry the reversal with its date and
+condition, `CLAUDE.md` names the four, `handoff.md` § Players holds what
+binds the code, and `lk-format.md` has both tables.
+
+**Verified.** `lk-import.test.ts` — the YouTube block comes in as a player
+uncounted, a filled Spotify property becomes a titled sidebar block and an
+empty one is skipped, and a page with none keeps no block list.
+`lk-export.test.ts` — the YouTube player goes back as LK's block with the
+caption after it, a Spotify one as a counted link, a sidebar Spotify
+player as `SPOTIFY_SINGLE` and a YouTube one nowhere. `markdown-page.test.ts`
+and `markdown-parse.test.ts` — the line forms both ways, a lone address
+from elsewhere left alone, a link among words left a link.
+`html-page.test.ts` — the still's markup exactly, Spotify's card at the
+theme's address and width, the sidebar player under its heading.
+`e2e/exports-a-player.e2e.ts` — the real app exports a page with a pasted
+player and a sidebar one and the Markdown holds both lines. The site's
+three players were rendered from the real writer and stylesheet and looked
+at.
+
+**The phase, closed.** Three steps, three PRs (#474 and the two stacked on
+it), one day. What it does not do, and why: no maps (never scoped, and a
+map is its own phase); no fifth service (her call, and the list is
+closed); no LK block for Spotify or SoundCloud in the writing (the key is
+not known from any real export, and a guessed one is a file LK may
+refuse).
