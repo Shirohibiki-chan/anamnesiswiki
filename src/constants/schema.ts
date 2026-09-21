@@ -359,7 +359,11 @@ export const DEFAULT_STATUS_OPTIONS: PropertyOption[] = [
 // `capture` (Phase 30) is the third kind with data of its own, and it is only
 // settings: which page its destinations hang under, and where the last
 // capture went. What gets captured becomes a page, not a value in the block.
-export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias" | "meter" | "capture";
+// `media` (Phase 31) is the fourth kind with data of its own: the link and
+// what the service said about it, the same fields the player block in the
+// writing holds — see `MediaInfo` in services/media-service.ts. Two records
+// because they sit in two places, which is the precedent the picture set.
+export type BlockKind = "property" | "image" | "tags" | "text" | "link" | "collection" | "alias" | "meter" | "capture" | "media";
 
 /**
  * How a `meter` block draws itself. Phase 18c, plus `spectrum` on 2026-08-25.
@@ -465,6 +469,20 @@ export const RECENT_DEFAULT_LIMIT = 8;
 /** The counts a Recently edited block can be set to, in menu order. */
 export const RECENT_LIMITS = [5, 8, 12, 20] as const;
 
+/** What a `media` block stores — the player block's fields, on a sidebar record. */
+export type SidebarMedia = {
+  url: string;
+  service: "youtube" | "youtube-music" | "spotify" | "soundcloud";
+  kind: "video" | "playlist" | "track" | "album" | "artist" | "episode" | "show" | "set";
+  mediaId: string;
+  title: string;
+  author: string;
+  /** The filename in `assets/` of the thumbnail, or empty. */
+  thumbnail: string;
+  fetched: boolean;
+  caption?: string;
+};
+
 export type Block = {
   id: string;
   kind: BlockKind;
@@ -519,6 +537,15 @@ export type Block = {
   image?: string;
   imageAlt?: string;
   imageFocusY?: number;
+  /**
+   * `media` only: the link and its memory — a YouTube, YouTube Music, Spotify
+   * or SoundCloud address, what it resolved to, and what the service said
+   * about it once (Phase 31). Absent on a block just added from the menu,
+   * which draws the box asking for the link. `thumbnail` names a file in
+   * `assets/`, so it counts as a use of that picture and is copied with the
+   * block the way an image block's picture is.
+   */
+  media?: SidebarMedia;
   // `link` only, and no new one is ever created: Phase 18b replaced it with a
   // `collection` whose source is "manual", which is the same feature holding a
   // list instead of a single page. Kept readable so the pages that already

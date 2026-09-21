@@ -8,6 +8,13 @@
 // is added to one and not the other the app has two answers to what a page can
 // hold.
 //
+// **The one kind deliberately not offered here is `media`** (Phase 31). The
+// writing has a player block of its own — `/YouTube`, `/Spotify`,
+// `/SoundCloud`, `/Embed` in media-slash-menu.tsx — and a second "Spotify"
+// beside those, one making a sidebar record and one not, would be the coin
+// toss the picture entry below is worded to avoid. The sidebar block can
+// still be dragged into the writing, where it draws the same player.
+//
 // **The meters are eight entries over one block, on purpose**, for the reason
 // the sidebar's menu already gives: somebody adding a rating does not want to
 // add a progress bar and then go hunting for the setting that turns it into

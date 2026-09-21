@@ -3990,9 +3990,13 @@ export async function clickLastLineInEditor(window: Page): Promise<void> {
   await window.keyboard.press("End");
 }
 
-/** The players on the open page, top to bottom: which service, and the words on the still (or none, while a player is loaded). */
-export async function mediaPlayersShown(window: Page): Promise<{ service: string; still: string | null; playing: boolean }[]> {
-  const frames = window.locator(`${MEDIA_EMBED} .media-player`);
+/**
+ * The players on the open page, top to bottom: which service, and the words
+ * on the still (or none, while a player is loaded). `within` picks the
+ * writing's players (the default) or the sidebar's (`.block-media`).
+ */
+export async function mediaPlayersShown(window: Page, within: string = MEDIA_EMBED): Promise<{ service: string; still: string | null; playing: boolean }[]> {
+  const frames = window.locator(`${within} .media-player`);
   const count = await frames.count();
   const out: { service: string; still: string | null; playing: boolean }[] = [];
   for (let i = 0; i < count; i += 1) {
@@ -4010,8 +4014,8 @@ export async function mediaPlayersShown(window: Page): Promise<{ service: string
 }
 
 /** The address the player at `index` is loaded from, or null while it is a still. */
-export async function mediaPlayerSource(window: Page, index: number): Promise<string | null> {
-  const frame = window.locator(`${MEDIA_EMBED} iframe`).nth(index);
+export async function mediaPlayerSource(window: Page, index: number, within: string = MEDIA_EMBED): Promise<string | null> {
+  const frame = window.locator(`${within} iframe`).nth(index);
   return (await frame.count()) > 0 ? frame.getAttribute("src") : null;
 }
 

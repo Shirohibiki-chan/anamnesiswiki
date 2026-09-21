@@ -32,6 +32,9 @@ import { usePageImage } from "../../hooks/use-page-image";
 import { useAllTags, useKnownOptions } from "../../hooks/use-property-index";
 import { isPipMeter, meterPip, meterSegmented, metersOf } from "../../services/meter-service";
 import { recentLimit } from "../../services/collection-service";
+import { copyText } from "../../services/clipboard-service";
+import { openInBrowser } from "../../services/host-service";
+import { mediaLabel } from "../../services/media-service";
 import type { RenderableProperty } from "../../services/property-service";
 import { DateProperty } from "../properties/DateProperty";
 import { ImageSlot } from "../properties/ImageSlot";
@@ -45,6 +48,7 @@ import { AliasBlock } from "./AliasBlock";
 import { BlockShell } from "./BlockShell";
 import { CaptureBlock } from "./CaptureBlock";
 import { CollectionBlock } from "./CollectionBlock";
+import { MediaBlock } from "./MediaBlock";
 import { IconPicker } from "./IconPicker";
 import { MeterBlock } from "./MeterBlock";
 import { TextBlock } from "./TextBlock";
@@ -79,6 +83,7 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
     setBlockTitleShown,
     setBlockColor,
     setBlockText,
+    setBlockMedia,
     setBlockSource,
     setBlockLimit,
     setBlockTargets,
@@ -266,6 +271,21 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
       };
     }
 
+    if (block.kind === "media") {
+      // The heading is what it is — "YouTube video", "Spotify track" — once
+      // the link is known, and the menu's own name for the kind before.
+      return {
+        natural: block.media?.url ? mediaLabel(block.media) : "Music or Video",
+        body: (
+          <MediaBlock
+            block={block}
+            onChange={(media) => setBlockMedia(node.id, block.id, media)}
+            onRemove={() => removeBlock(node.id, block.id)}
+          />
+        ),
+      };
+    }
+
     if (block.kind === "capture") {
       return {
         natural: "Quick Capture",
@@ -358,6 +378,16 @@ export function BlockList({ node, blocks, properties, onReorder, onMove }: Block
                     ? {
                         isPageImage: pictureOf(block).isPageImage,
                         onUse: () => setPageImageBlock(node.id, block.id),
+                      }
+                    : undefined
+                }
+                media={
+                  block.kind === "media" && block.media?.url
+                    ? {
+                        service: block.media.service,
+                        onOpen: () => void openInBrowser(block.media!.url),
+                        onCopy: () => void copyText(block.media!.url),
+                        onRefetch: () => setBlockMedia(node.id, block.id, { ...block.media!, thumbnail: "", fetched: false }),
                       }
                     : undefined
                 }

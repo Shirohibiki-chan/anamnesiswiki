@@ -23,6 +23,7 @@ import {
   createTemplateLibrary,
   type Node,
   type Project,
+  type SidebarMedia,
   type Storyline,
   type Board,
   type TemplateLibrary,
@@ -546,6 +547,13 @@ export type ProjectStoreState = {
    */
   setBlockWidth: (nodeId: string, blockId: string, width: number | undefined) => void;
   setBlockText: (nodeId: string, blockId: string, text: string) => void;
+  /**
+   * A player block's link and what the service said about it (Phase 31).
+   * Both writes — the link she gave, and the answer fetched a moment later
+   * — merge into one undo entry, so Ctrl+Z takes the link out rather than
+   * first forgetting its title.
+   */
+  setBlockMedia: (nodeId: string, blockId: string, media: SidebarMedia | undefined) => void;
   setBlockLink: (nodeId: string, blockId: string, targetId: string | undefined) => void;
   // Phase 18c's meters. A meter block holds a list of readings, so everything
   // below the first two names a reading as well as a block.
@@ -2477,6 +2485,15 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         blocks.map((block) => (block.id === blockId ? withField(block, "text", text || undefined) : block)),
         "editing a note",
         `block-text:${nodeId}:${blockId}`,
+      );
+    },
+
+    setBlockMedia(nodeId, blockId, media) {
+      editBlocks(
+        nodeId,
+        (blocks) => blocks.map((block) => (block.id === blockId ? withField(block, "media", media) : block)),
+        "setting a player",
+        `block-media:${nodeId}:${blockId}`,
       );
     },
 

@@ -703,6 +703,19 @@ describe("image blocks and the page's own picture", () => {
     const plain = [image("a")];
     expect(withCopiedBlockImages(plain, (fileName) => fileName)).toBe(plain);
   });
+
+  // Phase 31: a player's thumbnail is a picture in the library too, held only
+  // by the block that fetched it.
+  it("counts and copies a player block's thumbnail alongside the pictures", () => {
+    const media = { url: "https://youtu.be/x", service: "youtube" as const, kind: "video" as const, mediaId: "x", title: "", author: "", thumbnail: "still.jpg", fetched: true };
+    const blocks: Block[] = [{ id: "p", kind: "media", media }, { id: "q", kind: "media" }, { id: "r", kind: "media", media: { ...media, thumbnail: "" } }];
+    expect(blockImageFiles(blocks)).toEqual(["still.jpg"]);
+    const copied = withCopiedBlockImages(blocks, (fileName) => `copy-${fileName}`);
+    expect(copied?.[0].media?.thumbnail).toBe("copy-still.jpg");
+    expect(copied?.[0].media?.url).toBe("https://youtu.be/x");
+    // One that will not copy leaves the block without a picture rather than sharing the file.
+    expect(withCopiedBlockImages(blocks, () => undefined)?.[0].media?.thumbnail).toBe("");
+  });
 });
 
 // Phase 19.5: duplicating an infobox. The frame holds pointers, so the copy has

@@ -7441,3 +7441,37 @@ players and the caption come back after Ctrl+R from the file. Nothing in
 the scenario needs the internet — what the services say is fetched in the
 background and the card draws either way — though on this machine the
 fetch answered and the still drew Rick Astley's title and picture.
+
+### Step 2 — The sidebar block, a character's theme ✅ Shipped 2026-09-21
+
+**What it delivered.** `media` as a tenth block kind in `node.blocks`, holding
+`SidebarMedia` — the player block's fields on a sidebar record, plus a
+caption — and absent on a block just added, which draws the box asking for
+the link. `components/blocks/MediaBlock.tsx` is the block's life on the
+record: the box (`MediaLinkBox.tsx`, lifted out of the writing's block and
+shared, drawn bare inside the shell that already has a frame and a title),
+the fetch written back through the store's `setBlockMedia`, and
+`MediaPlayer` at sidebar width. The store action merges the link and the
+answer into one undo entry, so Ctrl+Z takes the link out rather than first
+forgetting its title. The shell's menu carries Open on the service, Copy
+Link and Fetch Again above the usual rows; the block's natural heading is
+`mediaLabel` — "Spotify track", "YouTube video" — once the link is known and
+"Music or Video" before. `blockImageFiles` and `withCopiedBlockImages` count
+and copy the thumbnail, so the Assets tab, duplicating a page, saving a
+template and a deleted page's restore all treat it as the picture it is.
+
+**Not offered from the slash menu, on purpose.** The writing has `/YouTube`,
+`/Spotify`, `/SoundCloud` and `/Embed` of its own; a "Music or video block"
+beside them, one making a sidebar record and one not, is the coin toss the
+picture entry is worded to avoid. The sidebar block drags into the writing
+like any block and draws the same player there.
+
+**Verified.** `block-service.test.ts` — the thumbnail is counted and copied,
+and a copy that fails leaves the block without one rather than sharing the
+file. `e2e/plays-music-in-the-sidebar.e2e.ts` — Add Block offers Music or
+Video and the block opens on its box; a Spotify link draws the card at the
+theme's address and renames the block "Spotify track"; the record is on the
+page file's block; the menu carries the three link rows; it all comes back
+after Ctrl+R. Looked at in the running app: the still's words step down a
+size at sidebar width, where the page's sizes drew the title across the
+whole picture.

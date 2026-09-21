@@ -623,6 +623,9 @@ export function blockImageFiles(blocks: Block[] | undefined): string[] {
   const found: string[] = [];
   for (const block of blocks ?? []) {
     if (block.kind === "image" && block.image) found.push(block.image);
+    // A player's thumbnail (Phase 31) is a picture in the library like any
+    // other, and one held only by the block that fetched it.
+    if (block.kind === "media" && block.media?.thumbnail) found.push(block.media.thumbnail);
   }
   return found;
 }
@@ -643,10 +646,17 @@ export function withCopiedBlockImages(
   blocks: Block[] | undefined,
   replace: (fileName: string) => string | undefined,
 ): Block[] | undefined {
-  if (!blocks?.some((block) => block.kind === "image" && block.image)) return blocks;
-  return blocks.map((block) =>
-    block.kind === "image" && block.image ? withField(block, "image", replace(block.image)) : block,
-  );
+  if (!blocks?.some((block) => (block.kind === "image" && block.image) || (block.kind === "media" && block.media?.thumbnail))) return blocks;
+  return blocks.map((block) => {
+    if (block.kind === "image" && block.image) return withField(block, "image", replace(block.image));
+    if (block.kind === "media" && block.media?.thumbnail) {
+      // A thumbnail that will not copy leaves the block without one, which
+      // the card draws fine; sharing the original's filename is the outcome
+      // that can lose it.
+      return withField(block, "media", { ...block.media, thumbnail: replace(block.media.thumbnail) ?? "" });
+    }
+    return block;
+  });
 }
 
 /**
@@ -814,6 +824,8 @@ export function blockKindLabel(kind: BlockKind): string {
       return "a meter";
     case "capture":
       return "a capture box";
+    case "media":
+      return "a player";
   }
 }
 

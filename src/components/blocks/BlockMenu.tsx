@@ -3,11 +3,12 @@
 // job, the same as every other menu in the app — see tree/ContextMenu.tsx,
 // whose idiom this follows so two menus in the same window don't behave
 // differently.
-import { ArrowDown, ArrowUp, Check, Copy, EyeOff, Grid2x2, Image as ImageIcon, PencilLine, Plus, Trash2, Type } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Copy, ExternalLink, EyeOff, Grid2x2, Image as ImageIcon, Link2, PencilLine, Plus, RefreshCw, Trash2, Type } from "lucide-react";
 import { COLLECTION_SOURCES } from "../../constants/collection-sources";
 import { RECENT_LIMITS } from "../../constants/schema";
 import { METER_STYLES } from "../../constants/meter-styles";
 import type { CollectionSource, MeterFace, MeterStyle } from "../../constants/schema";
+import { serviceLabel, type MediaService } from "../../services/media-service";
 import { ColorSwatches } from "./ColorSwatches";
 import { MeterIcon } from "./IconPicker";
 
@@ -67,6 +68,13 @@ type BlockMenuProps = {
     pip?: string;
     onPickPip?: () => void;
   };
+  /** Present only for a player block with a link (Phase 31). */
+  media?: {
+    service: MediaService;
+    onOpen: () => void;
+    onCopy: () => void;
+    onRefetch: () => void;
+  };
   /** Present only for a collection block: where it gets its pages. */
   collection?: {
     source: CollectionSource;
@@ -101,6 +109,7 @@ export function BlockMenu({
   onDeleteProperty,
   meter,
   collection,
+  media,
   pageImage,
 }: BlockMenuProps) {
   return (
@@ -275,6 +284,21 @@ export function BlockMenu({
           portrait; a menu that simply omits the entry on that one leaves you
           opening all three to find out which. Checked and inert, the way the
           collection sources above answer the same question. */}
+      {media && (
+        <>
+          <div className="block-menu-separator" />
+          <button type="button" onClick={media.onOpen}>
+            <ExternalLink size={13} /> Open on {serviceLabel(media.service)}
+          </button>
+          <button type="button" onClick={media.onCopy}>
+            <Link2 size={13} /> Copy Link
+          </button>
+          <button type="button" onClick={media.onRefetch}>
+            <RefreshCw size={13} /> Fetch Again
+          </button>
+        </>
+      )}
+
       {pageImage && (
         <>
           <div className="block-menu-separator" />
