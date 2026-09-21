@@ -5,28 +5,26 @@
 // that. The first entry decides, the ones after it break ties, which is what
 // the arrows in the list are for.
 import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
-import type { DatabaseField, DatabaseSort, Node } from "../../constants/schema";
+import type { DatabaseField, DatabaseSort } from "../../constants/schema";
 import {
   fieldId,
   fieldLabel,
   filterableFields,
   sameField,
-  useDatabase,
-  useUpdateDatabaseView,
+  type DatabaseViewHandle,
 } from "../../hooks/use-database";
 
-export function DatabaseSortMenu({ node }: { node: Node }) {
-  const { allColumns } = useDatabase(node);
-  const update = useUpdateDatabaseView();
+export function DatabaseSortMenu({ handle }: { handle: DatabaseViewHandle }) {
+  const { allColumns } = handle;
 
-  const sorts = node.view?.sorts ?? [];
+  const sorts = handle.view.sorts ?? [];
   const fields = filterableFields(allColumns);
   // A field already sorted by is not offered again — two rungs on one column
   // is a tie-break against itself, which can only ever do nothing.
   const spare = fields.filter((field) => !sorts.some((sort) => sameField(sort.field, field)));
 
   function write(next: DatabaseSort[]) {
-    update(node, { sorts: next });
+    handle.update({ sorts: next });
   }
 
   function change(at: number, patch: Partial<DatabaseSort>) {

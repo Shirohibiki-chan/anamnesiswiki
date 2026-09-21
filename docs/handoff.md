@@ -5781,6 +5781,13 @@ Phase 26, step 2. What binds the code:
   exists, so `AddBlockMenu` carries one too. Anything that hides the prompt has
   to keep that second route alive.
 
+- **A database settings menu takes a `DatabaseViewHandle`, never a node.**
+  The five menus serve a page's view and an index block's view through the
+  same handle (`usePageViewHandle`, `useBlockViewHandle`), so a new menu or
+  a new operator is written once and reaches both. A menu that reached for
+  `node.view` would work on the page and silently do nothing on a block.
+  `scopeable` is the only per-owner difference a menu may branch on.
+
 - **A rename by hand clears `nameFromParent`; a rename by the rule keeps
   it.** `renameNode(id, name, { byRule })` is how the cascade tells the two
   apart, and the distinction is the whole safety of the feature: a child she

@@ -18,6 +18,7 @@ import type { Block, DatabaseLayout, Node } from "../../constants/schema";
 import { groupableFields, useBlockDatabase } from "../../hooks/use-database";
 import { useProjectActions } from "../../hooks/use-project";
 import { DatabaseLayouts } from "../page/DatabaseLayouts";
+import { DatabaseBlockSettings } from "./DatabaseBlockSettings";
 import { DatabaseLayoutSubmenu } from "../tree/DatabaseLayoutSubmenu";
 import { TreePopover } from "../tree/TreePopover";
 
@@ -53,13 +54,17 @@ export function DatabaseBlock({ node, block }: { node: Node; block: Block }) {
     <div className="block-database">
       {/* A quiet control, like the source picker above it — the block's own
           title strip already says what this is. */}
-      <button
-        type="button"
-        className="block-collection-source"
-        onClick={(event) => setRect(event.currentTarget.getBoundingClientRect())}
-      >
-        {LAYOUT_LABELS[surface.view.layout]} <ChevronDown size={11} />
-      </button>
+      <div className="block-database-bar">
+        <button
+          type="button"
+          className="block-collection-source"
+          onClick={(event) => setRect(event.currentTarget.getBoundingClientRect())}
+        >
+          {LAYOUT_LABELS[surface.view.layout]} <ChevronDown size={11} />
+        </button>
+        {/* The other four settings, behind one control — see the component. */}
+        <DatabaseBlockSettings node={node} block={block} />
+      </div>
 
       <DatabaseLayouts data={{ ...surface, onEdit: editRowCell }} allColumns={surface.allColumns} dense />
 

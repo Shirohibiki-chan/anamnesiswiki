@@ -687,6 +687,39 @@
   min-width: 0;
 }
 
+/* The block's own bar: the layout switcher and the settings control, quiet
+   like the source picker above them. */
+.block-database-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.block-database-settings {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.block-database-settings[data-on] {
+  color: var(--color-text-secondary);
+}
+
+.block-database-settings-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.block-database-settings-item .database-tool-count {
+  margin-left: auto;
+}
+
+/* The way back sits at the top of the swapped-in menu, above its own heading. */
+.block-database-settings-back {
+  margin: var(--space-sm) var(--space-sm) 0;
+}
+
 /* The layouts were drawn for the middle of a page. In a sidebar block they
    have to give way rather than force the panel wider. */
 .block-database .database-cards {

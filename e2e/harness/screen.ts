@@ -1259,6 +1259,19 @@ export async function databaseRowNames(window: Page): Promise<string[]> {
   return names.map((name) => normalize(name));
 }
 
+/** The names an index block in the sidebar is listing, top to bottom. */
+export async function blockDatabaseRowNames(window: Page): Promise<string[]> {
+  const names = await window.locator(".block-database .database-list-name, .block-database .database-row-name").allInnerTexts();
+  return names.map((name) => normalize(name));
+}
+
+/** Opens one of an index block's settings menus — columns, filter, sort or group. */
+export async function openBlockDatabaseMenu(window: Page, menu: "columns" | "filter" | "sort" | "group"): Promise<void> {
+  await window.locator('[data-tool="block-settings"]').first().click();
+  await window.locator(`.database-menu [data-tool="${menu}"]`).click();
+  await window.locator(".database-menu-body").first().waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
 /** Clicks a row's name, which is the way from a table into a page. */
 export async function openDatabaseRow(window: Page, name: string): Promise<void> {
   await window.locator(DATABASE_ROW_NAME).filter({ hasText: name }).first().click();

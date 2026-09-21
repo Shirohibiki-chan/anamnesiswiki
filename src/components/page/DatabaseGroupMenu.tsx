@@ -4,22 +4,19 @@
 // by tags would list a page carrying three of them three times, so a table
 // showing nine rows would count twelve, and no heading would be wrong enough
 // to look like a bug.
-import type { Node } from "../../constants/schema";
 import {
   fieldId,
   fieldLabel,
   groupableFields,
   sameField,
-  useDatabase,
-  useUpdateDatabaseView,
+  type DatabaseViewHandle,
 } from "../../hooks/use-database";
 
-export function DatabaseGroupMenu({ node }: { node: Node }) {
-  const { allColumns } = useDatabase(node);
-  const update = useUpdateDatabaseView();
+export function DatabaseGroupMenu({ handle }: { handle: DatabaseViewHandle }) {
+  const { allColumns } = handle;
 
   const fields = groupableFields(allColumns);
-  const current = node.view?.groupBy;
+  const current = handle.view.groupBy;
 
   return (
     <div className="database-menu-body">
@@ -29,7 +26,7 @@ export function DatabaseGroupMenu({ node }: { node: Node }) {
         type="button"
         className="database-menu-item"
         data-on={current ? undefined : ""}
-        onClick={() => update(node, { groupBy: undefined })}
+        onClick={() => handle.update({ groupBy: undefined })}
       >
         Don't group
       </button>
@@ -40,7 +37,7 @@ export function DatabaseGroupMenu({ node }: { node: Node }) {
           type="button"
           className="database-menu-item"
           data-on={current && sameField(current, field) ? "" : undefined}
-          onClick={() => update(node, { groupBy: field })}
+          onClick={() => handle.update({ groupBy: field })}
         >
           {fieldLabel(field, allColumns)}
         </button>

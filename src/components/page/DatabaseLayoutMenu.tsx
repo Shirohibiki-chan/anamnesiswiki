@@ -3,9 +3,9 @@
 // **Switching is a menu, not a conversion.** All four read the same record, so
 // nothing is lost either way round — a board's columns are still there when you
 // go back to the table, because they were the view's grouping all along.
-import type { DatabaseLayout, Node } from "../../constants/schema";
+import type { DatabaseLayout } from "../../constants/schema";
 import { DATABASE_LAYOUTS } from "../../constants/schema";
-import { groupableFields, useDatabase, useUpdateDatabaseView } from "../../hooks/use-database";
+import { groupableFields, type DatabaseViewHandle } from "../../hooks/use-database";
 
 const LAYOUT_LABELS: Record<DatabaseLayout, string> = {
   table: "Table",
@@ -21,15 +21,14 @@ const LAYOUT_HINTS: Record<DatabaseLayout, string> = {
   list: "A name a line, quietly",
 };
 
-export function DatabaseLayoutMenu({ node }: { node: Node }) {
-  const { allColumns } = useDatabase(node);
-  const update = useUpdateDatabaseView();
+export function DatabaseLayoutMenu({ handle }: { handle: DatabaseViewHandle }) {
+  const { allColumns } = handle;
 
-  const current = node.view?.layout ?? "table";
+  const current = handle.view.layout ?? "table";
 
   function choose(layout: DatabaseLayout) {
-    if (layout !== "board" || node.view?.groupBy) {
-      update(node, { layout });
+    if (layout !== "board" || handle.view.groupBy) {
+      handle.update({ layout });
       return;
     }
     // A board with nothing to make columns from has nothing to draw, so
@@ -41,7 +40,7 @@ export function DatabaseLayoutMenu({ node }: { node: Node }) {
     // page, and in a folder of characters that is a single column — a board
     // that looks broken on arrival. Template is the fallback, not the default.
     const fields = groupableFields(allColumns);
-    update(node, { layout, groupBy: fields.find((field) => field.kind === "property") ?? fields[0] });
+    handle.update({ layout, groupBy: fields.find((field) => field.kind === "property") ?? fields[0] });
   }
 
   return (

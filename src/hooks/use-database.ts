@@ -111,6 +111,54 @@ export function useDatabase(node: Node | undefined): Omit<DatabaseSurface, "onEd
 }
 
 /**
+ * What a settings menu needs of a view, and no more: the record, the columns
+ * it can name, the values it can offer, and one way to change it.
+ *
+ * **One shape for a page and for a block, so the menus are written once.**
+ * The five menus were built against a page's `node.view` and lived on the
+ * bar above a full-page table; a Subpage index block in the sidebar draws
+ * through the same pipeline but had only the layout switcher, because a
+ * narrow column has nowhere to put six buttons — Queued Adjustments,
+ * 2026-09-21. The menus now take this and neither know nor care whose view
+ * it is; what differs is where the buttons go (`DatabaseToolbar` for the
+ * page, `DatabaseBlockSettings` for the block) and `scopeable`: a page's
+ * view can widen where its rows come from, a block's rows are its source's.
+ */
+export type DatabaseViewHandle = {
+  view: DatabaseView;
+  allColumns: RenderableProperty[];
+  choicesFor: (field: DatabaseField) => string[];
+  update: (patch: Partial<DatabaseView>) => void;
+  scopeable: boolean;
+};
+
+/** The handle for a page shown as a database. Its menus do nothing on a page without a view. */
+export function usePageViewHandle(node: Node): DatabaseViewHandle {
+  const { allColumns, choicesFor, view } = useDatabase(node);
+  const update = useUpdateDatabaseView();
+  return useMemo(
+    () => ({ view, allColumns, choicesFor, update: (patch) => update(node, patch), scopeable: true }),
+    [view, allColumns, choicesFor, update, node],
+  );
+}
+
+/** The handle for an index block drawn as a database. */
+export function useBlockViewHandle(host: Node, block: Block): DatabaseViewHandle {
+  const { allColumns, choicesFor, view } = useBlockDatabase(host, block);
+  const { setBlockView } = useProjectActions();
+  return useMemo(
+    () => ({
+      view,
+      allColumns,
+      choicesFor,
+      update: (patch) => setBlockView(host.id, block.id, { ...view, ...patch }),
+      scopeable: false,
+    }),
+    [view, allColumns, choicesFor, setBlockView, host.id, block.id],
+  );
+}
+
+/**
  * A fresh view for this page, with its columns guessed from what is inside it.
  *
  * Lives here rather than at the click site so the guess is made against the
