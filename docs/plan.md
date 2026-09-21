@@ -26,18 +26,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Queued Adjustments
 
-- **A marker on text that could be linked, while she is writing.** The other
-  half of `/link page names`, which shipped in Phase 19.5; this is the half that
-  shows what *could* be linked without being asked. It wants a ProseMirror
-  decoration, reached through BlockNote's own extension API the way
-  `select-all.ts` reaches it — ordinary work, and it was wrongly written down as
-  a blocked path until 2026-09-04.
-
-  **It is a nicety rather than a gap**, which is why it is here rather than in a
-  phase: the preview dialog already lists what could be linked, in the sentences
-  it was found in, and closing it changes nothing. What is missing is seeing it
-  while writing rather than when asking.
-
 - **Keep peeling logic out of `project-store.ts`, a slice at a time.** A
   read-through on 2026-08-28 found it at 3,226 lines and around 140 actions in
   one `create()` call — the largest file in the project and, at the time, the

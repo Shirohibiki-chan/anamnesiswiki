@@ -2,6 +2,14 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-20 — A page opened on a board
+
+### Additions
+
+- **Stretch a page card and it opens as the page.** Drag a card on a board past about twice its starting size in both directions and it stops being a card: its name goes across the top, its tabs beside it if it has more than one, and its writing fills the box — the page as it is now, drawn the way its own view draws it, callouts, columns, pictures and infobox included. Shrink it back and it is a picture card again; nothing about this is stored, so a card is only ever its size.
+- **Read it in place.** Double-click the opened page, or click it again once it is selected, and it takes the wheel and the keyboard: scroll it, select its words, follow a mention or a link in it. Escape, or a click elsewhere, hands the board back. Locked, it reads without any of that — a locked page cannot be moved, so the box is yours from the start.
+- **An *Open* button on it takes you to the page in full.** That is where the writing is done: the page on the board is for reading, this time round. Whether it should take typing as well is the question this step was built to ask.
+
 ## 2026-09-20 — Sticky notes on a board
 
 ### Additions

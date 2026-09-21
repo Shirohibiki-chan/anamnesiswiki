@@ -4,7 +4,7 @@
 // One setting so far. Its own section rather than a row bolted onto Sidebar or
 // Fonts because neither of those is about the editor, and a setting filed
 // somewhere it does not belong is a setting nobody finds twice.
-import { useFormattingBar, usePreferenceActions } from "../../hooks/use-preferences";
+import { useFormattingBar, useLinkMarks, usePreferenceActions } from "../../hooks/use-preferences";
 import { FORMATTING_BAR_MODES, type FormattingBarMode } from "../../services/preferences-service";
 
 const BAR_LABELS: Record<FormattingBarMode, { label: string; hint: string }> = {
@@ -20,7 +20,8 @@ const BAR_LABELS: Record<FormattingBarMode, { label: string; hint: string }> = {
 
 export function WritingSettings() {
   const formattingBar = useFormattingBar();
-  const { setFormattingBar } = usePreferenceActions();
+  const linkMarks = useLinkMarks();
+  const { setFormattingBar, setLinkMarks } = usePreferenceActions();
 
   return (
     <div className="appearance-settings">
@@ -45,6 +46,22 @@ export function WritingSettings() {
             </span>
           </label>
         ))}
+      </fieldset>
+
+      {/* A single switch rather than a pair of radios, since it is on or off
+          and there is no third way to have it. Same box the fonts toggle uses. */}
+      <fieldset className="sidebar-setting" data-setting="link-marks">
+        <legend className="sidebar-setting-label">Names that could be links</legend>
+        <p className="sidebar-setting-blurb">
+          A dotted line under a word in your writing that is the name of another page. It changes nothing on its own —
+          <em>/Link page names</em> is what turns them into links — and it is the same list that command would offer.
+        </p>
+        <label className="sidebar-setting-option">
+          <input type="checkbox" checked={linkMarks} onChange={(event) => setLinkMarks(event.target.checked)} />
+          <span className="sidebar-setting-option-text">
+            <span className="sidebar-setting-option-label">Mark them while I write</span>
+          </span>
+        </label>
       </fieldset>
     </div>
   );

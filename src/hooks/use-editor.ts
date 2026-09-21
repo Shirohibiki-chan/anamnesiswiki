@@ -33,6 +33,10 @@ import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-item
 import { applyColumnRepairs, type RepairableEditor } from "../services/editor-blocks/apply-column-repairs";
 import { applyPointerClones, type PointerEditor } from "../services/editor-blocks/apply-pointer-clones";
 import { selectAllExtension } from "../services/editor-blocks/select-all";
+import { linkableMarksExtension, refreshLinkableMarks } from "../services/editor-blocks/linkable-marks";
+import { useLinkMarks } from "./use-preferences";
+import { usePreferencesStore } from "../state/preferences-store";
+import { useProjectStore } from "../state/project-store";
 import { slashMenuItems } from "../services/editor-blocks/slash-menu";
 import { slashOpensCommandMenu } from "../services/editor-blocks/slash-trigger";
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
@@ -100,7 +104,20 @@ export function useEditor(
     schema: editorSchema,
     // Ctrl+A, which stops selecting anything once a row of columns is on the
     // page. See select-all.ts — the command works, the key handling does not.
-    extensions: [selectAllExtension()],
+    extensions: [
+      selectAllExtension(),
+      // The marks under words that could be links — see linkable-marks.ts.
+      // Always installed; the setting decides whether the list of names it
+      // is handed is empty, so turning it off needs no remount. Read off the
+      // stores at call time rather than closed over, since the extension is
+      // made once and must see the pages and the setting as they are now.
+      linkableMarksExtension({
+        getNames: () =>
+          usePreferencesStore.getState().preferences.linkMarks
+            ? linkableNames(useProjectStore.getState().nodes, nodeId)
+            : [],
+      }),
+    ],
     initialContent: openedContent.length > 0 ? (openedContent as never) : undefined,
     // Phase 16. These two are what make a picture inside a page possible at
     // all: BlockNote's image block holds a single string, so `uploadFile`
@@ -163,6 +180,12 @@ export function useEditor(
    * time it matters.
    */
   const page = useRef(nodes[nodeId]);
+  // The marks redraw on a document change by themselves; a change to the
+  // world's pages or to the setting is not one, so this asks for a redraw.
+  const linkMarks = useLinkMarks();
+  useEffect(() => {
+    refreshLinkableMarks(editor);
+  }, [nodes, linkMarks, editor]);
   // Written in an effect rather than during the render, which React's own rule
   // forbids: the handler below runs after the render either way, so it never
   // sees a page older than the keystroke it is reacting to.

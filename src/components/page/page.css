@@ -1427,6 +1427,21 @@
   overflow-x: auto;
 }
 
+/* A word that could be a link to a page, marked while writing — a dotted
+   line and nothing else, so it reads as a hint rather than as formatting.
+   It is a decoration, not a mark: nothing is in the file. See
+   services/editor-blocks/linkable-marks.ts, and Settings → Writing to turn
+   it off. */
+.editor-linkable {
+  text-decoration: underline dotted var(--color-accent-faint-border);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.editor-linkable:hover {
+  text-decoration-color: var(--color-accent-light);
+}
+
 .editor-mention {
   display: inline-flex;
   align-items: center;

@@ -223,6 +223,13 @@ export type PropertiesPanelDefault = (typeof PROPERTIES_PANEL_DEFAULTS)[number];
 export type Preferences = {
   treeDoubleClick: TreeDoubleClickAction;
   formattingBar: FormattingBarMode;
+  /**
+   * Whether words that could be a link to a page are marked while writing —
+   * a dotted line under them, and nothing else (editor-blocks/linkable-marks.ts).
+   * On to begin with, since it is quiet and changes nothing; here so it can be
+   * turned off by somebody who finds their prose underlined more than they like.
+   */
+  linkMarks: boolean;
   propertiesPanel: PropertiesPanelDefault;
   listPaging: ListPagingMode;
   listPageSize: ListPageSize;
@@ -272,6 +279,7 @@ export type Preferences = {
 export const DEFAULT_PREFERENCES: Preferences = {
   treeDoubleClick: "expand",
   formattingBar: "floating",
+  linkMarks: true,
   propertiesPanel: "open",
   listPaging: "pages",
   listPageSize: 20,
@@ -354,6 +362,7 @@ export function parsePreferences(raw: unknown): Preferences {
     formattingBar: FORMATTING_BAR_MODES.includes(formattingBar as FormattingBarMode)
       ? (formattingBar as FormattingBarMode)
       : DEFAULT_PREFERENCES.formattingBar,
+    linkMarks: typeof source.linkMarks === "boolean" ? source.linkMarks : DEFAULT_PREFERENCES.linkMarks,
     propertiesPanel: PROPERTIES_PANEL_DEFAULTS.includes(propertiesPanel as PropertiesPanelDefault)
       ? (propertiesPanel as PropertiesPanelDefault)
       : DEFAULT_PREFERENCES.propertiesPanel,
