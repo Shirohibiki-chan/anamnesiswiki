@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-20 — A Layers panel on the board
+
+### Additions
+
+- **A Layers panel:** a **Layers** button at the top right of every board opens a list on the board's right of everything on it, top to bottom, each named — a page card by its page, a text or a note by its words, a video by its file, anything else by what it is (Rectangle, Arrow, Drawing, Highlight…). A shape with words on it takes the words as its name, and a frame's shapes are listed under the frame's row. Click a row to select the shape (Shift+click to add it to the selection); the board scrolls to it if none of it was on screen. Drag a row up or down to change what is in front of what — the move is undoable like any other. The eye on a row hides a shape (see-through and locked, so nothing can bump it) and shows it again as it was; the lock locks and unlocks it. The panel stays on the right whether the board is in the page or expanded.
+
 ## 2026-09-20 — Boards inside a board, as tabs
 
 ### Additions
@@ -167,11 +173,3 @@
 
 - **A storyline or a board fills the page.** Title and breadcrumb at the top, then the canvas to the bottom edge and out to the column's edges — the way a board fills the window elsewhere — instead of a fixed-height box inside the reading column with empty page around it. Never shorter than 24rem in a short window; the page scrolls then. *Fill the window* still takes the sidebars too.
 - **A dashboard uses the full width of the page** rather than the reading column.
-
-## 2026-09-16 — Bubbles resize both ways
-
-### Fixes
-
-- **Dragging a bubble narrower no longer collapses it into a column of single letters on the way.** The narrowest a bubble can be was only enforced when you let go; now it holds while you drag.
-- **A bubble made taller keeps its words at the top.** The name was floating halfway down and the description sitting at the bottom, with the empty room split between them.
-- **The corner resizes height as well as width.** Drag down to make a bubble taller. A bubble is never shorter than its words — drag up past them and it stays at the words — and dragging back down to the plain one-row size clears the height rather than remembering a number that changes nothing.

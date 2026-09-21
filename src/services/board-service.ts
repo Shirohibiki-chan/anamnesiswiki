@@ -319,6 +319,17 @@ export function sunkUnderInk<T>(elements: readonly T[], ids: ReadonlySet<string>
   return [...rest.slice(0, at), ...strokes, ...rest.slice(at)];
 }
 
+/**
+ * Whether `element` is hidden by the Layers panel (step 15): see-through
+ * and locked, with what it was before kept in the mark so it can be shown
+ * again. The mark, not the opacity, is what says so — a shape she made
+ * see-through herself is not hidden.
+ */
+export function isHidden(element: unknown): boolean {
+  const hidden = (element as { customData?: { hidden?: unknown } }).customData?.hidden;
+  return !!hidden && typeof hidden === "object";
+}
+
 /** Whether `element` is a page card: an embed whose address is a page link. */
 export function isPageCard(element: unknown): boolean {
   const record = element as { type?: unknown; link?: unknown };
@@ -424,6 +435,9 @@ export function lockedButtonAt(elements: readonly unknown[], point: { x: number;
     if (!element.locked || element.isDeleted || typeof element.link !== "string" || !element.link.trim()) return;
     if (element.link === BOARD_NOTE_LINK || element.link === BOARD_VIDEO_LINK) return;
     if (isOpenPageCard(element)) return;
+    // Hidden by the Layers panel: locked so it takes no click, and a
+    // button nobody can see is not one.
+    if (isHidden(element)) return;
     if (insideBox(element, point)) found = { link: element.link, index };
   });
   return found;

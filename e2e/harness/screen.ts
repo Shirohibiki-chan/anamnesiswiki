@@ -2078,17 +2078,32 @@ export async function boardIsExpanded(window: Page): Promise<boolean> {
  */
 export async function toggleBoardExpand(window: Page): Promise<void> {
   await window.locator(`${BOARD} .board-expand`).click();
+  await boardCanvasSettled(window);
+}
+
+/**
+ * Waits for the drawing surface to fill what the board leaves it: the
+ * board less the sheet strip along its bottom and the panels beside it.
+ * The library resizes its canvas a moment after its box changes, and
+ * anything measured or clicked before that is against the old size — a
+ * moment long enough on CI's machine to be the whole difference (a
+ * Layers panel opened and the canvas still measured past it, 2026-09-20).
+ */
+async function boardCanvasSettled(window: Page): Promise<void> {
   await window.waitForFunction(
-    ([boardSelector, canvasSelector, sheetsSelector]) => {
+    ([boardSelector, canvasSelector, sheetsSelector, panelSelector]) => {
       const board = document.querySelector(boardSelector)?.getBoundingClientRect();
       const canvas = document.querySelector(canvasSelector)?.getBoundingClientRect();
       // The drawing takes the board down to the sheet strip along its
-      // bottom (Phase 32, step 13), which is the board's own.
+      // bottom (Phase 32, step 13), which is the board's own, and across
+      // it less the panels beside it — a viewed page (step 6) on the
+      // left, the Layers panel (step 15) on the right.
       const sheets = document.querySelector(sheetsSelector)?.getBoundingClientRect();
       const floor = sheets ? sheets.top : board?.bottom ?? 0;
-      return !!board && !!canvas && Math.abs(board.width - canvas.width) < 4 && Math.abs(floor - canvas.bottom) < 4;
+      const panels = Array.from(document.querySelectorAll(panelSelector)).reduce((sum, panel) => sum + panel.getBoundingClientRect().width, 0);
+      return !!board && !!canvas && Math.abs(board.width - panels - canvas.width) < 4 && Math.abs(floor - canvas.bottom) < 4;
     },
-    [BOARD, BOARD_CANVAS, "[data-testid='board-sheets']"],
+    [BOARD, BOARD_CANVAS, "[data-testid='board-sheets']", "[data-testid='board-view-panel'], [data-testid='board-layers-panel']"],
     { timeout: WAIT_MS },
   );
 }
@@ -3694,4 +3709,109 @@ export async function openBoardSheet(window: Page, name: string): Promise<void> 
 /** The + at the end of the strip: a new board inside this one, opened. */
 export async function addBoardSheet(window: Page): Promise<void> {
   await window.locator(`${BOARD_SHEETS} .board-sheet-add`).click();
+}
+
+// ---- The Layers panel (Phase 32, step 15) ----
+
+const BOARD_LAYERS_BUTTON = ".board-layers-button";
+const BOARD_LAYERS_PANEL = "[data-testid='board-layers-panel']";
+const BOARD_LAYER = "[data-testid='board-layer']";
+
+/** Opens the Layers panel with its top-right button if it is closed, or closes it if open, and waits for that. */
+export async function toggleBoardLayers(window: Page): Promise<void> {
+  const open = (await window.locator(BOARD_LAYERS_PANEL).count()) > 0;
+  await window.locator(BOARD_LAYERS_BUTTON).click();
+  await window.locator(BOARD_LAYERS_PANEL).waitFor({ state: open ? "detached" : "visible", timeout: WAIT_MS });
+  // The drawing gives the panel its room a moment later; wait for that,
+  // or a measurement or a click lands on the old size.
+  await boardCanvasSettled(window);
+}
+
+export async function boardLayersIsOpen(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD_LAYERS_PANEL).count()) > 0;
+}
+
+/** What the panel says when the board is empty, or empty when it lists rows. */
+export async function boardLayersEmptyText(window: Page): Promise<string> {
+  const empty = window.locator(`${BOARD_LAYERS_PANEL} .board-layers-empty`);
+  return (await empty.count()) > 0 ? normalize(await empty.innerText()) : "";
+}
+
+export type BoardLayerRow = { name: string; kind: string; selected: boolean; hidden: boolean; locked: boolean; inFrame: boolean };
+
+/** The panel's rows, top to bottom, as they read. */
+export async function boardLayerRows(window: Page): Promise<BoardLayerRow[]> {
+  return window.locator(BOARD_LAYER).evaluateAll((rows) =>
+    rows.map((row) => ({
+      name: (row.querySelector(".board-layer-label") as HTMLElement).innerText.trim(),
+      kind: row.getAttribute("data-kind") ?? "",
+      selected: row.getAttribute("data-selected") === "true",
+      hidden: row.getAttribute("data-hidden") === "true",
+      locked: row.getAttribute("data-locked") === "true",
+      inFrame: row.getAttribute("data-in-frame") === "true",
+    })),
+  );
+}
+
+/** The rows' names, top to bottom. */
+export async function boardLayerNames(window: Page): Promise<string[]> {
+  return (await boardLayerRows(window)).map((row) => row.name);
+}
+
+function boardLayerRow(window: Page, name: string) {
+  return window.locator(BOARD_LAYER).filter({ has: window.locator(".board-layer-label", { hasText: name }) }).first();
+}
+
+/** Clicks the row reading `name`, on its name — with Shift held, to add to the selection. */
+export async function clickBoardLayer(window: Page, name: string, shift = false): Promise<void> {
+  await boardLayerRow(window, name).locator(".board-layer-name").click({ modifiers: shift ? ["Shift"] : [] });
+}
+
+/**
+ * Drags the row reading `name` onto the row reading `onto`, with the
+ * mouse and in steps — the panel's rows are dnd-kit's, which commits to a
+ * drag only once the pointer has moved past its distance, and slides the
+ * other rows out of the way as it goes.
+ */
+export async function dragBoardLayer(window: Page, name: string, onto: string): Promise<void> {
+  const from = await boardLayerRow(window, name).boundingBox();
+  const to = await boardLayerRow(window, onto).boundingBox();
+  if (!from || !to) throw new Error("a layer row has no box");
+  await window.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await window.mouse.down();
+  await window.mouse.move(from.x + from.width / 2, from.y + from.height / 2 + 8, { steps: 4 });
+  await window.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  await window.mouse.up();
+}
+
+/** The eye on the row reading `name`: hides the shape, or shows it again. */
+export async function toggleBoardLayerHidden(window: Page, name: string): Promise<void> {
+  const row = boardLayerRow(window, name);
+  await row.hover();
+  await row.locator(".board-layer-eye").click();
+}
+
+/** The lock on the row reading `name`: locks the shape, or unlocks it. */
+export async function toggleBoardLayerLocked(window: Page, name: string): Promise<void> {
+  const row = boardLayerRow(window, name);
+  await row.hover();
+  await row.locator(".board-layer-lock").click();
+}
+
+/** Where the panel and the drawing's canvas sit, left to right, in window pixels. */
+export async function boardLayersLayout(window: Page): Promise<{ panelLeft: number; canvasRight: number }> {
+  const panel = await window.locator(BOARD_LAYERS_PANEL).boundingBox();
+  const canvas = await window.locator(BOARD_CANVAS).first().boundingBox();
+  if (!panel || !canvas) throw new Error("the Layers panel or the canvas has no box");
+  return { panelLeft: panel.x, canvasRight: canvas.x + canvas.width };
+}
+
+/** Renames the open page by its title: click, type, Enter. */
+export async function renameOpenPage(window: Page, name: string): Promise<void> {
+  await window.locator(PAGE_TITLE).first().click();
+  const input = window.locator(".page-title-input");
+  await input.waitFor({ state: "visible", timeout: WAIT_MS });
+  await input.fill(name);
+  await input.press("Enter");
+  await waitForPageTitle(window, name);
 }

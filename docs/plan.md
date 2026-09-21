@@ -779,18 +779,11 @@ other people's cursors. In the order they would matter:
     catching up, and comes last because it is the heaviest patch of the
     phase for the smallest visible change.
 
-15. **A Layers panel.** Asked 2026-09-19, from Canva rather than LK: a list
-    of everything on the board from top to bottom, click a row to select
-    it, drag a row to change what is in front of what, with a name for
-    each — a card's page, a text's words, the shape's kind otherwise. The
-    library has only the four Layers buttons in its styles panel (send
-    backward and the rest), which act on the selection and show nothing.
-    Built by the app beside the board from the library's element list and
-    `updateScene` with the list reordered, so it is the app's own panel
-    and takes the app's look; a hidden shape and a locked one are marked
-    on their rows. Where it sits is the same question as the properties
-    panel's and gets the same answer: one place, the right-hand side,
-    never moving by state.
+15. ~~**A Layers panel.**~~ Shipped 2026-09-20 — `docs/shipped.md` §
+    Phase 32, step 15. The app's own list on the board's right of
+    everything on it, top to bottom, named; a row selects, a row dragged
+    reorders, the eye hides and the lock locks. One place, whether the
+    board is in the page or expanded.
 
 **Not in this phase, and why, so it is not re-asked:**
 

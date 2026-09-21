@@ -35,7 +35,7 @@ import {
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { AppState, BinaryFileData, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIAppState } from "@excalidraw/excalidraw/types";
-import { FilePlus2, Grip, Highlighter, Link2, Maximize2, Minimize2, PanelLeftOpen, StickyNote, Unlink } from "lucide-react";
+import { FilePlus2, Grip, Highlighter, Layers, Link2, Maximize2, Minimize2, PanelLeftOpen, StickyNote, Unlink } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   BOARD_CARD_CASCADE,
@@ -56,14 +56,16 @@ import {
 } from "../../constants/board";
 import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import { DEFAULT_NOTE_COLOUR, NOTE_COLOURS, emptyNote, isNote, noteColourName, noteOf, type NoteColour, type NoteLine } from "../../services/board-notes";
+import { boardLayers, hiddenFields, layerOffScreen, movedLayer, shownFields, type BoardLayer } from "../../services/board-layers";
 import { fittedSize, type PictureFile } from "../../services/board-pictures";
-import { cardPageId, cardPlacement, draggedPageIds, elementLink, isHighlight, isOpenPageCard, isPageCard, lockedButtonAt, sunkUnderInk } from "../../services/board-service";
+import { cardPageId, cardPlacement, draggedPageIds, elementLink, isHidden, isHighlight, isOpenPageCard, isPageCard, lockedButtonAt, sunkUnderInk } from "../../services/board-service";
 import { isVideo, isVideoFileName, videoOf } from "../../services/board-videos";
 import { bookmarkOf, isBookmarkCard, placeholderBookmark, webAddressIn, type Bookmark } from "../../services/bookmark-service";
 import { BoardNote, type NoteEditor } from "./BoardNote";
 import type { BoardLinks } from "../../hooks/use-board-links";
 import { NodeIcon } from "../blocks/IconPicker";
 import { BoardBookmarkCard } from "./BoardBookmarkCard";
+import { BoardLayersPanel } from "./BoardLayersPanel";
 import { BoardPageCard } from "./BoardPageCard";
 import { BoardVideo } from "./BoardVideo";
 
@@ -272,6 +274,16 @@ export default function BoardCanvas({
   const penStyleRef = useRef<Pick<AppState, "currentItemStrokeColor" | "currentItemStrokeWidth" | "currentItemOpacity"> | null>(null);
   const highlightColourRef = useRef(BOARD_HIGHLIGHT_COLOUR);
   const knownStrokesRef = useRef<Set<string>>(new Set());
+  // The Layers panel (step 15): whether it is open, and its rows as last
+  // read off the board — read only while it is open, and set only when
+  // they read differently, since the library reports on every pointer
+  // move and the rows do not change with a shape's place.
+  const [layersOpen, setLayersOpen] = useState(false);
+  const layersOpenRef = useRef(false);
+  const [layers, setLayers] = useState<{ rows: BoardLayer[]; selected: ReadonlySet<string> }>({ rows: [], selected: new Set() });
+  const layersSignatureRef = useRef("");
+  const [layersNotice, setLayersNotice] = useState<string | null>(null);
+  const layersNoticeTimerRef = useRef<number | null>(null);
   // The viewed page, readable from the library's change reports.
   const viewedPageRef = useRef(viewedPageId);
   useEffect(() => {
@@ -624,6 +636,106 @@ export default function BoardCanvas({
     api.updateScene({ elements: sunkUnderInk(marked, ids, (element) => element.id), captureUpdate: CaptureUpdateAction.NEVER });
   }, []);
 
+  /** Reads the Layers panel's rows off the board, if the panel is open and they have changed. */
+  const refreshLayers = useCallback((elements: readonly ExcalidrawElement[], appState: UIAppState | AppState) => {
+    if (!layersOpenRef.current) return;
+    const rows = boardLayers(elements);
+    const selected = Object.keys(appState.selectedElementIds)
+      .filter((id) => appState.selectedElementIds[id])
+      .sort();
+    const signature = JSON.stringify([rows, selected]);
+    if (signature === layersSignatureRef.current) return;
+    layersSignatureRef.current = signature;
+    setLayers({ rows, selected: new Set(selected) });
+  }, []);
+
+  const toggleLayers = useCallback(() => {
+    const open = !layersOpenRef.current;
+    layersOpenRef.current = open;
+    setLayersOpen(open);
+    if (!open) {
+      layersSignatureRef.current = "";
+      return;
+    }
+    const api = apiRef.current;
+    if (api) refreshLayers(api.getSceneElementsIncludingDeleted(), api.getAppState());
+  }, [refreshLayers]);
+
+  /** Says something in the Layers panel for a moment — a move it would not make. */
+  const sayInLayers = useCallback((notice: string) => {
+    setLayersNotice(notice);
+    if (layersNoticeTimerRef.current !== null) window.clearTimeout(layersNoticeTimerRef.current);
+    layersNoticeTimerRef.current = window.setTimeout(() => setLayersNotice(null), 4000);
+  }, []);
+  useEffect(
+    () => () => {
+      if (layersNoticeTimerRef.current !== null) window.clearTimeout(layersNoticeTimerRef.current);
+    },
+    [],
+  );
+
+  /**
+   * A row clicked: the shape is the selection, or with Shift joins it
+   * (or leaves it). Brought on screen if none of it is, so the click is
+   * seen to do something; and the keyboard goes to the board, so Delete
+   * and the arrows act on what was just picked.
+   */
+  const selectLayer = useCallback(
+    (id: string, additive: boolean) => {
+      const api = apiRef.current;
+      if (!api) return;
+      const state = api.getAppState();
+      const current = additive ? { ...state.selectedElementIds } : {};
+      if (additive && current[id]) delete current[id];
+      else current[id] = true;
+      api.updateScene({ appState: { selectedElementIds: current, selectedGroupIds: {}, editingGroupId: null, activeEmbeddable: null } });
+      const element = api.getSceneElements().find((entry) => entry.id === id);
+      if (element && !additive && layerOffScreen(element, { scrollX: state.scrollX, scrollY: state.scrollY, zoom: state.zoom.value, width: state.width, height: state.height })) {
+        api.scrollToContent(element, { animate: true, duration: 300 });
+      }
+      surface?.querySelector<HTMLElement>(".excalidraw")?.focus();
+    },
+    [surface],
+  );
+
+  /** A row dropped beside another: the shape's unit moves there in the drawing, as one undoable edit. */
+  const moveLayer = useCallback(
+    (movedId: string, targetId: string, side: "above" | "below") => {
+      const api = apiRef.current;
+      if (!api) return;
+      const moved = movedLayer(api.getSceneElementsIncludingDeleted(), movedId, targetId, side);
+      if (!moved) {
+        sayInLayers("A shape goes into or out of a frame on the drawing, by where it is put.");
+        return;
+      }
+      api.updateScene({ elements: moved, captureUpdate: CaptureUpdateAction.IMMEDIATELY });
+    },
+    [sayInLayers],
+  );
+
+  /** Hides a shape — see-through and locked, as it was kept for showing again — or shows it. Hidden, it leaves the selection. */
+  const toggleLayerHidden = useCallback((id: string) => {
+    const api = apiRef.current;
+    if (!api) return;
+    let hiding = false;
+    const elements = api.getSceneElementsIncludingDeleted().map((element) => {
+      if (element.id !== id) return element;
+      hiding = !isHidden(element);
+      return newElementWith(element, hiding ? hiddenFields(element) : shownFields(element));
+    });
+    const selectedElementIds = { ...api.getAppState().selectedElementIds };
+    delete selectedElementIds[id];
+    api.updateScene({ elements, appState: hiding ? { selectedElementIds } : undefined, captureUpdate: CaptureUpdateAction.IMMEDIATELY });
+  }, []);
+
+  /** Locks a shape, or unlocks it — the library's own lock, from the row. */
+  const toggleLayerLocked = useCallback((id: string) => {
+    const api = apiRef.current;
+    if (!api) return;
+    const elements = api.getSceneElementsIncludingDeleted().map((element) => (element.id === id ? newElementWith(element, { locked: !element.locked }) : element));
+    api.updateScene({ elements, captureUpdate: CaptureUpdateAction.IMMEDIATELY });
+  }, []);
+
   // A new note on N, and Enter on a selected note to write in it — the
   // library's own Enter on a shape with words — or on a selected opened
   // page to write in it; the highlighter on Shift+P, the pen's key with a
@@ -793,6 +905,7 @@ export default function BoardCanvas({
   }, [surface, addCards, addPicture, addVideo, placeVideo]);
 
   return (
+    <>
     <Excalidraw
       excalidrawAPI={(api) => {
         apiRef.current = api;
@@ -806,6 +919,7 @@ export default function BoardCanvas({
       theme={theme}
       onChange={(elements, appState, files) => {
         lastSceneRef.current = { elements, appState: appState as unknown as Record<string, unknown>, files };
+        refreshLayers(elements, appState);
         // The library shows its own link popup for any selected embed, with
         // the raw page address in it. For a card the address is not for
         // reading, so the board is told and its stylesheet hides the popup;
@@ -951,6 +1065,10 @@ export default function BoardCanvas({
       // its own drawing, since the card is drawn only for a bookmark.
       validateEmbeddable={(link) => (link.startsWith(BOARD_PAGE_LINK_PREFIX) || link === BOARD_NOTE_LINK || link === BOARD_VIDEO_LINK || /^https?:\/\//i.test(link) ? true : undefined)}
       renderEmbeddable={(element) => {
+        // Hidden by the Layers panel: the box is see-through, and nothing is
+        // drawn in it either, so nothing in it can take a click or a wheel
+        // — an opened page's editor, or a note's links, would, invisibly.
+        if (isHidden(element)) return <div className="board-card board-card-hidden" data-testid="board-card-hidden" />;
         const pageId = cardPageId(element);
         if (pageId) {
           return (
@@ -1125,6 +1243,19 @@ export default function BoardCanvas({
                   <span className="board-link-label">View</span>
                 </button>
               )}
+              {/* The Layers panel, on the board's right: a list of everything
+                  on it, top to bottom. */}
+              <button
+                type="button"
+                className="board-top-button board-layers-button"
+                aria-pressed={layersOpen}
+                onClick={toggleLayers}
+                title="Layers"
+                aria-label="Show the Layers panel: everything on this board, top to bottom"
+              >
+                <Layers size={16} />
+                <span className="board-link-label">Layers</span>
+              </button>
               {linkable && (
                 <button
                   type="button"
@@ -1228,5 +1359,20 @@ export default function BoardCanvas({
         <MainMenu.DefaultItems.ChangeCanvasBackground />
       </MainMenu>
     </Excalidraw>
+    {/* Beside the library's element, not inside it: the board's grid places
+        the panel on the right by name. */}
+    {layersOpen && (
+      <BoardLayersPanel
+        layers={layers.rows}
+        selectedIds={layers.selected}
+        onSelect={selectLayer}
+        onMove={moveLayer}
+        onToggleHidden={toggleLayerHidden}
+        onToggleLocked={toggleLayerLocked}
+        onClose={toggleLayers}
+        notice={layersNotice}
+      />
+    )}
+    </>
   );
 }
