@@ -1,5 +1,5 @@
 diff --git a/dist/dev/chunk-4FTI6OG3.js b/dist/dev/chunk-4FTI6OG3.js
-index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d600f793c 100644
+index 65df46b6cd47f78f2c2c7f03574d233414a995a2..ee8baea15dc9f7a4d2db2941fa2d0897bc878ad4 100644
 --- a/dist/dev/chunk-4FTI6OG3.js
 +++ b/dist/dev/chunk-4FTI6OG3.js
 @@ -7711,6 +7711,9 @@ function deconstructDiamondElement(element, offset = 0) {
@@ -33,7 +33,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
          };
          context.drawImage(
            img,
-@@ -8981,6 +8985,95 @@ var drawElementOnCanvas = (element, rc, context, renderConfig, appState) => {
+@@ -8981,6 +8985,101 @@ var drawElementOnCanvas = (element, rc, context, renderConfig, appState) => {
      }
    }
  };
@@ -96,6 +96,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
 +    elapsed -= gif.frames[index].duration;
 +    index += 1;
 +  }
++  gif.remaining = gif.frames[index].duration - elapsed;
 +  if (index === gif.index) return false;
 +  gif.index = index;
 +  return true;
@@ -108,9 +109,14 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
 +  }
 +  const now = performance.now();
 +  let changed = false;
-+  for (const gif of anamnesisGifs.values()) if (gif.frames.length > 1 && anamnesisGifAdvance(gif, now)) changed = true;
++  let wait = 1000;
++  for (const gif of anamnesisGifs.values()) {
++    if (gif.frames.length < 2) continue;
++    if (anamnesisGifAdvance(gif, now)) changed = true;
++    wait = Math.min(wait, gif.remaining);
++  }
 +  if (changed) anamnesisGifRedraw();
-+  anamnesisGifLoop = requestAnimationFrame(anamnesisGifTick);
++  anamnesisGifLoop = setTimeout(anamnesisGifTick, Math.max(16, wait));
 +};
 +var anamnesisGifAfterRender = (config, render) => {
 +  const drawn = anamnesisGifsDrawn;
@@ -120,7 +126,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
 +  anamnesisGifLast = () => render(config);
 +  if (drawn) {
 +    anamnesisGifRedraw = anamnesisGifLast;
-+    if (!anamnesisGifLoop) anamnesisGifLoop = requestAnimationFrame(anamnesisGifTick);
++    if (!anamnesisGifLoop) anamnesisGifLoop = setTimeout(anamnesisGifTick, 16);
 +  } else {
 +    anamnesisGifRedraw = null;
 +  }
@@ -129,7 +135,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
  var elementWithCanvasCache = /* @__PURE__ */ new WeakMap();
  var generateElementWithCanvas = (element, elementsMap, renderConfig, appState) => {
    const zoom = renderConfig ? appState.zoom : defaultAppState.zoom;
-@@ -8994,6 +9087,7 @@ var generateElementWithCanvas = (element, elementsMap, renderConfig, appState) =
+@@ -8994,6 +9093,7 @@ var generateElementWithCanvas = (element, elementsMap, renderConfig, appState) =
    // regenerate the cached canvas. But we need to in case of labels which are
    // cached alongside the arrow, and we want the labels to remain unrotated
    // with respect to the arrow.
@@ -137,7 +143,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
    isArrowElement(element) && boundTextElement && element.angle !== prevElementWithCanvas.angle) {
      const elementWithCanvas = generateElementCanvas(
        element,
-@@ -9005,6 +9099,7 @@ var generateElementWithCanvas = (element, elementsMap, renderConfig, appState) =
+@@ -9005,6 +9105,7 @@ var generateElementWithCanvas = (element, elementsMap, renderConfig, appState) =
      if (!elementWithCanvas) {
        return null;
      }
@@ -145,7 +151,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
      elementWithCanvasCache.set(element, elementWithCanvas);
      return elementWithCanvas;
    }
-@@ -9092,9 +9187,11 @@ var renderElement = (element, elementsMap, allElementsMap, rc, context, renderCo
+@@ -9092,9 +9193,11 @@ var renderElement = (element, elementsMap, allElementsMap, rc, context, renderCo
        if (appState.frameRendering.enabled && appState.frameRendering.outline) {
          context.save();
          context.translate(
@@ -159,7 +165,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
          context.fillStyle = "rgba(0, 0, 200, 0.04)";
          context.lineWidth = FRAME_STYLE.strokeWidth / appState.zoom.value;
          context.strokeStyle = FRAME_STYLE.strokeColor;
-@@ -17327,14 +17424,14 @@ var maybeWrapNodesInFrameClipPath = (element, root, nodes, frameRendering, eleme
+@@ -17327,14 +17430,14 @@ var maybeWrapNodesInFrameClipPath = (element, root, nodes, frameRendering, eleme
    if (!frameRendering.enabled || !frameRendering.clip) {
      return null;
    }
@@ -179,7 +185,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
  };
  var renderElementToSvg = (element, elementsMap, rsvg, svgRoot, files, offsetX, offsetY, renderConfig) => {
    const offset = { x: offsetX, y: offsetY };
-@@ -18141,7 +18238,7 @@ var isPointHittingLinkIcon = (element, elementsMap, appState, [x, y]) => {
+@@ -18141,7 +18244,7 @@ var isPointHittingLinkIcon = (element, elementsMap, appState, [x, y]) => {
    return hitLink;
  };
  var isPointHittingLink = (element, elementsMap, appState, [x, y], isMobile) => {
@@ -188,7 +194,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
      return false;
    }
    if (!isMobile && appState.viewModeEnabled && hitElementBoundingBox(x, y, element, elementsMap)) {
-@@ -18310,32 +18407,38 @@ var strokeGrid = (context, gridSize, gridStep, scrollX, scrollY, zoom, width, he
+@@ -18310,32 +18413,38 @@ var strokeGrid = (context, gridSize, gridStep, scrollX, scrollY, zoom, width, he
    }
    context.restore();
  };
@@ -237,7 +243,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
      const [x1, y1, x2, y2] = getElementAbsoluteCoords(element, elementsMap);
      const [x, y, width, height] = getLinkHandleFromCoords(
        [x1, y1, x2, y2],
-@@ -18449,7 +18552,7 @@ var _renderStaticScene = ({
+@@ -18449,7 +18558,7 @@ var _renderStaticScene = ({
            elementsMap,
            inFrameGroupsMap
          )) {
@@ -246,7 +252,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
          }
          renderElement(
            element,
-@@ -18537,7 +18640,7 @@ var _renderStaticScene = ({
+@@ -18537,7 +18646,7 @@ var _renderStaticScene = ({
            elementsMap,
            inFrameGroupsMap
          )) {
@@ -255,7 +261,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
          }
          render();
          context.restore();
-@@ -18567,6 +18670,7 @@ var _renderStaticScene = ({
+@@ -18567,6 +18676,7 @@ var _renderStaticScene = ({
  var renderStaticSceneThrottled = throttleRAF(
    (config) => {
      _renderStaticScene(config);
@@ -263,7 +269,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
    },
    { trailing: true }
  );
-@@ -18576,6 +18680,7 @@ var renderStaticScene = (renderConfig, throttle2) => {
+@@ -18576,6 +18686,7 @@ var renderStaticScene = (renderConfig, throttle2) => {
      return;
    }
    _renderStaticScene(renderConfig);
@@ -271,7 +277,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
  };
  
  // scene/export.ts
-@@ -18617,6 +18722,14 @@ var addFrameLabelsAsTextElements = (elements, opts) => {
+@@ -18617,6 +18728,14 @@ var addFrameLabelsAsTextElements = (elements, opts) => {
        });
        textElement.y -= textElement.height;
        textElement = truncateText(textElement, element.width);
@@ -286,7 +292,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
        nextElements.push(textElement);
      }
      nextElements.push(element);
-@@ -18804,7 +18917,7 @@ var exportToSvg = async (elements, appState, files, opts) => {
+@@ -18804,7 +18923,7 @@ var exportToSvg = async (elements, appState, files, opts) => {
        const rect = svgRoot.ownerDocument.createElementNS(SVG_NS, "rect");
        rect.setAttribute(
          "transform",
@@ -295,7 +301,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
        );
        rect.setAttribute("width", `${frame.width}`);
        rect.setAttribute("height", `${frame.height}`);
-@@ -21868,10 +21981,40 @@ function isElementIntersectingFrame(element, frame, elementsMap) {
+@@ -21868,10 +21987,40 @@ function isElementIntersectingFrame(element, frame, elementsMap) {
    );
    return intersecting;
  }
@@ -337,7 +343,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
  );
  var isElementContainingFrame = (element, frame, elementsMap) => {
    return getElementsWithinSelection([frame], element, elementsMap).some(
-@@ -21879,23 +22022,14 @@ var isElementContainingFrame = (element, frame, elementsMap) => {
+@@ -21879,23 +22028,14 @@ var isElementContainingFrame = (element, frame, elementsMap) => {
    );
  };
  var elementsAreInFrameBounds = (elements, frame, elementsMap) => {
@@ -363,7 +369,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
  };
  var groupByFrameLikes = (elements) => {
    const frameElementsMap = /* @__PURE__ */ new Map();
-@@ -22053,7 +22187,7 @@ var filterElementsEligibleAsFrameChildren = (elements, frame) => {
+@@ -22053,7 +22193,7 @@ var filterElementsEligibleAsFrameChildren = (elements, frame) => {
    const processedGroups = /* @__PURE__ */ new Set();
    const eligibleElements = [];
    for (const element of elements) {
@@ -372,7 +378,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
        continue;
      }
      if (element.groupIds.length) {
-@@ -22098,7 +22232,7 @@ var addElementsToFrame = (allElements, elementsToAdd, frame, appState) => {
+@@ -22098,7 +22238,7 @@ var addElementsToFrame = (allElements, elementsToAdd, frame, appState) => {
      allElements,
      elementsToAdd
    )) {
@@ -381,7 +387,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
        continue;
      }
      if (element.frameId && appState.selectedElementIds[element.id] && appState.selectedElementIds[element.frameId]) {
-@@ -22181,7 +22315,7 @@ var updateFrameMembershipOfSelectedElements = (allElements, appState, app) => {
+@@ -22181,7 +22321,7 @@ var updateFrameMembershipOfSelectedElements = (allElements, appState, app) => {
    const elementsToRemove = /* @__PURE__ */ new Set();
    const elementsMap = arrayToMap(allElements);
    elementsToFilter.forEach((element) => {
@@ -390,7 +396,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
        elementsToRemove.add(element);
      }
    });
-@@ -22289,6 +22423,9 @@ var shouldApplyFrameClip = (element, frame, appState, elementsMap, checkedGroups
+@@ -22289,6 +22429,9 @@ var shouldApplyFrameClip = (element, frame, appState, elementsMap, checkedGroups
    if (!appState.frameRendering || !appState.frameRendering.clip) {
      return false;
    }
@@ -400,7 +406,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
    const shouldClipElementItself = isElementIntersectingFrame(element, frame, elementsMap) || isElementContainingFrame(element, frame, elementsMap);
    if (shouldClipElementItself) {
      for (const groupId of element.groupIds) {
-@@ -22348,7 +22485,53 @@ var excludeElementsInFramesFromSelection = (selectedElements) => {
+@@ -22348,7 +22491,53 @@ var excludeElementsInFramesFromSelection = (selectedElements) => {
      return true;
    });
  };
@@ -455,7 +461,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
    const [selectionX1, selectionY1, selectionX2, selectionY2] = getElementAbsoluteCoords(selection, elementsMap);
    let elementsInSelection = elements.filter((element) => {
      let [elementX1, elementY1, elementX2, elementY2] = getElementBounds(
-@@ -22366,7 +22549,10 @@ var getElementsWithinSelection = (elements, selection, elementsMap, excludeEleme
+@@ -22366,7 +22555,10 @@ var getElementsWithinSelection = (elements, selection, elementsMap, excludeEleme
        elementX2 = Math.min(fx2, elementX2);
        elementY2 = Math.min(fy2, elementY2);
      }
@@ -467,7 +473,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
    });
    elementsInSelection = excludeElementsInFrames ? excludeElementsInFramesFromSelection(elementsInSelection) : elementsInSelection;
    elementsInSelection = elementsInSelection.filter((element) => {
-@@ -22444,8 +22630,8 @@ var getSelectedElements = (elements, appState, opts) => {
+@@ -22444,8 +22636,8 @@ var getSelectedElements = (elements, appState, opts) => {
      const elementsToInclude = [];
      selectedElements.forEach((element) => {
        if (isFrameLikeElement(element)) {
@@ -478,7 +484,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
          );
        }
        elementsToInclude.push(element);
-@@ -23155,11 +23341,6 @@ var getTransformHandles = (element, zoom, elementsMap, pointerType = "mouse", om
+@@ -23155,11 +23347,6 @@ var getTransformHandles = (element, zoom, elementsMap, pointerType = "mouse", om
          omitSides = OMIT_SIDES_FOR_LINE_BACKSLASH;
        }
      }
@@ -490,7 +496,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
    }
    const margin = isLinearElement(element) ? DEFAULT_TRANSFORM_HANDLE_SPACING + 8 : isImageElement(element) ? 0 : DEFAULT_TRANSFORM_HANDLE_SPACING;
    return getTransformHandlesFromCoords(
-@@ -23358,6 +23539,13 @@ var getSelectionBorders = ([x1, y1], [x2, y2], center, angle) => {
+@@ -23358,6 +23545,13 @@ var getSelectionBorders = ([x1, y1], [x2, y2], center, angle) => {
  
  // element/resizeElements.ts
  var transformElements = (originalElements, transformHandleType, selectedElements, elementsMap, scene, shouldRotateWithDiscreteAngle2, shouldResizeFromCenter2, shouldMaintainAspectRatio2, pointerX, pointerY, centerX, centerY) => {
@@ -504,7 +510,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
    if (selectedElements.length === 1) {
      const [element] = selectedElements;
      if (transformHandleType === "rotation") {
-@@ -23471,9 +23659,7 @@ var rotateSingleElement = (element, elementsMap, scene, pointerX, pointerY, shou
+@@ -23471,9 +23665,7 @@ var rotateSingleElement = (element, elementsMap, scene, pointerX, pointerY, shou
    const cx = (x1 + x2) / 2;
    const cy = (y1 + y2) / 2;
    let angle;
@@ -515,7 +521,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
      angle = 5 * Math.PI / 2 + Math.atan2(pointerY - cy, pointerX - cx);
      if (shouldRotateWithDiscreteAngle2) {
        angle = angle + SHIFT_LOCKING_ANGLE / 2;
-@@ -23711,7 +23897,7 @@ var rotateMultipleElements = (originalElements, elements, elementsMap, scene, po
+@@ -23711,7 +23903,7 @@ var rotateMultipleElements = (originalElements, elements, elementsMap, scene, po
      centerAngle -= centerAngle % SHIFT_LOCKING_ANGLE;
    }
    for (const element of elements) {
@@ -524,7 +530,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
        const [x1, y1, x2, y2] = getElementAbsoluteCoords(element, elementsMap);
        const cx = (x1 + x2) / 2;
        const cy = (y1 + y2) / 2;
-@@ -24422,10 +24608,8 @@ var dragSelectedElements = (pointerDownState, _selectedElements, offset, scene,
+@@ -24422,10 +24614,8 @@ var dragSelectedElements = (pointerDownState, _selectedElements, offset, scene,
    );
    const frames = selectedElements.filter((e) => isFrameLikeElement(e)).map((f) => f.id);
    if (frames.length > 0) {
@@ -537,7 +543,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
      }
    }
    const commonBounds = getCommonBounds(
-@@ -24816,8 +25000,8 @@ var dataURLToString = (dataURL) => {
+@@ -24816,8 +25006,8 @@ var dataURLToString = (dataURL) => {
    return base64ToString(dataURL.slice(dataURL.indexOf(",") + 1));
  };
  var resizeImageFile = async (file2, opts) => {
@@ -548,7 +554,7 @@ index 65df46b6cd47f78f2c2c7f03574d233414a995a2..9a1b36b551640a56eeb8da1d45934a3d
    }
    const [pica, imageBlobReduce] = await Promise.all([
      import("pica").then((res) => res.default),
-@@ -25583,6 +25767,8 @@ export {
+@@ -25583,6 +25773,8 @@ export {
    isCursorInFrame,
    groupByFrameLikes,
    getFrameChildren,
@@ -968,10 +974,10 @@ index b358c23120a0e5245f896e5bfcc401a608c39a9a..a7f6b9755948ceacf5de70b29ea3d3f3
  (If you want to keep your local drawing, simply close the browser tab instead.)`,errorAddingToLibrary:"Couldn't add item to the library",errorRemovingFromLibrary:"Couldn't remove item from the library",confirmAddLibrary:"This will add {{numShapes}} shape(s) to your library. Are you sure?",imageDoesNotContainScene:"This image does not seem to contain any scene data. Have you enabled scene embedding during export?",cannotRestoreFromImage:"Scene couldn't be restored from this image file",invalidSceneUrl:"Couldn't import scene from the supplied URL. It's either malformed, or doesn't contain valid Excalidraw JSON data.",resetLibrary:"This will clear your library. Are you sure?",removeItemsFromsLibrary:"Delete {{count}} item(s) from library?",invalidEncryptionKey:"Encryption key must be of 22 characters. Live collaboration is disabled.",collabOfflineWarning:`No internet connection available.
  Your changes will not be saved!`},s={unsupportedFileType:"Unsupported file type.",imageInsertError:"Couldn't insert image. Try again later...",fileTooBig:"File is too big. Maximum allowed size is {{maxSize}}.",svgImageInsertError:"Couldn't insert SVG image. The SVG markup looks invalid.",failedToFetchImage:"Failed to fetch image.",cannotResolveCollabServer:"Couldn't connect to the collab server. Please reload the page and try again.",importLibraryError:"Couldn't load library",saveLibraryError:"Couldn't save library to storage. Please save your library to a file locally to make sure you don't lose changes.",collabSaveFailed:"Couldn't save to the backend database. If problems persist, you should save your file locally to ensure you don't lose your work.",collabSaveFailed_sizeExceeded:"Couldn't save to the backend database, the canvas seems to be too big. You should save the file locally to ensure you don't lose your work.",imageToolNotSupported:"Images are disabled.",brave_measure_text_error:{line1:"Looks like you are using Brave browser with the <bold>Aggressively Block Fingerprinting</bold> setting enabled.",line2:"This could result in breaking the <bold>Text Elements</bold> in your drawings.",line3:"We strongly recommend disabling this setting. You can follow <link>these steps</link> on how to do so.",line4:"If disabling this setting doesn't fix the display of text elements, please open an <issueLink>issue</issueLink> on our GitHub, or write us on <discordLink>Discord</discordLink>"},libraryElementTypeError:{embeddable:"Embeddable elements cannot be added to the library.",iframe:"IFrame elements cannot be added to the library.",image:"Support for adding images to the library coming soon!"},asyncPasteFailedOnRead:"Couldn't paste (couldn't read from system clipboard).",asyncPasteFailedOnParse:"Couldn't paste.",copyToSystemClipboardFailed:"Couldn't copy to clipboard."},d={selection:"Selection",image:"Insert image",rectangle:"Rectangle",diamond:"Diamond",ellipse:"Ellipse",arrow:"Arrow",line:"Line",freedraw:"Draw",text:"Text",library:"Library",lock:"Keep selected tool active after drawing",penMode:"Pen mode - prevent touch",link:"Add / Update link for a selected shape",eraser:"Eraser",frame:"Frame tool",magicframe:"Wireframe to code",embeddable:"Web Embed",laser:"Laser pointer",hand:"Hand (panning tool)",extraTools:"More tools",mermaidToExcalidraw:"Mermaid to Excalidraw"},c={rectangle:"Rectangle",diamond:"Diamond",ellipse:"Ellipse",arrow:"Arrow",line:"Line",freedraw:"Freedraw",text:"Text",image:"Image",group:"Group",frame:"Frame",magicframe:"Wireframe to code",embeddable:"Web Embed",selection:"Selection",iframe:"IFrame"},p={canvasActions:"Canvas actions",selectedShapeActions:"Selected shape actions",shapes:"Shapes"},m={dismissSearch:"Escape to dismiss search",canvasPanning:"To move canvas, hold mouse wheel or spacebar while dragging, or use the hand tool",linearElement:"Click to start multiple points, drag for single line",arrowTool:"Click to start multiple points, drag for single line. Press {{arrowShortcut}} again to change arrow type.",freeDraw:"Click and drag, release when you're finished",text:"Tip: you can also add text by double-clicking anywhere with the selection tool",embeddable:"Click-drag to create a website embed",text_selected:"Double-click or press ENTER to edit text",text_editing:"Press Escape or CtrlOrCmd+ENTER to finish editing",linearElementMulti:"Click on last point or press Escape or Enter to finish",lockAngle:"You can constrain angle by holding SHIFT",resize:`You can constrain proportions by holding SHIFT while resizing,
 diff --git a/dist/prod/chunk-K2UTITRG.js b/dist/prod/chunk-K2UTITRG.js
-index fd073bcc762a7ead793b3fb371f5235c95ccb053..b47bf126b6e13f53b56bb328f8442516ddc70cf3 100644
+index fd073bcc762a7ead793b3fb371f5235c95ccb053..9247357b336a34c850bc000db31de6f79b1aa396 100644
 --- a/dist/prod/chunk-K2UTITRG.js
 +++ b/dist/prod/chunk-K2UTITRG.js
-@@ -5,9 +5,84 @@ import{a as M}from"./chunk-ZUYEQ4TG.js";import{d as P}from"./chunk-SRAX5OIU.js";
+@@ -5,9 +5,90 @@ import{a as M}from"./chunk-ZUYEQ4TG.js";import{d as P}from"./chunk-SRAX5OIU.js";
  `),e,t).width+Se*2:n+Se*2},Ko=(e,t)=>ht("",e,t).width+Se*2,Vg=()=>Dd(Rd,Ee({fontSize:ut,fontFamily:Ft}))>0,ia=e=>gd(e).replace(/\t/g,"        "),aa=e=>ia(e).split(`
  `),Md=e=>{let t=aa(e.text).length;return e.height/t/e.fontSize},Zn=(e,t)=>e*t,Ld=(e,t)=>Zn(e,t)+Se*2,Ao,qg=e=>{Ao=e},oa=class{constructor(){P(this,"canvas");this.canvas=document.createElement("canvas")}getLineWidth(t,n){let r=this.canvas.getContext("2d");r.font=n;let i=r.measureText(t).width;return Ot()?i*10:i}},En=(e,t)=>(Ao||(Ao=new oa),Ao.getLineWidth(e,t)),Dd=(e,t)=>{let n=aa(e),r=0;return n.forEach(o=>{r=Math.max(r,En(o,t))}),r},B6=(e,t,n)=>{let r=aa(e).length;return Zn(t,n)*r},$n=(()=>{let e={};return{calculate:(o,i)=>{let a=o.charCodeAt(0);if(e[i]||(e[i]=[]),!e[i][a]){let s=En(o,i);e[i][a]=s}return e[i][a]},getCache:o=>e[o],clearCache:o=>{e[o]=[]}}})();var _6=e=>{let t=$n.getCache(e);if(!t)return 0;let n=t.filter(r=>r!==void 0);return Math.max(...n)};var sa,Ho,da,Sd=e=>(sa||(sa=le.class(...Object.values(jt))),sa.test(e)),O6=()=>{if(!Ho)try{Ho=K6()}catch{Ho=A6()}return Ho},ca=()=>(da||(da=H6()),da),ct={WHITESPACE:/\s/u,HYPHEN:/-/u,OPENING:/<\(\[\{/u,CLOSING:/>\)\]\}.,:;!\?…\//u},jt={CHAR:/\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}｀＇＾〃〰〆＃＆＊＋－ー／＼＝｜￤〒￢￣/u,OPENING:/（［｛〈《｟｢「『【〖〔〘〚＜〝/u,CLOSING:/）］｝〉》｠｣」』】〗〕〙〛＞。．，、〟‥？！：；・〜〞/u,CURRENCY:/￥￦￡￠＄/u},Pn={FLAG:/\p{RI}\p{RI}/u,JOINER:/(?:\p{Emoji_Modifier}|\uFE0F\u20E3?|[\u{E0020}-\u{E007E}]+\u{E007F})?/u,ZWJ:/\u200D/u,ANY:/[\p{Emoji}]/u,MOST:/[\p{Extended_Pictographic}\p{Emoji_Presentation}]/u},A6=()=>le.or(ca(),De.On(ct.HYPHEN,ct.WHITESPACE,jt.CHAR)),K6=()=>le.or(ca(),De.Before(ct.WHITESPACE).Build(),De.After(ct.WHITESPACE,ct.HYPHEN).Build(),De.Before(jt.CHAR,jt.CURRENCY).NotPrecededBy(ct.OPENING,jt.OPENING).Build(),De.After(jt.CHAR).NotFollowedBy(ct.HYPHEN,ct.CLOSING,jt.CLOSING).Build(),De.BeforeMany(jt.OPENING).NotPrecededBy(ct.OPENING).Build(),De.AfterMany(jt.CLOSING).NotFollowedBy(ct.CLOSING).Build(),De.AfterMany(ct.CLOSING).FollowedBy(ct.OPENING).Build()),H6=()=>le.group(le.or(Pn.FLAG,le.and(Pn.MOST,Pn.JOINER,le.build(`(?:${Pn.ZWJ.source}(?:${Pn.FLAG.source}|${Pn.ANY.source}${Pn.JOINER.source}))*`)))),le={build:e=>new RegExp(e,"u"),join:(...e)=>e.map(t=>t.source).join(""),and:(...e)=>le.build(le.join(...e)),or:(...e)=>le.build(e.map(t=>t.source).join("|")),group:(...e)=>le.build(`(${le.join(...e)})`),class:(...e)=>le.build(`[${le.join(...e)}]`)},De={On:(...e)=>{let t=le.join(...e);return le.build(`([${t}])`)},Before:(...e)=>{let t=le.join(...e),n=()=>le.build(`(?=[${t}])`);return De.Chain(n)},After:(...e)=>{let t=le.join(...e),n=()=>le.build(`(?<=[${t}])`);return De.Chain(n)},BeforeMany:(...e)=>{let t=le.join(...e),n=()=>le.build(`(?<![${t}])(?=[${t}])`);return De.Chain(n)},AfterMany:(...e)=>{let t=le.join(...e),n=()=>le.build(`(?<=[${t}])(?![${t}])`);return De.Chain(n)},NotBefore:(...e)=>{let t=le.join(...e),n=()=>le.build(`(?![${t}])`);return De.Chain(n)},NotAfter:(...e)=>{let t=le.join(...e),n=()=>le.build(`(?<![${t}])`);return De.Chain(n)},Chain:e=>({Build:e,PreceededBy:(...t)=>{let n=e(),r=De.After(...t).Build(),o=()=>le.and(r,n);return De.Chain(o)},FollowedBy:(...t)=>{let n=e(),r=De.Before(...t).Build(),o=()=>le.and(n,r);return De.Chain(o)},NotPrecededBy:(...t)=>{let n=e(),r=De.NotAfter(...t).Build(),o=()=>le.and(r,n);return De.Chain(o)},NotFollowedBy:(...t)=>{let n=e(),r=De.NotBefore(...t).Build(),o=()=>le.and(n,r);return De.Chain(o)}})},J6=e=>{let t=O6();return e.normalize("NFC").split(t).filter(Boolean)},en=(e,t,n)=>{if(!Number.isFinite(n)||n<0)return e;let r=[],o=e.split(`
  `);for(let i of o){if(En(i,t)<=n){r.push(i);continue}let s=Y6(i,t,n);r.push(...s)}return r.join(`
@@ -1028,6 +1034,7 @@ index fd073bcc762a7ead793b3fb371f5235c95ccb053..b47bf126b6e13f53b56bb328f8442516
 +    elapsed -= gif.frames[index].duration;
 +    index += 1;
 +  }
++  gif.remaining = gif.frames[index].duration - elapsed;
 +  if (index === gif.index) return false;
 +  gif.index = index;
 +  return true;
@@ -1039,9 +1046,14 @@ index fd073bcc762a7ead793b3fb371f5235c95ccb053..b47bf126b6e13f53b56bb328f8442516
 +  }
 +  const now = performance.now();
 +  let changed = false;
-+  for (const gif of anamnesisGifs.values()) if (gif.frames.length > 1 && anamnesisGifAdvance(gif, now)) changed = true;
++  let wait = 1000;
++  for (const gif of anamnesisGifs.values()) {
++    if (gif.frames.length < 2) continue;
++    if (anamnesisGifAdvance(gif, now)) changed = true;
++    wait = Math.min(wait, gif.remaining);
++  }
 +  if (changed) anamnesisGifRedraw();
-+  anamnesisGifLoop = requestAnimationFrame(anamnesisGifTick);
++  anamnesisGifLoop = setTimeout(anamnesisGifTick, Math.max(16, wait));
 +},anamnesisGifAfterRender=(config, render) => {
 +  const drawn = anamnesisGifsDrawn;
 +  anamnesisGifsDrawn = false;
@@ -1050,7 +1062,7 @@ index fd073bcc762a7ead793b3fb371f5235c95ccb053..b47bf126b6e13f53b56bb328f8442516
 +  anamnesisGifLast = () => render(config);
 +  if (drawn) {
 +    anamnesisGifRedraw = anamnesisGifLast;
-+    if (!anamnesisGifLoop) anamnesisGifLoop = requestAnimationFrame(anamnesisGifTick);
++    if (!anamnesisGifLoop) anamnesisGifLoop = setTimeout(anamnesisGifTick, 16);
 +  } else {
 +    anamnesisGifRedraw = null;
 +  }
@@ -1058,7 +1070,7 @@ index fd073bcc762a7ead793b3fb371f5235c95ccb053..b47bf126b6e13f53b56bb328f8442516
              C ${d} ${c}, ${d} ${c}, ${d-b} ${c+E}
              L ${l+b} ${U-E}
              C ${l} ${U}, ${l} ${U}, ${l-b} ${U-E}
-@@ -25,10 +100,10 @@ import{a as M}from"./chunk-ZUYEQ4TG.js";import{d as P}from"./chunk-SRAX5OIU.js";
+@@ -25,10 +106,10 @@ import{a as M}from"./chunk-ZUYEQ4TG.js";import{d as P}from"./chunk-SRAX5OIU.js";
              table, .gist { height: 100%; }
              .gist .gist-file { height: calc(100vh - 2px); padding: 0px; display: grid; grid-template-rows: 1fr auto; }
            </style>

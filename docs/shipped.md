@@ -6943,9 +6943,9 @@ a still PNG.
 **How.** A section of `scripts/excalidraw-patch.mjs`, in both builds:
 frames decoded with `ImageDecoder` into bitmaps, the current one drawn
 in place of the `<img>`, the element canvas cache keyed on the frame
-index too, a `requestAnimationFrame` loop redrawing the static scene on
-frame changes while a moving picture is drawn, and `resizeImageFile`
-leaving GIFs alone. `docs/handoff.md` § Boards has the rules.
+index too, a timer loop redrawing the static scene on frame changes
+while a moving picture is drawn, and `resizeImageFile` leaving GIFs
+alone. `docs/handoff.md` § Boards has the rules.
 
 **Verified.** `e2e/a-board-gifs.e2e.ts`: a two-frame GIF built byte by
 byte in the test, pasted onto the board, shows both colours at its
@@ -6954,8 +6954,11 @@ which an unpatched build fails, standing on the first frame. Found on
 the way, by logging from inside the patched library: the frames decoded
 fine from the test's bytes but not from the board's, because the
 library had already re-encoded the pasted GIF as a PNG; that is the
-second half of the patch. Looked at in the real app: the picture drawn
-clean on the board.
+second half of the patch. Then on CI only, one colour seen: a
+diagnostics push showed `requestAnimationFrame` never fires in CI's
+window though it reports itself visible — the handoff's own rule, which
+the first cut had ignored — so the loop is a timer. Looked at in the
+real app: the picture drawn clean on the board.
 
 ### Step 8 — Theme follows while open ✅ Shipped 2026-09-20
 

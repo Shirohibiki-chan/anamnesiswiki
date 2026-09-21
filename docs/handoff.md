@@ -693,11 +693,14 @@ Board spike, closed 2026-09-13. What binds the code:
   icon (step 10), and a moving GIF that moves (step 9): the library
   draws a picture from an `<img>`, and a canvas takes an animated
   picture's first frame only, so the patch decodes a GIF's frames once
-  with `ImageDecoder`, draws the current one, and runs a
-  `requestAnimationFrame` loop that redraws the static scene on each
-  frame change while a moving picture is on screen — the element's
-  cached canvas is keyed on version and zoom, so the patch adds the
-  frame index to that key. The loop starts from a render that drew a
+  with `ImageDecoder`, draws the current one, and runs a timer loop —
+  `setTimeout` to the next frame change, **not `requestAnimationFrame`**,
+  which never fires in a window nobody is looking at, CI's included; the
+  rule under § Layout already said so and the first cut of this ignored it
+  and failed only on CI — that redraws the static scene on each frame
+  change while a moving picture is on screen; the element's cached
+  canvas is keyed on version and zoom, so the patch adds the frame index
+  to that key. The loop starts from a render that drew a
   moving picture and ends from one that did not; a decode finishing
   after the render that asked for it redraws once itself, since nothing
   else may. The same section keeps a GIF as it came on the way in: the

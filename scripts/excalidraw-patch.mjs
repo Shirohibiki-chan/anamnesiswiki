@@ -901,10 +901,12 @@ for (const file of ["dist/dev/chunk-LMHBUWQS.js", "dist/prod/chunk-6U3AYISY.js"]
 // board stood still. The frames are decoded once per file with the
 // engine's own `ImageDecoder` (Chromium has it; where it is missing the
 // still is what shows, as before), and while a moving picture is on
-// screen the static scene is drawn again on every frame change: a
-// `requestAnimationFrame` loop advances each GIF's frame from the clock,
-// and the picture's cached element canvas is regenerated when its frame
-// index has moved — the cache is keyed on version and zoom, which a frame
+// screen the static scene is drawn again on every frame change: a timer
+// loop advances each GIF's frame from the clock — a `setTimeout` to the
+// next frame change rather than `requestAnimationFrame`, which a window
+// nobody is looking at never fires (CI's, 2026-09-20) — and the
+// picture's cached element canvas is regenerated when its frame index
+// has moved, since the cache is keyed on version and zoom, which a frame
 // does not change. The loop ends by itself when a render draws no moving
 // picture (scrolled away, deleted, the board closed) and starts again on
 // the next render that does. Exports draw whichever frame is current.
@@ -985,6 +987,7 @@ const gifHelpers = (isInitializedImage) => [
     elapsed -= gif.frames[index].duration;
     index += 1;
   }
+  gif.remaining = gif.frames[index].duration - elapsed;
   if (index === gif.index) return false;
   gif.index = index;
   return true;
@@ -1000,9 +1003,14 @@ const gifHelpers = (isInitializedImage) => [
   }
   const now = performance.now();
   let changed = false;
-  for (const gif of anamnesisGifs.values()) if (gif.frames.length > 1 && anamnesisGifAdvance(gif, now)) changed = true;
+  let wait = 1000;
+  for (const gif of anamnesisGifs.values()) {
+    if (gif.frames.length < 2) continue;
+    if (anamnesisGifAdvance(gif, now)) changed = true;
+    wait = Math.min(wait, gif.remaining);
+  }
   if (changed) anamnesisGifRedraw();
-  anamnesisGifLoop = requestAnimationFrame(anamnesisGifTick);
+  anamnesisGifLoop = setTimeout(anamnesisGifTick, Math.max(16, wait));
 }`,
   ],
   [
@@ -1015,7 +1023,7 @@ const gifHelpers = (isInitializedImage) => [
   anamnesisGifLast = () => render(config);
   if (drawn) {
     anamnesisGifRedraw = anamnesisGifLast;
-    if (!anamnesisGifLoop) anamnesisGifLoop = requestAnimationFrame(anamnesisGifTick);
+    if (!anamnesisGifLoop) anamnesisGifLoop = setTimeout(anamnesisGifTick, 16);
   } else {
     anamnesisGifRedraw = null;
   }
