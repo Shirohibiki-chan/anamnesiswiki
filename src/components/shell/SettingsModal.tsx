@@ -49,6 +49,7 @@ import { WritingSettings } from "./WritingSettings";
 import { SnippetSettings } from "./SnippetSettings";
 import { ThemeEditor } from "./ThemeEditor";
 import { PatchNotes } from "./PatchNotes";
+import { AboutSettings } from "./AboutSettings";
 import { GettingStartedSettings } from "./GettingStartedSettings";
 import { BugReportSettings } from "./BugReportSettings";
 import { ThemeSettings } from "./ThemeSettings";
@@ -72,6 +73,7 @@ const PANELS: Record<string, () => React.JSX.Element> = {
   updates: UpdateCheck,
   report: BugReportSettings,
   "patch-notes": PatchNotes,
+  about: AboutSettings,
   // Rendered through the special case below rather than from here, like Patch
   // Notes — the entry exists so the id has a panel and the search index can
   // find it.

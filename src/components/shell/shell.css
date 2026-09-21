@@ -1505,6 +1505,75 @@
 
 /* Update check — see components/shell/UpdateCheck.tsx. Deliberately the
    quietest thing in the panel when idle: it's a utility, not an invitation. */
+/* --- Settings -> About --- */
+
+.about-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-width: 40rem;
+}
+
+.about-settings-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  color: var(--color-text-primary);
+}
+
+.about-settings-version {
+  margin-left: var(--space-sm);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.about-settings-line {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.about-settings-line .ui-link {
+  font-size: inherit;
+}
+
+.about-settings-heading {
+  margin: var(--space-sm) 0 0;
+}
+
+/* Name, what it is, licence: three columns so the licences line up and can be
+   read down as a list, which is what somebody checking them is doing. */
+.about-settings-credits {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
+  column-gap: var(--space-lg);
+  row-gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-sm);
+}
+
+.about-settings-credit {
+  display: contents;
+}
+
+.about-settings-credit-name {
+  font-size: inherit;
+  text-align: left;
+}
+
+.about-settings-credit-role {
+  color: var(--color-text-secondary);
+}
+
+.about-settings-credit-licence {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .update-check {
   min-height: 1.5rem;
 }
