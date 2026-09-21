@@ -659,11 +659,21 @@ export type DatabaseField =
  * Status is an equality; `is` on a page's tags would have to mean "has", and an
  * operator that changes meaning per row is how a filter stops being readable.
  * So a multi-valued field gets `has` / `does not have` and never `is`.
+ *
+ * **A number is a one-valued field with four more.** `more-than`, `less-than`,
+ * `at-least` and `at-most` fit the rule above — a page holds one number — and
+ * are only offered on a number column, because "more than" on a Status is not
+ * a question. They compare as numbers, where `is` compares the text of it;
+ * `contains` is left off a number for the same reason `is` is left off tags.
  */
 export const DATABASE_OPERATORS = [
   "is",
   "is-not",
   "contains",
+  "more-than",
+  "less-than",
+  "at-least",
+  "at-most",
   "has",
   "does-not-have",
   "is-empty",

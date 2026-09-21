@@ -53,6 +53,7 @@ export {
   operatorsFor,
   sameField,
   takesValue,
+  takesTypedValue,
   OPERATOR_LABELS,
 } from "../services/database-service";
 

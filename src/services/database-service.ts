@@ -300,9 +300,17 @@ export function isMultiValued(field: DatabaseField, columns: RenderableProperty[
   return type === "multiselect" || type === "refs";
 }
 
+/** Whether the field is a number column, which is the one that can be compared. */
+export function isNumeric(field: DatabaseField, columns: RenderableProperty[]): boolean {
+  return field.kind === "property" && columns.find((column) => column.key === field.key)?.type === "number";
+}
+
 /** The operators worth offering on a field. See DATABASE_OPERATORS for why there are two sets. */
 export function operatorsFor(field: DatabaseField, columns: RenderableProperty[]): DatabaseOperator[] {
   if (isMultiValued(field, columns)) return ["has", "does-not-have", "is-empty", "is-not-empty"];
+  if (isNumeric(field, columns)) {
+    return ["is", "is-not", "more-than", "less-than", "at-least", "at-most", "is-empty", "is-not-empty"];
+  }
   return ["is", "is-not", "contains", "is-empty", "is-not-empty"];
 }
 
@@ -311,10 +319,27 @@ export function takesValue(operator: DatabaseOperator): boolean {
   return operator !== "is-empty" && operator !== "is-not-empty";
 }
 
+const COMPARISONS = new Set<DatabaseOperator>(["more-than", "less-than", "at-least", "at-most"]);
+
+/**
+ * Whether the value is something to type rather than pick from a list.
+ *
+ * `contains` matches part of a name or a summary, which by definition is not
+ * in the list of values already there; a comparison wants a number the rows
+ * may not hold at all — "more than 40" is a line drawn between them.
+ */
+export function takesTypedValue(operator: DatabaseOperator): boolean {
+  return operator === "contains" || COMPARISONS.has(operator);
+}
+
 export const OPERATOR_LABELS: Record<DatabaseOperator, string> = {
   is: "is",
   "is-not": "is not",
   contains: "contains",
+  "more-than": "is more than",
+  "less-than": "is less than",
+  "at-least": "is at least",
+  "at-most": "is at most",
   has: "has",
   "does-not-have": "does not have",
   "is-empty": "is empty",
@@ -399,6 +424,27 @@ export function matchesFilter(
   // row while she picks would make the list flash empty between two clicks.
   const wanted = (filter.value ?? "").trim().toLowerCase();
   if (!wanted) return true;
+
+  // A comparison reads both sides as numbers. A line that is not a number yet
+  // — "4" on the way to "40" is one, but "forty" is not — is still being
+  // typed, so nothing is hidden; a row with no number, or one that is not a
+  // number, is on neither side of the line and is left out.
+  if (COMPARISONS.has(filter.operator)) {
+    const line = Number(wanted);
+    if (!Number.isFinite(line)) return true;
+    const held = values.length > 0 ? Number(values[0].label) : NaN;
+    if (!Number.isFinite(held)) return false;
+    switch (filter.operator) {
+      case "more-than":
+        return held > line;
+      case "less-than":
+        return held < line;
+      case "at-least":
+        return held >= line;
+      default:
+        return held <= line;
+    }
+  }
 
   const labels = values.map((value) => value.label.toLowerCase());
   switch (filter.operator) {
