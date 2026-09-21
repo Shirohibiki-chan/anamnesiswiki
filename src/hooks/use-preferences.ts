@@ -30,6 +30,11 @@ export function useFormattingBar(): FormattingBarMode {
   return usePreferencesStore((state) => state.preferences.formattingBar);
 }
 
+/** Whether words that could link to a page are marked while writing. */
+export function useLinkMarks(): boolean {
+  return usePreferencesStore((state) => state.preferences.linkMarks);
+}
+
 /** What the properties panel does on a page she has never toggled it on. */
 export function usePropertiesPanelDefault(): PropertiesPanelDefault {
   return usePreferencesStore((state) => state.preferences.propertiesPanel);
@@ -118,6 +123,7 @@ export function usePreferenceActions() {
       setTreeDoubleClick: state.setTreeDoubleClick,
       setPropertiesPanelDefault: state.setPropertiesPanelDefault,
       setFormattingBar: state.setFormattingBar,
+      setLinkMarks: state.setLinkMarks,
       setListPaging: state.setListPaging,
       setListPageSize: state.setListPageSize,
       setProjectView: state.setProjectView,

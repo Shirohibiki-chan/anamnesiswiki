@@ -5781,6 +5781,14 @@ Phase 26, step 2. What binds the code:
   exists, so `AddBlockMenu` carries one too. Anything that hides the prompt has
   to keep that second route alive.
 
+- **The link marks are decorations and must stay that way.** `linkable-marks.ts`
+  draws under words that `matchesInText` would offer to `/Link page names`;
+  it never writes a mark or a node into the document, so nothing reaches the
+  file and turning the setting off is a redraw, not a migration. Anything
+  that wants the marks to *do* something belongs in the auto-link command,
+  not in the plugin. The matcher is shared on purpose — change the matching
+  rules in `auto-link-service.ts` and both halves change together.
+
 - **A database settings menu takes a `DatabaseViewHandle`, never a node.**
   The five menus serve a page's view and an index block's view through the
   same handle (`usePageViewHandle`, `useBlockViewHandle`), so a new menu or

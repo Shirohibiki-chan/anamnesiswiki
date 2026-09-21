@@ -31,6 +31,7 @@ export type PreferencesStoreState = {
   setTreeDoubleClick: (action: TreeDoubleClickAction) => void;
   setPropertiesPanelDefault: (mode: PropertiesPanelDefault) => void;
   setFormattingBar: (mode: FormattingBarMode) => void;
+  setLinkMarks: (on: boolean) => void;
   setListPaging: (mode: ListPagingMode) => void;
   setListPageSize: (size: ListPageSize) => void;
   setProjectView: (view: ProjectView) => void;
@@ -89,6 +90,10 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setFormattingBar(mode) {
       apply({ ...get().preferences, formattingBar: mode });
+    },
+
+    setLinkMarks(on) {
+      apply({ ...get().preferences, linkMarks: on });
     },
 
     setTreeDoubleClick(action) {

@@ -343,6 +343,13 @@ export const DECLARED_SETTINGS: readonly {
     keywords: ["where", "save", "saved", "location", "files", "disk", "storage", "path", "documents", "move"],
   },
   {
+    id: "link-marks",
+    tabId: "writing",
+    label: "Names That Could Be Links",
+    hint: "a dotted line under a page's name in your writing, until you link it",
+    keywords: ["link", "links", "underline", "dotted", "mention", "wikilink", "suggest"],
+  },
+  {
     id: "update-check",
     tabId: "updates",
     label: "Check for Updates",

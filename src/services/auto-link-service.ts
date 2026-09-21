@@ -111,52 +111,69 @@ function isWordChar(text: string, at: number): boolean {
  * "particular", which is the sort of thing that would be found weeks later in
  * the middle of a paragraph nobody was looking at.
  */
+/** One name found in one run of text: where, and which page. */
+export type TextMatch = { start: number; end: number; nodeId: string; pageName: string };
+
+/**
+ * The names found in one run of text, in the order they are written.
+ *
+ * The matching rules live here and nowhere else — `findLinkMatches` uses
+ * this for the preview dialog, and the marks drawn while writing
+ * (`editor-blocks/linkable-marks.ts`) use it on the editor's own text nodes,
+ * so what is underlined and what the dialog offers are the same by
+ * construction.
+ */
+export function matchesInText(text: string, names: LinkableName[]): TextMatch[] {
+  const found: TextMatch[] = [];
+  // Which characters are already claimed, so a shorter name inside a longer
+  // one is not matched a second time.
+  const taken: boolean[] = new Array(text.length).fill(false);
+  const haystack = text.toLowerCase();
+
+  for (const name of names) {
+    const needle = name.name.toLowerCase();
+    let from = 0;
+    for (;;) {
+      const at = haystack.indexOf(needle, from);
+      if (at === -1) break;
+      const end = at + needle.length;
+      from = at + 1;
+
+      if (isWordChar(text, at - 1) || isWordChar(text, end)) continue;
+      if (taken.slice(at, end).some(Boolean)) continue;
+
+      for (let i = at; i < end; i++) taken[i] = true;
+      found.push({ start: at, end, nodeId: name.nodeId, pageName: name.pageName });
+    }
+  }
+
+  // The loop above goes name by name — longest first, which is what makes a
+  // long name win — and that is not an order anybody reads in.
+  return found.sort((a, b) => a.start - b.start);
+}
+
 export function findLinkMatches(content: unknown, names: LinkableName[]): LinkMatch[] {
   const matches: LinkMatch[] = [];
 
   function scanText(blockId: string, itemIndex: number, text: string): void {
-    const found: LinkMatch[] = [];
-    // Which characters are already claimed, so a shorter name inside a longer
-    // one is not matched a second time.
-    const taken: boolean[] = new Array(text.length).fill(false);
-    const haystack = text.toLowerCase();
-
-    for (const name of names) {
-      const needle = name.name.toLowerCase();
-      let from = 0;
-      for (;;) {
-        const at = haystack.indexOf(needle, from);
-        if (at === -1) break;
-        const end = at + needle.length;
-        from = at + 1;
-
-        if (isWordChar(text, at - 1) || isWordChar(text, end)) continue;
-        if (taken.slice(at, end).some(Boolean)) continue;
-
-        for (let i = at; i < end; i++) taken[i] = true;
-        found.push({
-          blockId,
-          itemIndex,
-          start: at,
-          end,
-          text: text.slice(at, end),
-          nodeId: name.nodeId,
-          pageName: name.pageName,
-          context: [
-            at > CONTEXT_CHARS ? "…" : "",
-            text.slice(Math.max(0, at - CONTEXT_CHARS), at),
-            text.slice(at, end),
-            text.slice(end, end + CONTEXT_CHARS),
-            text.length > end + CONTEXT_CHARS ? "…" : "",
-          ].join(""),
-        });
-      }
+    for (const { start: at, end, nodeId, pageName } of matchesInText(text, names)) {
+      matches.push({
+        blockId,
+        itemIndex,
+        start: at,
+        end,
+        text: text.slice(at, end),
+        nodeId,
+        pageName,
+        context: [
+          at > CONTEXT_CHARS ? "…" : "",
+          text.slice(Math.max(0, at - CONTEXT_CHARS), at),
+          text.slice(at, end),
+          text.slice(end, end + CONTEXT_CHARS),
+          text.length > end + CONTEXT_CHARS ? "…" : "",
+        ].join(""),
+      });
     }
-
-    // This run's own matches in the order they are written. The loop above goes
-    // name by name — longest first, which is what makes a long name win — and
-    // that is not an order anybody reads in.
-    matches.push(...found.sort((a, b) => a.start - b.start));
   }
 
   function walk(blocks: unknown): void {

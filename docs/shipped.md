@@ -7951,3 +7951,47 @@ the way the tree's submenus work.
 sub-pages and a Subpage Index block; the filter menu opens from the block,
 offers no scope, and a *contains* filter thins the rows; a sort turned over
 from the same place reverses them.
+
+## Queued Adjustments — names marked while writing ✅ Shipped 2026-09-21
+
+The other half of `/Link page names` (Phase 19.5): a dotted line under any
+words that could be a link to a page, drawn as they are typed. A nicety
+rather than a gap — the preview dialog already listed what could be linked
+— and it was wrongly written down as a blocked path until 2026-09-04; it is
+a ProseMirror decoration through BlockNote's own extension API, the door
+`select-all.ts` already used.
+
+**Built as a decoration and nothing else.** `editor-blocks/linkable-marks.ts`
+registers a plugin through `prosemirrorPlugins` whose state is a
+`DecorationSet` recomputed on every document change (and on a `refresh`
+meta), by walking the text nodes and running `matchesInText` — the matcher
+lifted out of `findLinkMatches` in `auto-link-service.ts` so what is
+underlined and what the dialog offers are the same by construction. Text
+inside a link is skipped; mentions are not text nodes and never match.
+Whole-document recompute is deliberate: a few hundred names against a page
+of prose is well under a millisecond, and it keeps the plugin free of range
+arithmetic. Nothing is saved — the file is untouched.
+
+**The names come from the stores at call time, not from a closure.** The
+extension is made once with the editor, so `getNames` reads
+`useProjectStore.getState().nodes` and the preference off
+`usePreferencesStore` when asked, and an effect in `use-editor.ts` asks for
+a redraw when the pages or the setting change. The first cut held both in
+refs and tripped the React compiler's rule against reading a ref during
+render; the stores are the honest version of the same idea.
+
+**A setting, on by default.** Settings → Writing → *Names that could be
+links* → *Mark them while I write*. On because it is quiet and changes
+nothing; there because prose underlined more than somebody likes is a real
+complaint. Turning it off empties the list the plugin is handed, so no
+remount.
+
+**Dependencies.** `prosemirror-state` and `prosemirror-view` are now direct
+dependencies — they were already in the lockfile underneath BlockNote at the
+same versions, so nothing new was downloaded, but pnpm's strictness means a
+transitive package cannot be imported by name.
+
+**Verified** by unit tests on `matchesInText` and by
+`e2e/marks-names-while-writing.e2e.ts`: a sentence naming Kalla Reyes gets
+one mark and no link; the setting takes it away and brings it back with the
+page still open.
