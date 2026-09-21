@@ -2,6 +2,18 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-20 — View a page beside the board
+
+### Additions
+
+- **A *View* button for a selected page card.** It opens the card's page in a panel on the left of the board — the page's own view, title, tabs and writing, editable — so a page can be read and written without leaving the board. *Open* in the panel's bar goes to the page in full; the × closes it. The panel is the same size in the same place whether the board is in the page or expanded to the window.
+- While a page is viewed beside the board, its opened box on the board stays drawn rather than written in, and follows what is typed in the panel as you type. One page, one editor.
+- A board or a storyline is not viewed beside a board — a drawing inside a drawing — the panel says so and offers Open.
+
+### Fixes
+
+- On an expanded board, the *Note* and *View* buttons in the top-right row were squeezed to their first letter, and with a card selected the row ran off the edge of the window. The buttons take their width and the row wraps.
+
 ## 2026-09-20 — A page on a board can be written in
 
 ### Additions

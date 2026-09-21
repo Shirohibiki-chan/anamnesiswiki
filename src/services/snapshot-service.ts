@@ -11,15 +11,41 @@
 import { SNAPSHOT_INTERVAL_MS, SNAPSHOT_MAX_AGE_MS, SNAPSHOT_MAX_PER_NODE } from "../constants/limits";
 import type { Node, Project } from "../constants/schema";
 
-/** One copy on disk: the file's name, and when it was taken. */
+/** One copy on disk: the file's name, when it was taken, and what she called it. */
 export type Snapshot = {
   /** File name inside the node's history directory. */
   name: string;
   /** Epoch milliseconds, read back out of the name. */
   at: number;
+  /**
+   * A name she gave it, read back out of the file name — "before the
+   * rewrite". A labelled copy is *kept*: the pruning below never returns one.
+   * Null for the automatic copies, which is most of them.
+   */
+  label: string | null;
 };
 
 const SUFFIX = ".json";
+/** What sits between the stamp and the label in a kept copy's file name. */
+const LABEL_JOIN = " ~ ";
+/** The longest label a file name carries; the rest is cut, not refused. */
+const LABEL_MAX = 60;
+
+/**
+ * A label made safe for a file name: the characters Windows refuses and the
+ * control characters gone, whitespace collapsed, cut to a length. Empty when
+ * nothing is left, which the caller treats as "no label".
+ */
+export function snapshotLabel(raw: string): string {
+  return raw
+    .replace(/[\\/:*?"<>|]/g, "")
+    // eslint-disable-next-line no-control-regex -- the control range is the point
+    .replace(/[\u0000-\u001f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, LABEL_MAX)
+    .trim();
+}
 
 /**
  * The name a copy taken at this instant gets.
@@ -28,10 +54,13 @@ const SUFFIX = ".json";
  * would look like a second extension (`.`) swapped for `-`. Sorting the names
  * as strings therefore sorts them by time, which is what makes listing a
  * directory enough — no index file to keep in step, and nothing to rebuild if
- * one goes missing.
+ * one goes missing. A kept copy carries its label after the stamp, joined by
+ * ` ~ `, so the file still sorts by time and still says when it was taken.
  */
-export function snapshotName(at: number): string {
-  return `${new Date(at).toISOString().replace(/[:.]/g, "-")}${SUFFIX}`;
+export function snapshotName(at: number, label?: string | null): string {
+  const stamp = new Date(at).toISOString().replace(/[:.]/g, "-");
+  const clean = label ? snapshotLabel(label) : "";
+  return `${stamp}${clean ? `${LABEL_JOIN}${clean}` : ""}${SUFFIX}`;
 }
 
 /**
@@ -43,21 +72,29 @@ export function snapshotName(at: number): string {
  * file it does not understand.
  */
 export function snapshotTime(name: string): number | null {
+  return readSnapshotName(name)?.at ?? null;
+}
+
+/** The stamp and the label a file name carries, or null if it is not one of ours. */
+export function readSnapshotName(name: string): { at: number; label: string | null } | null {
   if (!name.endsWith(SUFFIX)) return null;
   const stem = name.slice(0, -SUFFIX.length);
+  const joinAt = stem.indexOf(LABEL_JOIN);
+  const stampPart = joinAt === -1 ? stem : stem.slice(0, joinAt);
+  const label = joinAt === -1 ? null : stem.slice(joinAt + LABEL_JOIN.length).trim() || null;
   // 2026-08-27T05-12-03-123Z → 2026-08-27T05:12:03.123Z
-  const iso = stem.replace(/^(\d{4}-\d{2}-\d{2}T\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/, "$1:$2:$3.$4Z");
-  if (iso === stem) return null;
+  const iso = stampPart.replace(/^(\d{4}-\d{2}-\d{2}T\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/, "$1:$2:$3.$4Z");
+  if (iso === stampPart) return null;
   const at = Date.parse(iso);
-  return Number.isNaN(at) ? null : at;
+  return Number.isNaN(at) ? null : { at, label };
 }
 
 /** The copies in a directory listing, newest first, with anything foreign dropped. */
 export function readSnapshots(names: readonly string[]): Snapshot[] {
   const found: Snapshot[] = [];
   for (const name of names) {
-    const at = snapshotTime(name);
-    if (at !== null) found.push({ name, at });
+    const read = readSnapshotName(name);
+    if (read) found.push({ name, at: read.at, label: read.label });
   }
   return found.sort((a, b) => b.at - a.at);
 }
@@ -114,7 +151,11 @@ export function snapshotsToPrune(
   const maxAge = options.maxAge ?? SNAPSHOT_MAX_AGE_MS;
   const maxPerNode = options.maxPerNode ?? SNAPSHOT_MAX_PER_NODE;
 
-  const newestFirst = [...snapshots].sort((a, b) => b.at - a.at);
+  // **A kept copy is never returned either**, whatever its age: naming one
+  // is the whole of "mark this state and come back to it", and a rule that
+  // could age it out would make the name a lie. Kept copies also do not
+  // count towards the limit — they are hers, not the timer's.
+  const newestFirst = [...snapshots].filter((snapshot) => !snapshot.label).sort((a, b) => b.at - a.at);
   const keepAtLeast = newestFirst.slice(0, 1);
   const rest = newestFirst.slice(1);
 
@@ -146,6 +187,10 @@ export function historyReadme(): string {
     "",
     "A copy is taken before a page is saved, at most once every few minutes,",
     "and before a page is deleted. Old ones are cleared out automatically.",
+    "",
+    "A file with ' ~ ' and a name after the time is a copy you chose to keep",
+    "and named yourself, from the page's Earlier Versions. Those are never",
+    "cleared out automatically.",
     "",
     "Deleting this folder loses the history and nothing else. Your pages are",
     "the .json files in the folders above this one.",

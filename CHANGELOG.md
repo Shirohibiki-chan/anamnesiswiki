@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-21 — A version you name is kept
+
+### Additions
+
+- **An earlier version of a page can be kept under a name.** In *Earlier Versions*, *Keep This Version* on the one you are looking at asks for a name and keeps it for good — the automatic clearing-out never touches a named one — and *Keep a Copy Now* takes a copy of the page as it is this minute and names it in the same breath. A kept version shows its name above its time in the list, with a bookmark beside it. *Stop Keeping* takes the name off and puts it back on the timer. On disk it is the same file with the name after the time, so it survives anything the app does and reads plainly in the folder.
+
 ## 2026-09-21 — Loose ends
 
 ### Additions
@@ -143,15 +149,3 @@
 ### Additions
 
 - **A *Highlighter* button in the board's top-right row, and Shift+P.** It is the pen with a marker's settings — wide, half see-through, yellow to start with — so it is a tool you pick, not three settings to remember. Each stroke goes *under* everything already drawn, so a highlight over words or a shape leaves them readable. It stays in hand for the next stroke; Escape or any other tool puts it down, and the pen gets its own colour, width and opacity back. Pick a different colour from the styles panel while it is in hand and the highlighter remembers it.
-
-## 2026-09-20 — View a page beside the board
-
-### Additions
-
-- **A *View* button for a selected page card.** It opens the card's page in a panel on the left of the board — the page's own view, title, tabs and writing, editable — so a page can be read and written without leaving the board. *Open* in the panel's bar goes to the page in full; the × closes it. The panel is the same size in the same place whether the board is in the page or expanded to the window.
-- While a page is viewed beside the board, its opened box on the board stays drawn rather than written in, and follows what is typed in the panel as you type. One page, one editor.
-- A board or a storyline is not viewed beside a board — a drawing inside a drawing — the panel says so and offers Open.
-
-### Fixes
-
-- On an expanded board, the *Note* and *View* buttons in the top-right row were squeezed to their first letter, and with a card selected the row ran off the edge of the window. The buttons take their width and the row wraps.

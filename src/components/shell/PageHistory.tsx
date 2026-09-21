@@ -7,7 +7,7 @@
 // on — every copy here can be read in full before it replaces anything, and
 // what is on the page right now is copied aside before a restore, so choosing
 // wrong is itself undoable.
-import { History, RotateCcw } from "lucide-react";
+import { Bookmark, BookmarkPlus, BookmarkX, History, RotateCcw } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { documentText } from "../../services/search-service";
@@ -16,13 +16,39 @@ import { timeAgo } from "../../services/relative-time";
 import { usePageHistory } from "../../hooks/use-page-history";
 import { useShortcutLabel } from "../../hooks/use-shortcuts";
 import { useProject } from "../../hooks/use-project";
+import { useDialogs } from "../../hooks/use-dialogs";
 import type { Tab } from "../../constants/schema";
 
 export function PageHistory({ nodeId, onClose }: { nodeId: string; onClose: () => void }) {
   const { nodes } = useProject();
   const node = nodes[nodeId];
-  const { snapshots, listedAt, selected, select, restore, isRestoring } = usePageHistory(nodeId);
+  const { snapshots, listedAt, selected, select, restore, isRestoring, keep, keepNow } = usePageHistory(nodeId);
+  const { requestName } = useDialogs();
   const [highlighted, setHighlighted] = useState(0);
+  const current = snapshots?.[highlighted] ?? null;
+
+  // Named checkpoints (2026-09-21): "mark this state, name it, come back to
+  // it". A name keeps the copy out of the automatic clearing-out; taking the
+  // name away puts it back on the timer. The name is asked for in the same
+  // small box a template asks for a page's name in.
+  async function keepCurrent() {
+    if (!current) return;
+    const label = await requestName({
+      title: "Keep This Version",
+      message: "A kept version is never cleared out. Give it a name you'll recognise later.",
+      initial: current.label ?? "",
+    });
+    if (label !== null) await keep(current, label);
+  }
+
+  async function keepNowNamed() {
+    const label = await requestName({
+      title: "Keep a Copy Now",
+      message: "A copy of the page as it is right now, kept under a name and never cleared out.",
+      initial: "",
+    });
+    if (label !== null) await keepNow(label);
+  }
   // Read rather than written down: undo moved off Ctrl+Z on 2026-08-27 and
   // this sentence would have gone on naming the old key. It is also rebindable,
   // so a hardcoded label is wrong for anyone who has changed it.
@@ -121,6 +147,11 @@ export function PageHistory({ nodeId, onClose }: { nodeId: string; onClose: () =
                     className={`page-history-row${index === highlighted ? " page-history-row-active" : ""}`}
                     onClick={() => setHighlighted(index)}
                   >
+                    {snapshot.label && (
+                      <span className="page-history-label">
+                        <Bookmark size={12} /> {snapshot.label}
+                      </span>
+                    )}
                     <span className="page-history-when">{timeAgo(snapshot.at, listedAt) ?? "unknown"}</span>
                     <span className="page-history-exact">{new Date(snapshot.at).toLocaleString()}</span>
                   </button>
@@ -137,12 +168,28 @@ export function PageHistory({ nodeId, onClose }: { nodeId: string; onClose: () =
         <footer className="page-history-footer">
           <p className="page-history-note">
             Restoring puts this version's writing, properties and tags back. It leaves the page where it is in the
-            tree. What's on the page now is kept as a version first, and <kbd>{undoKey}</kbd> undoes a restore.
+            tree. What's on the page now is kept as a version first, and <kbd>{undoKey}</kbd> undoes a restore. A
+            version you name is kept for good; the rest are cleared out over time.
           </p>
           <div className="page-history-actions">
             <button ref={closeRef} type="button" className="ui-btn ui-btn-secondary" onClick={onClose}>
               Close
             </button>
+            <button type="button" className="ui-btn ui-btn-secondary" disabled={!node} onClick={() => void keepNowNamed()}>
+              <BookmarkPlus size={14} />
+              Keep a Copy Now
+            </button>
+            {current?.label ? (
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void keep(current, null)}>
+                <BookmarkX size={14} />
+                Stop Keeping
+              </button>
+            ) : (
+              <button type="button" className="ui-btn ui-btn-secondary" disabled={!current} onClick={() => void keepCurrent()}>
+                <Bookmark size={14} />
+                Keep This Version
+              </button>
+            )}
             <button
               type="button"
               className="ui-btn ui-btn-primary"

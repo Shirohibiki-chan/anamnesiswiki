@@ -64,6 +64,7 @@ import {
   readSnapshots,
   snapshotName,
   snapshotsToPrune,
+  snapshotTime,
   type Snapshot,
 } from "./snapshot-service";
 import { decideAmongNestedWorlds, isAppOwnedDir, WORLD_SCAN_DEPTH, type OpenFolderOutcome, type WorldFile } from "./world-scan";
@@ -1231,7 +1232,13 @@ export async function readSnapshot(rootPath: string, nodeId: string, name: strin
  * actual work, and refusing it to protect a convenience would be the worst
  * trade in the app.
  */
-async function snapshotBeforeWrite(rootPath: string, nodeId: string, filePath: string, force: boolean): Promise<void> {
+async function snapshotBeforeWrite(
+  rootPath: string,
+  nodeId: string,
+  filePath: string,
+  force: boolean,
+  label?: string,
+): Promise<void> {
   try {
     const now = Date.now();
     let last = lastSnapshotAt.get(nodeId) ?? null;
@@ -1251,7 +1258,7 @@ async function snapshotBeforeWrite(rootPath: string, nodeId: string, filePath: s
     // copy. See `nextSnapshotAt`.
     const at = nextSnapshotAt(last, now);
     await mkdir(dir, { recursive: true });
-    await writeTextFile(joinPath(dir, snapshotName(at)), contents);
+    await writeTextFile(joinPath(dir, snapshotName(at, label)), contents);
     lastSnapshotAt.set(nodeId, at);
 
     await writeHistoryReadme(rootPath);
@@ -1294,9 +1301,33 @@ async function pruneSnapshots(rootPath: string, nodeId: string, now: number): Pr
  * delete — rather than merely change. Undo can already bring a deleted page
  * back within a session; this is what is left when the session is not.
  */
-export async function snapshotNode(rootPath: string, node: Node, graph: Node[] | PathIndex): Promise<void> {
+export async function snapshotNode(rootPath: string, node: Node, graph: Node[] | PathIndex, label?: string): Promise<void> {
   const { dirSegments, fileName } = resolveNodePath(node, graph);
-  await snapshotBeforeWrite(rootPath, node.id, joinPath(rootPath, ...dirSegments, fileName), true);
+  await snapshotBeforeWrite(rootPath, node.id, joinPath(rootPath, ...dirSegments, fileName), true, label);
+}
+
+/**
+ * Gives one copy a name, or takes one away — by renaming the file, since the
+ * name is where a copy's label lives (see `snapshotName`). Returns the copy's
+ * new file name, or null if the rename did not happen.
+ */
+export async function labelSnapshot(
+  rootPath: string,
+  nodeId: string,
+  name: string,
+  label: string | null,
+): Promise<string | null> {
+  const at = snapshotTime(name);
+  if (at === null) return null;
+  const next = snapshotName(at, label);
+  if (next === name) return name;
+  try {
+    const dir = historyDirFor(rootPath, nodeId);
+    await rename(joinPath(dir, name), joinPath(dir, next));
+    return next;
+  } catch {
+    return null;
+  }
 }
 
 /** The copies kept of `project.json`, newest first. */
