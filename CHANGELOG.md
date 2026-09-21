@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-21 — A player in the sidebar
+
+### Additions
+
+- **Add Block offers Music or Video.** A YouTube, YouTube Music, Spotify or SoundCloud player as a sidebar block — a character's theme in the infobox, a location's ambience beside its description. The block opens on a box for the link; once it has one it draws the same player the page does, at sidebar width, and names itself by what the link is ("Spotify track", "YouTube video") until you rename it. It has everything a sidebar block has — a title, a colour, a place in a template, drag between the sidebar, the page and an infobox — and its own menu gains Open on the service, Copy Link and Fetch Again. Nothing in the sidebar plays until you press play.
+
 ## 2026-09-21 — Music and video in the page
 
 ### Additions
@@ -148,9 +154,3 @@
 ### Fixes
 
 - **Clicking anywhere inside a shape on a board selects it, filled or not.** An empty rectangle, diamond or ellipse could only be picked up by clicking exactly on its outline; a click in the middle went straight through to the board. Now it selects, and dragging from inside moves it — the way Canva behaves. Lines, arrows and scribbles still take the click on the stroke itself. Like the selection box the day before, this is a change to the drawing library, kept as a patch.
-
-## 2026-09-18 — A selection box takes what it touches
-
-### Fixes
-
-- **Dragging a selection box on a board selects everything the box touches.** It used to take only what the box swallowed whole — a box drawn across five things picked up the one that fitted inside it. Now a shape is selected the moment the box crosses its outline, a line or arrow where the box crosses it or holds one of its points, and text, pictures and cards wherever the box overlaps them. A box drawn *inside* a big empty rectangle still leaves the rectangle alone, so things inside one can be picked out on their own. This is a change to the drawing library itself, kept as a patch in the repo.

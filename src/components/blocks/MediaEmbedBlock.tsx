@@ -11,26 +11,18 @@
 // through a context and rendered as a component type; one built inside another
 // component would be a new type on every keystroke, resetting the caption box
 // mid-word. PageBlock and Infobox live under the same rule.
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBlockNoteEditor } from "@blocknote/react";
 import { Copy, ExternalLink, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
 import { useMediaFetch, useOnline } from "../../hooks/use-media";
 import { BLOCK_WIDTH_FULL, storedBlockWidth } from "../../services/block-service";
 import { copyText } from "../../services/clipboard-service";
 import { openInBrowser } from "../../services/host-service";
-import {
-  defaultMediaWidth,
-  mediaInfoFor,
-  mediaLabel,
-  parseMediaLink,
-  serviceLabel,
-  type MediaInfo,
-  type MediaKind,
-  type MediaService,
-} from "../../services/media-service";
+import { mediaLabel, serviceLabel, type MediaInfo, type MediaKind, type MediaService } from "../../services/media-service";
 import type { MediaEmbedProps } from "../../services/editor-blocks/block-ref-context";
 import { TreePopover } from "../tree/TreePopover";
 import { BlockWidthHandles } from "./BlockWidthHandle";
+import { MediaLinkBox } from "./MediaLinkBox";
 import { MediaPlayer } from "./MediaPlayer";
 import "./blocks.css";
 
@@ -209,75 +201,5 @@ export function MediaEmbedBlock({ editorBlockId, props }: { editorBlockId: strin
         </TreePopover>
       )}
     </div>
-  );
-}
-
-/**
- * The box an empty block is: a place for the link, for the case where it is
- * not on the clipboard yet. Enter or Add takes it; Escape, or leaving it
- * empty and moving on, takes the block out — an empty player is nothing
- * worth keeping on the page.
- */
-function MediaLinkBox({ onLink, onCancel }: { onLink: (info: MediaInfo, width: number) => void; onCancel: () => void }) {
-  const [draft, setDraft] = useState("");
-  const [refused, setRefused] = useState(false);
-  const input = useRef<HTMLInputElement | null>(null);
-  useEffect(() => input.current?.focus(), []);
-
-  function submit(event?: FormEvent) {
-    event?.preventDefault();
-    const link = parseMediaLink(draft);
-    if (!link) {
-      setRefused(true);
-      return;
-    }
-    onLink(mediaInfoFor(link), defaultMediaWidth(link));
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    event.stopPropagation();
-    if (event.key === "Escape") {
-      event.preventDefault();
-      onCancel();
-    }
-  }
-
-  return (
-    <form className="block-frame media-embed media-link-box" onSubmit={submit}>
-      <span className="ui-eyebrow media-link-box-title">Music or Video</span>
-      <div className="media-link-box-row">
-        <input
-          ref={input}
-          className="media-link-box-input"
-          value={draft}
-          placeholder="Paste a YouTube, Spotify or SoundCloud link"
-          onChange={(event) => {
-            setDraft(event.target.value);
-            setRefused(false);
-          }}
-          onKeyDown={onKeyDown}
-          onPaste={(event) => {
-            // A paste that is one of the four services' links is taken at
-            // once — no second Enter for the ordinary case.
-            const link = parseMediaLink(event.clipboardData.getData("text/plain"));
-            if (!link) return;
-            event.preventDefault();
-            onLink(mediaInfoFor(link), defaultMediaWidth(link));
-          }}
-          aria-label="Link"
-        />
-        <button type="submit" className="ui-btn ui-btn-primary">
-          Add
-        </button>
-        <button type="button" className="ui-btn" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
-      {refused && (
-        <p className="media-link-box-refused" role="alert">
-          That's not a link from YouTube, YouTube Music, Spotify or SoundCloud — those are the four that play here.
-        </p>
-      )}
-    </form>
   );
 }

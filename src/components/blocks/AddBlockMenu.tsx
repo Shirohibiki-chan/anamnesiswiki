@@ -16,6 +16,7 @@ import {
   Image as ImageIcon,
   Inbox,
   LayoutTemplate,
+  Music,
   Link2,
   ListTree,
   Pin,
@@ -119,6 +120,11 @@ export function AddBlockMenu({
       </button>
       <button type="button" onClick={() => onAdd("capture")}>
         <Inbox size={13} /> Quick Capture
+      </button>
+      {/* Phase 31: a YouTube, Spotify or SoundCloud player — a character's
+          theme in the infobox. The block opens on its box for the link. */}
+      <button type="button" onClick={() => onAdd("media")}>
+        <Music size={13} /> Music or Video
       </button>
 
       <div className="tree-context-menu-heading">Meters</div>

@@ -2775,6 +2775,29 @@
   padding: var(--space-md) var(--space-lg);
 }
 
+/* In the sidebar the block's shell is the frame and the title, so the box is
+   only its row — and the row wraps, since a sidebar is too narrow for a field
+   and two buttons abreast. */
+.media-link-box-bare {
+  padding: 0;
+}
+
+.media-link-box-bare .media-link-box-row {
+  flex-wrap: wrap;
+}
+
+.media-link-box-bare .media-link-box-input {
+  flex-basis: 100%;
+}
+
+/* The player at sidebar width: the same frame's insides, clipped to the
+   block's own rounding. Nothing else to say — the still, the player and the
+   offline card are drawn exactly as in the page. */
+.block-media {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
 .media-link-box-row {
   display: flex;
   align-items: center;
@@ -2806,4 +2829,27 @@
 
 .media-service-mark {
   flex: none;
+}
+
+/* At sidebar width a still has a third of the room the page gives it, so the
+   words step down a size and the play mark takes less of the corner — the
+   page's sizes drew the title across the whole picture. */
+.block-media .media-still-words {
+  padding: var(--space-sm) var(--space-md);
+  padding-right: 56px;
+}
+
+.block-media .media-still-title {
+  font-size: var(--fs-sm);
+}
+
+.block-media .media-still-author {
+  font-size: var(--fs-xs);
+}
+
+.block-media .media-still-play {
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+  width: 36px;
+  height: 36px;
 }

@@ -14,6 +14,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { getPaletteHex } from "../../constants/palette";
 import { useColorPreview } from "../../hooks/use-color-preview";
 import type { CollectionSource, MeterFace, MeterStyle } from "../../constants/schema";
+import type { MediaService } from "../../services/media-service";
 import { TreePopover } from "../tree/TreePopover";
 import { BlockMenu } from "./BlockMenu";
 
@@ -65,6 +66,13 @@ type BlockShellProps = {
     limit?: number;
     onSetLimit?: (limit: number) => void;
   };
+  /** Present only for a player block with a link (Phase 31): the three rows that are about the link. */
+  media?: {
+    service: MediaService;
+    onOpen: () => void;
+    onCopy: () => void;
+    onRefetch: () => void;
+  };
   /**
    * Present only for an image block: whether this is the frame the page's own
    * picture lives in, and how to make it so. Phase 19.5.
@@ -93,6 +101,7 @@ export function BlockShell({
   onDeleteProperty,
   meter,
   collection,
+  media,
   pageImage,
   children,
 }: BlockShellProps) {
@@ -255,6 +264,23 @@ export function BlockShell({
                 isPageImage: pageImage.isPageImage,
                 onUse: () => {
                   pageImage.onUse();
+                  setMenuRect(null);
+                },
+              }
+            }
+            media={
+              media && {
+                service: media.service,
+                onOpen: () => {
+                  media.onOpen();
+                  setMenuRect(null);
+                },
+                onCopy: () => {
+                  media.onCopy();
+                  setMenuRect(null);
+                },
+                onRefetch: () => {
+                  media.onRefetch();
                   setMenuRect(null);
                 },
               }

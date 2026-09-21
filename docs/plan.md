@@ -642,7 +642,15 @@ from it each time.
 - **The picture panel's Embed tab is untouched.** It is for pictures by URL
   (`CLAUDE.md`, decided 2026-08-11) and stays that.
 
-### 2. The sidebar block — a character's theme
+### 2. ~~The sidebar block — a character's theme~~ Shipped 2026-09-21
+
+Shipped 2026-09-21 — `docs/shipped.md` § Phase 31, step 2. Built as scoped
+below; the one thing decided on the way is that the slash menu does *not*
+gain a "Music or video block" entry beside `/Spotify`, since two Spotify
+rows — one making a sidebar record and one not — would be a coin toss.
+The sidebar block drags into the writing like any block, where it draws
+the same player.
+
 
 A `media` block kind in `node.blocks`, alongside `image`, holding the same
 fields, drawn by the same renderer at sidebar width. This is the half that
