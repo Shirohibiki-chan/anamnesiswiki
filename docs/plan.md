@@ -67,21 +67,19 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   as a fix; that's a design decision wearing a tidy-up's clothes, and it's hers.
   Related: icons you choose yourself, in `docs/ideas.md`.
 
-- **Find out what our own copy and paste actually does, before building any
-  importer on top of it.** Raised 2026-08-12 by what botmakers said about the
-  tool they're leaving (see `docs/ideas.md` → Import and paste fidelity): the
-  formatting complaints were as much about pasting in and out as about file
-  import, and paste is a code path nothing here has ever looked at. BlockNote
-  handles the clipboard itself.
-
-  This is a measurement, not a build, and it's cheap: paste a spaced document
-  in from Google Docs, from Word, and from a plain text editor, and check
-  whether blank lines survive and whether any heading or bold appears that
-  wasn't there. Then copy a page *out* into a plain textarea and see what comes
-  with it. **Write the answer down either way** — if it's already right, that's
-  a baseline the importer must not regress; if it's wrong, it's a bug we ship
-  today and don't know about, and it makes the whole import feature moot until
-  fixed.
+- **Paste was measured on 2026-09-21 and is wrong today; the fix is not yet
+  built.** The findings are in `docs/ideas.md` → Import and paste fidelity.
+  The short version: plain text is read as Markdown on the way in, so
+  `*asterisks*` become italics, `<angle brackets>` vanish and `# ` becomes a
+  heading; one Markdown-looking word in a Google Docs paste throws the
+  document's real formatting away; and the plain-text copy *out* is Markdown
+  with backslashes before line breaks. Google Docs and Word HTML themselves
+  come through well. **Pasting in as text is a build with no decision in it**
+  — the anti-goals in `ideas.md` already say so — and it is a paste handler
+  passed to BlockNote with `plainTextAsMarkdown` and
+  `prioritizeMarkdownOverHTML` off. **What the plain-text copy should be is
+  her call**: text (right for a lorebook field, loses the bold) or Markdown
+  (right for Discord, litter in a text box).
 
 - **LegendKeeper's controls for a picture in a page, which the user pointed at
   2026-08-11 as the shape to match.** Two parts, neither built here yet:
