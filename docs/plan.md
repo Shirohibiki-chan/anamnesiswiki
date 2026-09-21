@@ -26,22 +26,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Queued Adjustments
 
-- **A database block has the layouts but not the menus.** What Phase 23 left
-  behind, and the only piece of it worth queuing. A page shown as a database
-  gets six controls — layout, columns, filter, sort, group and scope; a Subpage
-  index or Tag index block inside a page gets the layout switcher and editable
-  cells, and the other four are page-only. **Nothing is missing from the engine:**
-  `presentDatabase` already takes rows and a view and hands back everything
-  filtered, sorted and grouped, and `block.view` is the same record the
-  page-level one stores. What is missing is those menus being reachable from a
-  block's own bar.
-
-  **It was left for width, not for effort.** The controls were built as a bar
-  above a full-page table, and a block in the narrow sidebar has nowhere to put
-  six menus — List and Cards suit that column, and a table wants the page body.
-  So the job is as much deciding what a block's bar shows at its width as it is
-  wiring the menus up, which is why it did not ride along with the rest.
-
 - **A marker on text that could be linked, while she is writing.** The other
   half of `/link page names`, which shipped in Phase 19.5; this is the half that
   shows what *could* be linked without being asked. It wants a ProseMirror

@@ -11,7 +11,7 @@
 // rather than inventing a second language for the same job — so the field list
 // here deliberately holds more than the table's own columns.
 import { Plus, X } from "lucide-react";
-import type { DatabaseField, DatabaseFilter, DatabaseOperator, DatabaseScope, Node } from "../../constants/schema";
+import type { DatabaseField, DatabaseFilter, DatabaseOperator, DatabaseScope } from "../../constants/schema";
 import { DATABASE_SCOPES } from "../../constants/schema";
 import {
   fieldId,
@@ -20,9 +20,8 @@ import {
   operatorsFor,
   takesTypedValue,
   takesValue,
-  useDatabase,
-  useUpdateDatabaseView,
   OPERATOR_LABELS,
+  type DatabaseViewHandle,
 } from "../../hooks/use-database";
 import { useTemplates } from "../../hooks/use-templates";
 
@@ -32,16 +31,15 @@ const SCOPE_LABELS: Record<DatabaseScope, string> = {
   everywhere: "Everywhere in This World",
 };
 
-export function DatabaseFilterMenu({ node }: { node: Node }) {
-  const { allColumns, choicesFor } = useDatabase(node);
-  const update = useUpdateDatabaseView();
+export function DatabaseFilterMenu({ handle }: { handle: DatabaseViewHandle }) {
+  const { allColumns, choicesFor } = handle;
   const { getLabel } = useTemplates();
 
-  const filters = node.view?.filters ?? [];
+  const filters = handle.view.filters ?? [];
   const fields = filterableFields(allColumns);
 
   function write(next: DatabaseFilter[]) {
-    update(node, { filters: next });
+    handle.update({ filters: next });
   }
 
   function add() {
@@ -66,12 +64,12 @@ export function DatabaseFilterMenu({ node }: { node: Node }) {
    * rather than as a hidden rule.
    */
   function pickScope(scope: DatabaseScope) {
-    const templateKey = node.view?.templateKey;
+    const templateKey = handle.view.templateKey;
     if (scope === "subpages" || filters.length > 0 || !templateKey) {
-      update(node, { scope });
+      handle.update({ scope });
       return;
     }
-    update(node, {
+    handle.update({
       scope,
       filters: [
         {
@@ -97,24 +95,30 @@ export function DatabaseFilterMenu({ node }: { node: Node }) {
           sixth button on the bar, because it is the same question asked at its
           widest — which pages are we even considering. The bar says which scope
           is on, so a widened view still advertises itself without one. */}
-      <p className="database-menu-head">Looking in</p>
-      <select
-        className="database-select"
-        aria-label="Where to look for rows"
-        value={node.view?.scope ?? "subpages"}
-        onChange={(event) => pickScope(event.target.value as DatabaseScope)}
-      >
-        {DATABASE_SCOPES.map((scope) => (
-          <option key={scope} value={scope}>
-            {SCOPE_LABELS[scope]}
-          </option>
-        ))}
-      </select>
-      {(node.view?.scope ?? "subpages") !== "subpages" && (
-        <p className="database-menu-note">
-          Pages gathered from elsewhere, so there is nowhere obvious to put a new one — Add a page is only offered
-          while a database is showing what is inside it.
-        </p>
+      {/* Not on a block: its rows are its source's, and a Tag index widened
+          to "everywhere" would be a question with two answers. */}
+      {handle.scopeable && (
+        <>
+          <p className="database-menu-head">Looking in</p>
+          <select
+            className="database-select"
+            aria-label="Where to look for rows"
+            value={handle.view.scope ?? "subpages"}
+            onChange={(event) => pickScope(event.target.value as DatabaseScope)}
+          >
+            {DATABASE_SCOPES.map((scope) => (
+              <option key={scope} value={scope}>
+                {SCOPE_LABELS[scope]}
+              </option>
+            ))}
+          </select>
+          {(handle.view.scope ?? "subpages") !== "subpages" && (
+            <p className="database-menu-note">
+              Pages gathered from elsewhere, so there is nowhere obvious to put a new one — Add a page is only offered
+              while a database is showing what is inside it.
+            </p>
+          )}
+        </>
       )}
 
       <p className="database-menu-head">Filter</p>

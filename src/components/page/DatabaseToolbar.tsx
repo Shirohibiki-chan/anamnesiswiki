@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { ArrowDownUp, Columns3, Filter, Group, LayoutGrid } from "lucide-react";
 import type { Node } from "../../constants/schema";
-import { useDatabase } from "../../hooks/use-database";
+import { useDatabase, usePageViewHandle } from "../../hooks/use-database";
 import { useTemplates } from "../../hooks/use-templates";
 import { TreePopover } from "../tree/TreePopover";
 import { DatabaseColumnsMenu } from "./DatabaseColumnsMenu";
@@ -32,6 +32,7 @@ const LAYOUT_NAMES: Record<string, string> = {
 export function DatabaseToolbar({ node }: { node: Node }) {
   const [open, setOpen] = useState<{ menu: Menu; rect: DOMRect } | null>(null);
   const { rows, allRows, allColumns } = useDatabase(node);
+  const handle = usePageViewHandle(node);
   const { getLabel } = useTemplates();
 
   const view = node.view;
@@ -102,11 +103,11 @@ export function DatabaseToolbar({ node }: { node: Node }) {
 
       {open && (
         <TreePopover anchorRect={open.rect} onClose={() => setOpen(null)} className="database-menu">
-          {open.menu === "layout" && <DatabaseLayoutMenu node={node} />}
-          {open.menu === "columns" && <DatabaseColumnsMenu node={node} />}
-          {open.menu === "filter" && <DatabaseFilterMenu node={node} />}
-          {open.menu === "sort" && <DatabaseSortMenu node={node} />}
-          {open.menu === "group" && <DatabaseGroupMenu node={node} />}
+          {open.menu === "layout" && <DatabaseLayoutMenu handle={handle} />}
+          {open.menu === "columns" && <DatabaseColumnsMenu handle={handle} />}
+          {open.menu === "filter" && <DatabaseFilterMenu handle={handle} />}
+          {open.menu === "sort" && <DatabaseSortMenu handle={handle} />}
+          {open.menu === "group" && <DatabaseGroupMenu handle={handle} />}
         </TreePopover>
       )}
     </div>

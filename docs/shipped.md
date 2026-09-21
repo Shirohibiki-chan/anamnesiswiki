@@ -7919,3 +7919,35 @@ is untouched: no toggle to find, no rule running in the background.
 app: save with sub-pages, switch the rule on, make a page from the grid,
 rename it, rename a child by hand and rename the parent again, the
 right-click route twice, and the name-first prompt.
+
+## Queued Adjustments — an index block's settings ✅ Shipped 2026-09-21
+
+What Phase 23 left behind: a page shown as a database had six controls and
+a Subpage index or Tag index block had the layout switcher alone, because
+the controls were built as a bar above a full-page table and a sidebar
+column has nowhere to put six menus. Nothing was missing from the engine —
+`presentDatabase` already did the filtering, sorting and grouping for a
+block's `view` — only the menus being reachable.
+
+**The menus were written once and now take a handle.** `DatabaseViewHandle`
+in `use-database.ts` is what a settings menu needs of a view and no more:
+the record, the columns, the values it can offer, one `update`, and
+`scopeable`. `usePageViewHandle` and `useBlockViewHandle` make one for a page
+and for a block, and the five menus take the handle rather than the node.
+So a filter on a block is the same menu, the same operators and the same
+matching as on a page, and the two cannot drift. `scopeable` is the one
+difference the menus see: a page's view can widen where its rows come from,
+a block's rows are its source's, so the *Looking in* section is not offered
+on a block — a Tag index widened to "everywhere" would be a question with
+two answers.
+
+**One control at a sidebar's width.** `DatabaseBlockSettings` sits beside
+the block's layout switcher as a second quiet control, *Settings*, with a
+summed count while anything is on. Its popover lists the four menus with
+their counts; picking one swaps the popover to that menu with a way back,
+the way the tree's submenus work.
+
+**Verified** by `e2e/filters-an-index-block.e2e.ts`: a Faction with three
+sub-pages and a Subpage Index block; the filter menu opens from the block,
+offers no scope, and a *contains* filter thins the rows; a sort turned over
+from the same place reverses them.

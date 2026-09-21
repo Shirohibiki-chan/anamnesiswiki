@@ -3,20 +3,18 @@
 // **Stored as what is off, not what is on** (see `hiddenColumns`), so a
 // property added to a template later turns up in views that already exist
 // rather than staying invisible until somebody thinks to come in here.
-import type { Node } from "../../constants/schema";
-import { useDatabase, useUpdateDatabaseView } from "../../hooks/use-database";
+import type { DatabaseViewHandle } from "../../hooks/use-database";
 
-export function DatabaseColumnsMenu({ node }: { node: Node }) {
-  const { allColumns } = useDatabase(node);
-  const update = useUpdateDatabaseView();
+export function DatabaseColumnsMenu({ handle }: { handle: DatabaseViewHandle }) {
+  const { allColumns } = handle;
 
-  const hidden = new Set(node.view?.hiddenColumns ?? []);
+  const hidden = new Set(handle.view.hiddenColumns ?? []);
 
   function toggle(key: string) {
     const next = new Set(hidden);
     if (next.has(key)) next.delete(key);
     else next.add(key);
-    update(node, { hiddenColumns: [...next] });
+    handle.update({ hiddenColumns: [...next] });
   }
 
   if (allColumns.length === 0) {
