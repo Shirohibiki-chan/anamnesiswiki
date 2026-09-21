@@ -1180,6 +1180,11 @@ export async function editorText(window: Page): Promise<string> {
   return normalize((await window.locator(EDITOR).first().textContent()) ?? "");
 }
 
+/** The words in the open page marked as the name of a page they could link to. */
+export async function linkableMarks(window: Page): Promise<string[]> {
+  return (await window.locator(`${EDITOR} .editor-linkable`).allInnerTexts()).map(normalize);
+}
+
 /** The headings in the open page, top to bottom. */
 export async function editorHeadings(window: Page): Promise<string[]> {
   return (await window.locator(`${EDITOR} [data-content-type="heading"]`).allInnerTexts()).map(normalize);

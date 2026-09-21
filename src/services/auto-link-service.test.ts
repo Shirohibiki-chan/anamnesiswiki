@@ -3,7 +3,7 @@
 // is a way it could quietly link the wrong thing.
 import { describe, expect, it } from "vitest";
 import { createNode, type Node } from "../constants/schema";
-import { blocksToRelink, findLinkMatches, linkableNames, withLinkedMatches } from "./auto-link-service";
+import { blocksToRelink, findLinkMatches, linkableNames, matchesInText, withLinkedMatches } from "./auto-link-service";
 
 function page(name: string, patch: Partial<Node> = {}): Node {
   return { ...createNode({ parentId: null, templateKey: "character", name }), ...patch };
@@ -173,5 +173,25 @@ describe("withLinkedMatches", () => {
   it("names the blocks that have to be written", () => {
     const found = findLinkMatches([text("b1", "Quietgate"), text("b2", "Art"), text("b3", "nothing")], names);
     expect(blocksToRelink(found)).toEqual(["b1", "b2"]);
+  });
+});
+
+describe("matchesInText", () => {
+  const names = [
+    { nodeId: "vj", name: "Valera Jiang", pageName: "Valera Jiang" },
+    { nodeId: "v", name: "Valera", pageName: "Valera" },
+  ];
+
+  it("finds whole words, longest first, in reading order", () => {
+    const text = "Valera met Valera Jiang; particularly not valerable.";
+    expect(matchesInText(text, names)).toEqual([
+      { start: 0, end: 6, nodeId: "v", pageName: "Valera" },
+      { start: 11, end: 23, nodeId: "vj", pageName: "Valera Jiang" },
+    ]);
+  });
+
+  it("finds nothing in text with no names", () => {
+    expect(matchesInText("Nobody here.", names)).toEqual([]);
+    expect(matchesInText("Valera", [])).toEqual([]);
   });
 });
