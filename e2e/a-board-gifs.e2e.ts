@@ -94,6 +94,30 @@ describe("a moving GIF on a board", () => {
     // decoding the frames takes a moment after that.
     await app.window.waitForTimeout(1500);
     const colours = await boardCentreColours(app.window, 800, 40);
+    // Diagnostics for CI, where this failed with one colour seen (2026-09-20).
+    const diag = await app.window.evaluate(async (bytes) => {
+      const out: Record<string, unknown> = { decoder: typeof ImageDecoder, visibility: document.visibilityState, hidden: document.hidden, bitmap: typeof createImageBitmap };
+      try {
+        const decoder = new ImageDecoder({ data: new Uint8Array(bytes), type: "image/gif" });
+        await decoder.tracks.ready;
+        out.frames = decoder.tracks.selectedTrack?.frameCount;
+        const { image } = await decoder.decode({ frameIndex: 1 });
+        out.duration = image.duration;
+        const bitmap = await createImageBitmap(image);
+        out.size = [bitmap.width, bitmap.height];
+      } catch (error) {
+        out.error = String(error);
+      }
+      out.raf = await new Promise<string>((done) => {
+        const timer = setTimeout(() => done("never fired in 500ms"), 500);
+        requestAnimationFrame(() => {
+          clearTimeout(timer);
+          done("fired");
+        });
+      });
+      return out;
+    }, Array.from(animatedGif(60, [[220, 30, 30], [30, 60, 220]], 10)));
+    console.log("GIF DIAG", JSON.stringify(diag), JSON.stringify([...new Set(colours)]));
     const distinct = new Set(colours);
     // Two frames, both seen: the picture is moving. The background is not
     // among them — the picture covers the middle.
