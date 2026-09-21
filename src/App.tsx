@@ -8,6 +8,7 @@ import { NoticeDialog } from "./components/shell/NoticeDialog";
 import { PageHistory } from "./components/shell/PageHistory";
 import { ProjectHistory } from "./components/shell/ProjectHistory";
 import { SaveAsTemplateDialog } from "./components/shell/SaveAsTemplateDialog";
+import { NamePromptDialog } from "./components/shell/NamePromptDialog";
 import { ShortcutSheet } from "./components/shell/ShortcutSheet";
 import { StartupRouter } from "./components/shell/StartupRouter";
 import { TitleBar } from "./components/shell/TitleBar";
@@ -80,6 +81,7 @@ function App() {
           are no props to thread a callback down through, the same routing
           reason the export request lives in the dialog store. */}
       <SaveAsTemplateDialog />
+      <NamePromptDialog />
       {/* Opened from two places with no props path between them — a picture
           inside the editor and the portrait button in the properties panel —
           and it portals like the three above, so it belongs at the root for

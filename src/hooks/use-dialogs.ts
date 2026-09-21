@@ -17,6 +17,9 @@ export function useDialogs() {
   const pendingTemplateScope = useDialogStore((s) => s.pendingTemplateScope);
   const requestTemplateScope = useDialogStore((s) => s.requestTemplateScope);
   const resolveTemplateScope = useDialogStore((s) => s.resolveTemplateScope);
+  const pendingName = useDialogStore((s) => s.pendingName);
+  const requestName = useDialogStore((s) => s.requestName);
+  const resolveName = useDialogStore((s) => s.resolveName);
   const historyNodeId = useDialogStore((s) => s.historyNodeId);
   const openHistory = useDialogStore((s) => s.openHistory);
   const closeHistory = useDialogStore((s) => s.closeHistory);
@@ -54,6 +57,9 @@ export function useDialogs() {
     pendingTemplateScope,
     requestTemplateScope,
     resolveTemplateScope,
+    pendingName,
+    requestName,
+    resolveName,
     pickFolder,
     pickImportFile,
     pickLkSavePath,

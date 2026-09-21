@@ -17,10 +17,14 @@ import { X } from "lucide-react";
 import { getTemplateIcon } from "../../constants/icons";
 import { useCustomTemplates, useProjectActions } from "../../hooks/use-project";
 import { useDialogs } from "../../hooks/use-dialogs";
+import { useNamedTemplate } from "../../hooks/use-named-template";
 import { useTemplates } from "../../hooks/use-templates";
 
 export function NewPageLanding({ node, onSkip }: { node: Node; onSkip: () => void }) {
-  const { applyTemplate, applyCustomTemplate, deleteTemplate } = useProjectActions();
+  const { applyTemplate, deleteTemplate } = useProjectActions();
+  // Asks for the page's name first when the template names its pages after
+  // it and the page is still "Untitled" — see the hook.
+  const { applyCustomTemplate } = useNamedTemplate();
   const customTemplates = useCustomTemplates();
   const { confirmDestructive } = useDialogs();
   const { templates, getLabel } = useTemplates();

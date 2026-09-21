@@ -17,6 +17,9 @@ import { getTemplateIcon } from "../../constants/icons";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useOpenBuiltInKey, useTemplateActions, useTemplateEditing } from "../../hooks/use-template-editing";
 import { useTemplates } from "../../hooks/use-templates";
+import { useTemplateChildNames } from "../../hooks/use-project";
+import { composeChildName } from "../../services/child-naming";
+import { DEFAULT_CHILD_NAME_SEPARATOR } from "../../constants/schema";
 import { useStyleClassesInUse } from "../../hooks/use-style-class";
 import { StyleMenu } from "../tree/StyleMenu";
 import { TreePopover } from "../tree/TreePopover";
@@ -44,6 +47,8 @@ export function TemplateView({ template }: { template: Node }) {
 
   const activeTab = template.tabs.find((tab) => tab.id === activeTabId) ?? template.tabs[0];
   const Icon = getTemplateIcon(template.templateKey);
+  const childNames = useTemplateChildNames(template.id);
+  const naming = template.namesChildren;
 
   function handleAddTab() {
     const tab = editing.addTab("New Tab");
@@ -149,6 +154,43 @@ export function TemplateView({ template }: { template: Node }) {
               onBack={() => setStyleAnchor(null)}
             />
           </TreePopover>
+        )}
+
+        {/* The naming rule for the pages saved inside — only when there are
+            some, since there is nothing to name otherwise. One switch and one
+            box for the whole template rather than a checkbox per page (her
+            call, 2026-08-31): a template wanting some children prefixed and
+            others not is two templates, which is cheaper to explain. */}
+        {childNames.length > 0 && (
+          <div className="template-view-naming">
+            <label className="template-view-naming-row">
+              <input
+                type="checkbox"
+                checked={naming !== undefined}
+                onChange={(event) =>
+                  editing.setChildNaming(event.target.checked ? { separator: DEFAULT_CHILD_NAME_SEPARATOR } : undefined)
+                }
+              />
+              <span>Name the pages inside after the page they land in</span>
+            </label>
+            {naming && (
+              <div className="template-view-naming-detail">
+                <label className="template-view-naming-separator">
+                  Joined with
+                  <input
+                    type="text"
+                    aria-label="What goes between the page's name and the sub-page's"
+                    value={naming.separator}
+                    onChange={(event) => editing.setChildNaming({ separator: event.target.value })}
+                  />
+                </label>
+                <span className="template-view-naming-example">
+                  So a page called Damien gets {composeChildName("Damien", childNames[0], naming.separator)}
+                  {childNames.length > 1 ? " and so on" : ""}. Renaming the page renames them with it.
+                </span>
+              </div>
+            )}
+          </div>
         )}
 
         {template.tabs.length === 0 ? (

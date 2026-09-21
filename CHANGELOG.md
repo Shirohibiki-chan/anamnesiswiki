@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-21 — Pages inside a template, named after the page
+
+### Additions
+
+- **A template can name the pages inside it after the page they land in.** Save a page with its sub-pages as a template, open the template, and tick *Name the pages inside after the page they land in*: a page called Damien made from it gets Damien_Pics and Damien_Sheets, with whatever you put in the *Joined with* box between the halves (an underscore to start; it can be anything, or nothing). Renaming the page renames them with it, and one press of undo takes the lot back. A sub-page you rename yourself stops following — a name you typed wins.
+- **Add Pages From Template, on a page's right-click menu.** The pages saved inside one of your templates, put inside a page that already exists — its own writing and fields left alone. A page of that name already there is skipped and the rest are still made, and a line says how many, so running it on a character twice is safe.
+- **A page still called Untitled is asked for its name first** when a template like this is picked for it, so nothing is ever named after nothing.
+
 ## 2026-09-21 — The shortcut sheet knows the slash commands and the markdown
 
 ### Additions
@@ -147,11 +155,3 @@
 - **A note's words take bold, italic and links.** Ctrl+B and Ctrl+I while writing; Ctrl+K, or the *Link to Page* button, puts a link at the cursor — a page of yours by name, or a web address pasted into the box. Click a link on a note to follow it. Before, a "note" was a filled rectangle with plain text in it.
 - **Writing in a note is the library's own rhythm:** double-click it, or click a selected note again, or press Enter with it selected; Escape or a click elsewhere finishes. The whole edit is one undo step. A selected note shows a *Colour* button in the top-right row to recolour it, and several selected notes recolour together.
 - Notes keep their colour between the light and dark looks — the dark one dims the paper rather than swapping it — and their words are in the board's own hand.
-
-## 2026-09-20 — Bookmark cards on a board
-
-### Additions
-
-- **Paste a web address onto a board and it becomes a card.** The card fills in with the page's title, description, picture and site name a moment later, and it lands where the mouse is. Click a card twice to open the address in your browser — the first click selects it, like any shape — or lock the card and one click does it. Before, a pasted address was a line of text with a link on it.
-- **The card keeps what it fetched.** Title, words and picture are stored on the board, and the picture goes into *Library* like any other, so the card draws the same with no internet, and in a world you hand to someone else. A page that will not answer, or says nothing about itself, gives a card with just the address on it.
-- Only a lone address becomes a card; a sentence with an address in it is still pasted as text.
