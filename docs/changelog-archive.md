@@ -2,6 +2,17 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-19 — Frames inside frames, and frames that turn
+
+### Additions
+
+- **A frame can hold a frame.** Draw a frame inside a frame and it is part of it: move the outer one and the inner one comes along with everything in it, duplicate it and the whole set is copied, delete it and everything inside goes too. Drag a frame into another frame to put it there, and out to take it back. Anything sticking out of an inner frame is cut off at the inner frame's edge, and at the outer's too. *Wrap Selection in Frame* now works when a frame is among what you selected.
+- **A frame can be turned.** Select one and it has the same rotation handle as any shape. Turning it turns everything in it round the frame's middle — a straight frame inside a turned one is a matter of turning the inner one back — and the frame's name goes round with it. The frame cuts off its contents at its turned edges, so a frame at forty-five degrees is a diamond, and a shape dropped into a turned frame lands inside its turned shape, not the box around it.
+
+### Changes
+
+- **Deleting a frame deletes what it holds.** It used to keep the contents and quietly leave them selected, which is not what the eraser did with a frame, and not what Canva does. Put things outside a frame first if they should stay.
+
 ## 2026-09-19 — The board's menus and panels look like the app
 
 ### Changes

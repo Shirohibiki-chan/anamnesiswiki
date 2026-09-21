@@ -7727,3 +7727,28 @@ which would silently drop the "-" mid-typing.
 the panel, turns the folder into a table, and checks the operators offered,
 the typed box, and the rows kept either side of the line. Screenshot of the
 built app with *Age is more than 20* open: one of nine rows kept.
+
+## Queued Adjustments — Settings → About ✅ Shipped 2026-09-21
+
+The other half of a Phase 12 bullet whose first half shipped as Patch Notes
+on 2026-08-08. A Settings section rather than a dialog, since Patch Notes had
+already made Settings the place the app talks about itself, and a dialog
+over a dialog is the wrong shape.
+
+**What it shows.** The name and the version the shell reports (nothing when
+there is no shell, so `pnpm dev` in a browser says "Anamnesis" and not
+"Anamnesis undefined"); one line on what the app is; the licence and
+copyright with links to `LICENSE` on GitHub and the repository; a *Built
+With* list of the nine libraries the app is made of, each a link, with its
+role in the app's own words and its licence; and a note on the fonts — the
+three default faces, the library's size read off `FONT_LIBRARY` rather than
+written down, and that all of them are open typefaces bundled with the app.
+The credits are hand-written in `constants/about.ts`, and that is fine: they
+are the libraries a person could point at on screen, not the dependency
+tree, and none of them changes licence between one week and the next. The
+licences were read off each package's `package.json` when the list was
+written (BlockNote is MPL-2.0, Lucide ISC, Fuse.js Apache-2.0, the rest MIT).
+
+**Verified** by `e2e/says-what-it-is.e2e.ts` — the section opens, the
+version on screen is the one in `package.json`, the credits and the font
+licence line are there — and a screenshot of the built app.

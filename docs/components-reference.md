@@ -130,4 +130,4 @@
 | Start from a template, and managing pinned projects | `src/components/start/TemplatePickerDialog.tsx`, `src/components/start/ManagePinsDialog.tsx` |
 | All properties & tags | `src/components/properties/AllPropertiesModal.tsx` |
 
-**Not built:** an About dialog (`plan.md` → Queued Adjustments). It was listed here as though it existed.
+**About** is a Settings section, `AboutSettings.tsx` (2026-09-21) — the version, the credits in `constants/about.ts`, and the fonts note; a section rather than a dialog because Patch Notes had already set that precedent.

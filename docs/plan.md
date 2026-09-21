@@ -230,11 +230,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   blocks wearing a different hat, so check that phase before treating this as one
   job.
 
-- **The About dialog never got built.** The other half of a Phase 12 bullet
-  whose first half shipped as Settings → Patch Notes on 2026-08-08. Small and
-  self-contained — version, licence, the fonts' licences, a link to the repo.
-  Left here rather than folded into a phase because it belongs to none of them.
-
 - **The app's *default* fonts are still Inter / Fraunces / Newsreader.** The
   98-family library ships, so nothing is blocked on bundling — but
   `--font-ui` / `--font-display` / `--font-prose`'s defaults in `index.css` are

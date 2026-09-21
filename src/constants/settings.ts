@@ -106,6 +106,12 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     label: "Patch Notes",
     blurb: "What changed in the last few versions of Anamnesis.",
   },
+  {
+    id: "about",
+    group: "app",
+    label: "About",
+    blurb: "Which version this is, what it is built with, and the licences.",
+  },
 ];
 
 export type SettingsTabId = (typeof SETTINGS_TABS)[number]["id"];
@@ -349,5 +355,12 @@ export const DECLARED_SETTINGS: readonly {
     label: "Patch Notes",
     hint: "what changed in the last few versions",
     keywords: ["changelog", "changes", "release notes", "what's new", "history", "version"],
+  },
+  {
+    id: "about",
+    tabId: "about",
+    label: "About Anamnesis",
+    hint: "the version, what it is built with, and the licences",
+    keywords: ["about", "version", "licence", "license", "credits", "open source", "source code", "github", "fonts"],
   },
 ];

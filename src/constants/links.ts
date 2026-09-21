@@ -5,7 +5,11 @@
 
 // The repository itself. Every address below is built from it, so a move or a
 // rename is one edit here rather than a hunt through three string literals.
-const REPO_URL = "https://github.com/Shirohibiki-chan/anamnesiswiki";
+export const REPO_URL = "https://github.com/Shirohibiki-chan/anamnesiswiki";
+
+// Where "Read the licence" goes from Settings -> About: the file itself, on
+// the default branch, rather than a copy of its text in the app.
+export const LICENCE_URL = `${REPO_URL}/blob/main/LICENSE`;
 
 // Where "See everything in this release" goes. `/latest` rather than a
 // `/tag/v0.3.0` built from the version string, because the update on offer is
