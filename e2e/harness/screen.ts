@@ -3858,3 +3858,101 @@ export async function renameOpenPage(window: Page, name: string): Promise<void> 
   await input.press("Enter");
   await waitForPageTitle(window, name);
 }
+
+
+// ---- Bold, italic and links in a text box (Phase 32, step 14) ----
+
+const BOARD_TEXT_EDITOR = ".board .excalidraw-wysiwyg";
+const BOARD_TEXT_TOOLS = "[data-testid='board-text-tools']";
+
+/**
+ * Starts a text box on the board at a point given as fractions of the
+ * canvas, with the library's text tool, and types `text` into it. The box
+ * is left open for writing, with the keyboard in it.
+ */
+export async function startBoardText(window: Page, at: { x: number; y: number }, text: string): Promise<void> {
+  const canvas = window.locator(BOARD_CANVAS).first();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("the board's canvas has no size");
+  // A click on empty canvas first, so the keyboard is the board's for the tool key.
+  await canvas.click({ position: { x: box.width * 0.05, y: box.height * 0.85 } });
+  await window.keyboard.press("t");
+  await canvas.click({ position: { x: box.width * at.x, y: box.height * at.y } });
+  await window.locator(BOARD_TEXT_EDITOR).waitFor({ state: "visible", timeout: WAIT_MS });
+  await window.keyboard.type(text);
+}
+
+/** Opens the drawn text box under `at` (window pixels) for writing, by the library's double-click. */
+export async function editBoardTextAt(window: Page, at: { x: number; y: number }): Promise<void> {
+  await window.mouse.dblclick(at.x, at.y);
+  await window.locator(BOARD_TEXT_EDITOR).waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** What the text box being written in holds, marks and all — the words as typed. */
+export async function boardTextBeingWritten(window: Page): Promise<string> {
+  return window.locator(BOARD_TEXT_EDITOR).inputValue();
+}
+
+/** Whether a text box is open for writing. */
+export async function boardTextIsBeingWritten(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD_TEXT_EDITOR).count()) > 0;
+}
+
+/** Selects all the words in the text box being written in. */
+export async function selectAllBoardText(window: Page): Promise<void> {
+  await window.locator(BOARD_TEXT_EDITOR).press("Control+a");
+}
+
+/** Whether the small toolbar over the text box being written in is up. */
+export async function boardTextToolsShown(window: Page): Promise<boolean> {
+  return (await window.locator(BOARD_TEXT_TOOLS).count()) > 0;
+}
+
+/** Clicks Bold, Italic or Link on the toolbar over the text box being written in. */
+export async function clickBoardTextTool(window: Page, name: "Bold" | "Italic" | "Link"): Promise<void> {
+  await window.locator(BOARD_TEXT_TOOLS).getByRole("button", { name, exact: true }).click();
+}
+
+/** Links the selected words to the page called `name`, from the toolbar's Link through the picker. */
+export async function linkBoardWordsToPage(window: Page, name: string): Promise<void> {
+  await clickBoardTextTool(window, "Link");
+  await window.locator(BOARD_PICKER_INPUT).fill(name);
+  await window.locator(BOARD_PICKER_ROW).filter({ hasText: name }).first().click();
+}
+
+/**
+ * Where the ink is on the board's drawn canvas, in window pixels: the
+ * box around every pixel that is not see-through, and how many there
+ * are. The drawing's canvas starts see-through and the dots are drawn
+ * under it by the board, so what is on it is what the library drew.
+ */
+export async function boardInkExtent(window: Page): Promise<{ left: number; right: number; top: number; bottom: number; count: number }> {
+  const extent = await window.evaluate(() => {
+    const drawn = document.querySelector<HTMLCanvasElement>(".board .excalidraw__canvas.static");
+    if (!drawn) return null;
+    const context = drawn.getContext("2d");
+    if (!context) return null;
+    const { width, height } = drawn;
+    const pixels = context.getImageData(0, 0, width, height).data;
+    let left = width;
+    let right = -1;
+    let top = height;
+    let bottom = -1;
+    let count = 0;
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        if (pixels[(y * width + x) * 4 + 3] < 100) continue;
+        count += 1;
+        if (x < left) left = x;
+        if (x > right) right = x;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      }
+    }
+    const rect = drawn.getBoundingClientRect();
+    const scale = drawn.width / rect.width;
+    return { left: rect.left + left / scale, right: rect.left + right / scale, top: rect.top + top / scale, bottom: rect.top + bottom / scale, count };
+  });
+  if (!extent) throw new Error("the board has no drawn canvas");
+  return extent;
+}

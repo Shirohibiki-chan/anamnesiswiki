@@ -2,6 +2,19 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-18 — Pages on a board
+
+### Additions
+
+- **A page can be put on a board.** *Put a Page on It* in the board's top-right corner opens a search box; pick a page and it lands in the middle of the board as a card showing its icon, name and picture. The box stays open for the next one. A page can also be dragged straight out of the sidebar onto the board, and lands where it's dropped — several at once if several rows are selected.
+- **A card reads its page rather than copying it.** Rename the page or give it a new picture and the card on the board shows that the next time it's drawn. A card for a page that's since been deleted says so instead of drawing a blank.
+- **Resizing a card changes what it shows.** Big, it's the picture with the name across the bottom. Shorter, it's the icon and the name in a row. Narrower still, it's the icon alone with the name in its tooltip. Nothing to set; the size is the setting.
+- **Click a card twice to open its page.** The first click selects it, the way any shape on a board is selected; a second click on it opens the page. A card can be moved, resized, locked and grouped like anything else on the board, and it's in the page's connections along with linked shapes.
+
+### Changes
+
+- **The board's link button reads *Link to Page* and the picker's unlink row reads *Remove the Link*,** in Title Case with the rest of the app.
+
 ## 2026-09-17 — Tab between a scene's name and its description
 
 ### Additions

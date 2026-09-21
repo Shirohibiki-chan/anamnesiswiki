@@ -2,12 +2,13 @@
 //
 // **Why a patch at all**: a board has to work the way her hands expect
 // from Canva and from LegendKeeper's boards, and the library's rules do
-// not, in six places it has no switch for: a selection box takes only
+// not, in seven places it has no switch for: a selection box takes only
 // what it swallows whole; a click inside an unfilled shape picks up
 // nothing; its labels are sentence case; a frame can neither hold a
 // frame nor turn; every embed wears a link icon, which a sticky note
-// and a video must not; and a moving GIF stands still. Each is written
-// into its two builds, in its own section below.
+// and a video must not; a moving GIF stands still; and a text box is
+// one style through, no bold word or link in it. Each is written into
+// its two builds, in its own section below.
 //
 // **Why this script exists beside the patch**: the patch file is enormous
 // because the library's built files are single minified lines, so nobody
@@ -1107,5 +1108,190 @@ edit("dist/prod/chunk-K2UTITRG.js", [
   [
     `x7=pd(e=>{dp(e)},{trailing:!0}),cp=(e,t)=>{if(t){x7(e);return}dp(e)}`,
     `x7=pd(e=>{dp(e),anamnesisGifAfterRender(e,anamnesisGifRender)},{trailing:!0}),cp=(e,t)=>{if(t){x7(e);return}dp(e),anamnesisGifAfterRender(e,anamnesisGifRender)}`,
+  ],
+]);
+
+// ---- Bold, italic and links in a text box (Phase 32, step 14) ----
+//
+// The library draws a text box one style per box: one font on the canvas
+// context, one `fillText` per line. The words may now carry Markdown's
+// marks — `**bold**`, `*italic*`, `[label](address)` — and this section
+// draws them: the lines are read into runs by the app's text metrics
+// provider (`hooks/board-text-metrics.ts`, which the app installs through
+// the library's own `setCustomTextMetricsProvider` and which measures the
+// marks hidden too), and each run is drawn in its own font, end to end,
+// a link underlined. Both the canvas and the SVG drawing, so exports show
+// the same. A right-to-left text keeps the library's own drawing: the
+// runs are laid left to right. The editor is a textarea and shows the
+// marks as typed, so while writing it is widened (free text) or made
+// taller (text in a shape) to fit them, since the box it sits in is
+// measured with the marks hidden.
+const richHelpers = (getFontString, provider) => [
+  [
+    "anamnesisRichLines",
+    `(text) => {
+  const p = ${provider};
+  if (!p || !p.richLines || !/[*[]/.test(text)) return null;
+  const lines = p.richLines(text);
+  return lines.some((line) => line.some((run) => run.bold || run.italic || run.link)) ? lines : null;
+}`,
+  ],
+  [
+    "anamnesisDrawRuns",
+    `(context, runs, element, offset, y) => {
+  const p = ${provider};
+  const font = ${getFontString}(element);
+  const widths = runs.map((run) => {
+    context.font = p.runFont(font, run);
+    return context.measureText(run.text).width;
+  });
+  const total = widths.reduce((sum, width) => sum + width, 0);
+  let x = element.textAlign === "center" ? offset - total / 2 : element.textAlign === "right" ? offset - total : offset;
+  context.textAlign = "left";
+  runs.forEach((run, index) => {
+    context.font = p.runFont(font, run);
+    context.fillText(run.text, x, y);
+    if (run.link) context.fillRect(x, y + element.fontSize * 0.12, widths[index], Math.max(1, element.fontSize / 16));
+    x += widths[index];
+  });
+  context.textAlign = element.textAlign;
+}`,
+  ],
+  [
+    "anamnesisSvgRuns",
+    `(text, line, runs) => {
+  if (!runs) {
+    text.textContent = line;
+    return;
+  }
+  for (const run of runs) {
+    const span = text.ownerDocument.createElementNS(text.namespaceURI, "tspan");
+    span.textContent = run.text;
+    if (run.bold) span.setAttribute("font-weight", "bold");
+    if (run.italic) span.setAttribute("font-style", "italic");
+    if (run.link) span.setAttribute("text-decoration", "underline");
+    text.appendChild(span);
+  }
+}`,
+  ],
+];
+
+// The editor, both builds: after the library has sized the textarea to the
+// box, it is widened or made taller when what is typed — the marks
+// included — does not fit. A free text box is widened to the right, or
+// around its middle or its right edge by its alignment, and never past the
+// window's edge, which is the library's own cap; text in a shape, or a
+// box with a fixed width, wraps and so gets taller. The transform is
+// re-made, since the library's centres its scale on the box's size.
+const fitEditor = `(editable, container, element, viewportX, width, height, maxWidth, maxHeight, appState, transform) => {
+  if (!container && element.autoResize) {
+    if (editable.scrollWidth <= editable.clientWidth) return;
+    const fitted = Math.min(editable.scrollWidth + 1, maxWidth);
+    const shift = (fitted - width) * (element.textAlign === "center" ? 0.5 : element.textAlign === "right" ? 1 : 0);
+    editable.style.width = fitted + "px";
+    editable.style.left = viewportX - shift * appState.zoom.value + "px";
+    editable.style.transform = transform(fitted, height);
+  } else if (editable.scrollHeight > editable.clientHeight) {
+    const fitted = editable.scrollHeight + 1;
+    editable.style.height = fitted + "px";
+    editable.style.transform = transform(width, fitted);
+  }
+}`;
+
+edit("dist/dev/chunk-4FTI6OG3.js", [
+  [
+    `var drawElementOnCanvas = (element, rc, context, renderConfig, appState) => {`,
+    `// Anamnesis patch: bold, italic and links in a text box — see scripts/excalidraw-patch.mjs.\n` +
+      richHelpers("getFontString", "textMetricsProvider")
+        .map(([name, expr]) => `var ${name} = ${expr};`)
+        .join("\n") +
+      `\nvar drawElementOnCanvas = (element, rc, context, renderConfig, appState) => {`,
+  ],
+  [
+    `        for (let index = 0; index < lines.length; index++) {
+          context.fillText(
+            lines[index],
+            horizontalOffset,
+            index * lineHeightPx + verticalOffset
+          );
+        }
+`,
+    `        const anamnesisRich = !rtl && anamnesisRichLines(element.text); // Anamnesis patch: the marks drawn
+        for (let index = 0; index < lines.length; index++) {
+          if (anamnesisRich && anamnesisRich[index]) {
+            anamnesisDrawRuns(context, anamnesisRich[index], element, horizontalOffset, index * lineHeightPx + verticalOffset);
+            continue;
+          }
+          context.fillText(
+            lines[index],
+            horizontalOffset,
+            index * lineHeightPx + verticalOffset
+          );
+        }
+`,
+  ],
+  [
+    `          const text = svgRoot.ownerDocument.createElementNS(SVG_NS, "text");
+          text.textContent = lines[i];
+`,
+    `          const text = svgRoot.ownerDocument.createElementNS(SVG_NS, "text");
+          anamnesisSvgRuns(text, lines[i], direction === "ltr" && anamnesisRich && anamnesisRich[i]); // Anamnesis patch: the marks drawn
+`,
+  ],
+  [
+    `        const textAnchor = element.textAlign === "center" ? "middle" : element.textAlign === "right" || direction === "rtl" ? "end" : "start";
+`,
+    `        const textAnchor = element.textAlign === "center" ? "middle" : element.textAlign === "right" || direction === "rtl" ? "end" : "start";
+        const anamnesisRich = anamnesisRichLines(element.text);
+`,
+  ],
+]);
+
+edit("dist/dev/index.js", [
+  [
+    `var textWysiwyg = ({`,
+    `// Anamnesis patch: the editor fits the marks typed into it — see scripts/excalidraw-patch.mjs.
+var anamnesisFitEditor = ${fitEditor};
+var textWysiwyg = ({`,
+  ],
+  [
+    `      editable.scrollTop = 0;
+`,
+    `      editable.scrollTop = 0;
+      anamnesisFitEditor(editable, container, updatedTextElement, viewportX, width, height, maxWidth, editorMaxHeight, appState, (w, h) => getTransform(w, h, getTextElementAngle(updatedTextElement, container), appState, maxWidth, editorMaxHeight));
+`,
+  ],
+]);
+
+// The same, minified: Ee = getFontString, Po = isRTL, Ao = textMetricsProvider;
+// in the SVG drawing D is the direction and w the lines; in the editor d is
+// the textarea, be the container, O the element, pl viewportX, mt width, wo
+// height, Dn maxWidth, qg editorMaxHeight, F appState, K5 getTransform and
+// wE getTextElementAngle; lt is getFontString.
+edit("dist/prod/chunk-K2UTITRG.js", [
+  [
+    `anamnesisGifRender=e=>cp(e,!0),`,
+    richHelpers("Ee", "Ao")
+      .map(([name, expr]) => `${name}=${expr},`)
+      .join("") + `anamnesisGifRender=e=>cp(e,!0),`,
+  ],
+  [
+    `for(let U=0;U<s.length;U++)n.fillText(s[U],d,U*c+l);`,
+    `let anamnesisRich=!i&&anamnesisRichLines(e.text);for(let U=0;U<s.length;U++)anamnesisRich&&anamnesisRich[U]?anamnesisDrawRuns(n,anamnesisRich[U],e,d,U*c+l):n.fillText(s[U],d,U*c+l);`,
+  ],
+  [
+    `for(let B=0;B<w.length;B++){let _=r.ownerDocument.createElementNS(re,"text");_.textContent=w[B],`,
+    `let anamnesisRich=D==="ltr"&&anamnesisRichLines(e.text);for(let B=0;B<w.length;B++){let _=r.ownerDocument.createElementNS(re,"text");anamnesisSvgRuns(_,w[B],anamnesisRich&&anamnesisRich[B]),`,
+  ],
+]);
+
+edit("dist/prod/index.js", [
+  // The dev build exports `getFontString` and the prod build does not; the
+  // app needs it (lt here) to lay a text box's links out for a click.
+  [`export{Gt as Button,`, `export{lt as getFontString,Gt as Button,`],
+  [`var K5=(e,o,t,r,n,i)=>{let{zoom:a}=r`, `var anamnesisFitEditor=${fitEditor};var K5=(e,o,t,r,n,i)=>{let{zoom:a}=r`],
+  [
+    `d.scrollTop=0,sa()&&(d.style.fontFamily=Xr(O)),P(O,{x:ne,y:ge})}}`,
+    `d.scrollTop=0,anamnesisFitEditor(d,be,O,pl,mt,wo,Dn,qg,F,(w,h)=>K5(w,h,wE(O,be),F,Dn,qg)),sa()&&(d.style.fontFamily=Xr(O)),P(O,{x:ne,y:ge})}}`,
   ],
 ]);

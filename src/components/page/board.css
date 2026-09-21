@@ -143,6 +143,48 @@
   padding: 0 var(--space-sm);
 }
 
+/* ---- The toolbar over a text box being written in (Phase 32, step 14) ----
+   Bold, Italic and Link for the selected words, just over the library's
+   textarea and following it. The board's own, in the window's pixels, so
+   it stays one size at every zoom; over the library's canvases and under
+   its panels and the pickers. */
+.board-text-tools {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel);
+  box-shadow: var(--elev-modal);
+}
+
+.board-text-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.board-text-tool:hover,
+.board-text-tool[aria-expanded="true"] {
+  color: var(--color-text-primary);
+  background: var(--color-hover);
+}
+
+.board-text-tool:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: -2px;
+}
+
 /* ---- The Layers panel (Phase 32, step 15) ----
    Everything on the board, top to bottom, on the board's right — one
    place whether the board is in the page or expanded. The rows are the

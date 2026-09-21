@@ -11,6 +11,7 @@ import { BOARD_EXPORT_PADDING, LIBRARY_DEFAULT_BACKGROUND } from "../constants/b
 import { boardHasDrawing, exportableElements, isBoardPage, type BoardPictures } from "../services/board-export";
 import { mimeForFileName, pictureAsset, pictureFile, type PictureFile } from "../services/board-pictures";
 import { collectSubtree } from "../services/export-walk";
+import { installBoardTextMetrics } from "./board-text-metrics";
 import { readAssetImage } from "../services/filesystem-service";
 import { useProjectStore } from "../state/project-store";
 
@@ -44,7 +45,11 @@ export async function renderBoardPictures(rootIds: string[]): Promise<BoardPictu
   const pictures: BoardPictures = {};
   if (boardNodes.length === 0) return pictures;
 
-  const { convertToExcalidrawElements, exportToBlob } = await import("@excalidraw/excalidraw");
+  const library = await import("@excalidraw/excalidraw");
+  const { convertToExcalidrawElements, exportToBlob } = library;
+  // The marks in a text box's words are drawn, not shown, in the picture
+  // too (step 14) — the library reads them off the app's measuring.
+  installBoardTextMetrics(library);
   const pageName = (id: string) => nodes[id]?.name ?? null;
 
   for (const node of boardNodes) {

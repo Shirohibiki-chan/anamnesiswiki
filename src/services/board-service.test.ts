@@ -137,9 +137,11 @@ describe("links", () => {
           link: BOARD_NOTE_LINK,
           customData: { note: { colour: "yellow", lines: [[{ text: "Sable", link: pageLinkFor("sable1") }, { text: "gone", link: pageLinkFor("nobody") }]] } },
         },
+        // A text box's words link to pages too (step 14), on top of its own link.
+        { id: "g", type: "text", text: `see [the harbour](${pageLinkFor("grey")}) and [him](${pageLinkFor("sable2")})`, link: pageLinkFor("sable1") },
       ],
     };
-    expect(boardPageLinks(board, nodes, linkTargets(nodes))).toEqual(["grey", "sable1"]);
+    expect(boardPageLinks(board, nodes, linkTargets(nodes))).toEqual(["grey", "sable1", "sable2"]);
   });
 
   it("offers pages by name or alias, never the board itself or a universe", () => {

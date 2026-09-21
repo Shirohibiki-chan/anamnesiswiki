@@ -707,8 +707,26 @@ Board spike, closed 2026-09-13. What binds the code:
   library re-encodes every pasted or dropped picture but an SVG through
   the browser's encoder, which cannot write a GIF, so a GIF arrived as a
   PNG of its first frame — `resizeImageFile` now leaves GIFs alone.
-  `e2e/a-board-gifs.e2e.ts` fails against an unpatched build. Upgrading
-  the library means re-running the
+  `e2e/a-board-gifs.e2e.ts` fails against an unpatched build. The last
+  section draws bold, italic and links in a text box (step 14): the
+  marks are Markdown's, in the element's own `text` — `**bold**`,
+  `*italic*`, `[words](address)` — read into runs by
+  `services/board-text.ts` and drawn run by run, on the canvas and in
+  the SVG, through the text metrics provider the app installs with the
+  library's own `setCustomTextMetricsProvider` (`hooks/board-text-metrics.ts`,
+  which also answers the library's every width with the marks hidden and
+  a bold run bold, so wrapping and box size are the drawn words'). The
+  provider is the one bridge: the patch reads `richLines` and `runFont`
+  off it and draws plain when they are missing, so the app must install
+  it before anything draws — the board does at module load, the exports
+  before they render. The editor is the library's textarea and shows the
+  marks as typed; the patch widens it (free text) or makes it taller
+  (text in a shape) to fit them, since the box under it is measured with
+  them hidden. The prod build does not export `getFontString` and the
+  app needs it to lay a box's links out for a click, so the patch adds
+  it to the prod exports; the app reads it by name, untyped.
+  `e2e/a-board-rich-text.e2e.ts` fails against an unpatched build.
+  Upgrading the library means re-running the
   script against the new version (the how-to is at its top); every
   replacement asserts its target once, so a moved or renamed line stops the
   upgrade rather than quietly restoring the library's rule, and
