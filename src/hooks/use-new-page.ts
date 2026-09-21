@@ -12,6 +12,7 @@
 import { useCallback } from "react";
 import { BLANK_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY, UNTITLED_PAGE_NAME } from "../constants/schema";
 import { getTemplate } from "../services/template-registry";
+import { useDialogStore } from "../state/dialog-store";
 import { useHistoryStore } from "../state/history-store";
 import { useProjectStore } from "../state/project-store";
 
@@ -168,17 +169,32 @@ export function useCreatePageFromTemplate(): (template: NewPageTemplate) => Prom
     // this made. Both halves record for themselves, which is right when
     // they're used on their own and two presses of undo when they're used
     // together — see history-service's collapseSince.
+    // A template that names its pages after the page they land in needs the
+    // name before it is poured in, or they would land as "Untitled_Pics" —
+    // see child-naming.ts. Asked for up front, the way the plugin this was
+    // modelled on does it; every other template is named afterwards as before.
+    const namesChildren = "templateRootId" in template && templates.nodes[template.templateRootId]?.namesChildren;
+    const name = namesChildren
+      ? await useDialogStore.getState().requestName({
+          title: "What Is This Page Called?",
+          message: `The "${label}" template names the pages inside after this one, so it needs the name first.`,
+          initial: "",
+        })
+      : UNTITLED_PAGE_NAME;
+    if (name === null) return null;
+
     const depth = useHistoryStore.getState().past.length;
 
-    const node = addNode({ parentId: null, templateKey: BLANK_TEMPLATE_KEY, name: UNTITLED_PAGE_NAME });
+    const node = addNode({ parentId: null, templateKey: BLANK_TEMPLATE_KEY, name });
     if ("builtInKey" in template) await applyTemplate(node.id, template.builtInKey);
     else await applyCustomTemplate(node.id, template.templateRootId);
     useHistoryStore.getState().collapse(depth, `making a page from the ${label} template`);
 
     // Same order and the same reason as useCreatePageIn: the rename is asked
     // for before the selection that opens the page, because the title only
-    // asks whether it's being named once, at mount.
-    requestRename(node.id);
+    // asks whether it's being named once, at mount. Not asked when the name
+    // was just given.
+    if (!namesChildren) requestRename(node.id);
     selectNode(node.id);
     return node.id;
   }, []);

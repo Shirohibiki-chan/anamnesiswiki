@@ -164,6 +164,7 @@ import {
   removeTemplate,
   withTemplatesReordered,
 } from "../services/template-library";
+import { asTemplateSubtree, namedForParent, planAddedChildren, renamesFor } from "../services/child-naming";
 import {
   EMPTY_NAV_HISTORY,
   forgetNodes,
@@ -741,7 +742,13 @@ export type ProjectStoreState = {
   setNodeBannerFromLibrary: (nodeId: string, fileName: string) => void;
   setBannerFocus: (nodeId: string, focusY: number) => void;
   clearNodeBanner: (nodeId: string) => Promise<void>;
-  renameNode: (id: string, name: string) => void;
+  /**
+   * `byRule` marks a rename made by the naming rule — a child following its
+   * parent — rather than by hand. A rename by hand clears the page's
+   * `nameFromParent`, because a name a person typed outranks the rule; one
+   * by the rule keeps it, or the cascade would run exactly once.
+   */
+  renameNode: (id: string, name: string, options?: { byRule?: boolean }) => Promise<void>;
   moveNode: (id: string, newParentId: string | null, index?: number) => void;
   moveNodes: (ids: string[], newParentId: string | null, index?: number) => Promise<void>;
   deleteNode: (id: string) => Promise<void>;
@@ -817,6 +824,15 @@ export type ProjectStoreState = {
    * saved inside it — replaces what's there.
    */
   applyCustomTemplate: (nodeId: string, templateRootId: string) => Promise<void>;
+  /**
+   * The pages saved inside a template, made inside a page that already
+   * exists — the second route to a template's structure, and the one that
+   * reaches a world already full of characters. The page's own writing and
+   * fields are untouched; a child whose name is already there is skipped and
+   * the rest are still made, so running it twice is safe. Returns the count,
+   * which the caller shows.
+   */
+  addTemplatePages: (nodeId: string, templateRootId: string) => Promise<{ made: number; skipped: number } | null>;
   // Rewrites one sibling group's manual order. `parentId` is null for the
   // project root, matching rootOrder/childOrder.
   sortChildren: (parentId: string | null, sort: SiblingSort) => void;
@@ -3136,10 +3152,14 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       releaseAsset(rootPath, previousBanner);
     },
 
-    async renameNode(id, name) {
+    async renameNode(id, name, options) {
       const { rootPath, nodes } = get();
       const existing = nodes[id];
-      if (!rootPath || !existing) return;
+      if (!rootPath || !existing || existing.name === name) return;
+      // The stack's depth before anything happens, so the cascade below can
+      // be folded onto this rename: a parent and its three children renamed
+      // by one edit is one press of undo, not four.
+      const depth = useHistoryStore.getState().past.length;
 
       // A rename/move changes where this node resolves on disk. If a
       // debounced content edit for this same node is still pending, flush it
@@ -3155,7 +3175,14 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
 
       const allNodesBefore = Object.values(nodesAfter);
       const previousName = existingAfter.name;
-      const updated: Node = { ...existingAfter, name, updatedAt: Date.now() };
+      const previousRule = existingAfter.nameFromParent;
+      // Typed by hand: the page stops following its parent's name. See the
+      // note on `nameFromParent` in schema.ts for why that is the whole
+      // safety of the cascade.
+      const keepsRule = options?.byRule || !previousRule;
+      const updated: Node = keepsRule
+        ? { ...existingAfter, name, updatedAt: Date.now() }
+        : { ...existingAfter, name, nameFromParent: undefined, updatedAt: Date.now() };
       const nextNodes = { ...nodesAfter, [id]: updated };
       set({ nodes: nextNodes });
       track(() => fsService.renameNode(rootPathAfter, allNodesBefore, Object.values(nextNodes), id));
@@ -3174,9 +3201,23 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // no new filesystem path is involved in undoing one.
       record(
         `renaming "${previousName}"`,
-        () => get().renameNode(id, previousName),
-        () => get().renameNode(id, name),
+        async () => {
+          await get().renameNode(id, previousName, { byRule: true });
+          if (!keepsRule) get().updateNode(id, { nameFromParent: previousRule }, { touch: false });
+        },
+        () => get().renameNode(id, name, options),
       );
+
+      // The children named after this page follow it — her call 2026-08-31,
+      // over the plugin's behaviour of baking the name in once. Each goes
+      // through this same action so its directory moves on disk; sequential
+      // rather than in parallel, since the parent's move has to land first.
+      // Folded onto the rename above so the whole thing is one press of undo.
+      const following = renamesFor(get().nodes, id, name);
+      if (following.length > 0) {
+        for (const child of following) await get().renameNode(child.id, child.name, { byRule: true });
+        useHistoryStore.getState().collapse(depth, `renaming "${previousName}" and the pages named after it`);
+      }
     },
 
     async moveNode(id, newParentId, index) {
@@ -3446,14 +3487,17 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       );
 
       const rootId = idMap.get(nodeId)!;
-      const nextTemplates = addTemplate(templates, withOwnAssets, rootId);
+      // Children that were named after this page go in under their base
+      // names, and the template carries the rule — see child-naming.ts.
+      const shaped = asTemplateSubtree(withOwnAssets);
+      const nextTemplates = addTemplate(templates, shaped, rootId);
       set({ templates: nextTemplates });
       track(() => fsService.saveTemplateLibrary(rootPath, nextTemplates));
 
       record(
         `saving "${nodes[nodeId].name}" as a template`,
         () => applyTemplates(removeTemplate(get().templates, rootId)),
-        () => applyTemplates(addTemplate(get().templates, withOwnAssets, rootId)),
+        () => applyTemplates(addTemplate(get().templates, shaped, rootId)),
       );
     },
 
@@ -3650,7 +3694,11 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // isn't among them: its *contents* are being poured into a page that
       // already exists, rather than arriving as a new page of its own.
       const descendants = collectSubtree(templateRootId, templates.nodes, true).filter((n) => n.id !== templateRootId);
-      const { clones } = cloneSubtree(descendants, nodeId, () => crypto.randomUUID());
+      const { clones: bare } = cloneSubtree(descendants, nodeId, () => crypto.randomUUID());
+      // Named after the page they are landing in, if the template says so.
+      // The page's name is read now, which is why the new-page screen asks
+      // for it before this runs — see NewPageLanding.
+      const clones = namedForParent(bare, nodeId, target.name, source.namesChildren);
 
       // Every picture gets a private copy, the root's included — a page sharing
       // the template's filename would lose its image the moment the template
@@ -3761,6 +3809,64 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
           if (arriving.length > 0 && project) await restoreNodes(arriving, clonedAssets, captureOrdering(project));
         },
       );
+    },
+
+    async addTemplatePages(nodeId, templateRootId) {
+      const { rootPath, nodes, templates } = get();
+      const target = nodes[nodeId];
+      const source = templates.nodes[templateRootId];
+      if (!rootPath || !target || !source) return null;
+
+      const descendants = collectSubtree(templateRootId, templates.nodes, true).filter((n) => n.id !== templateRootId);
+      const { clones: bare } = cloneSubtree(descendants, nodeId, () => crypto.randomUUID());
+      const named = namedForParent(bare, nodeId, target.name, source.namesChildren);
+      const existingNames = Object.values(nodes)
+        .filter((n) => n.parentId === nodeId)
+        .map((n) => n.name);
+      const { make, skipped } = planAddedChildren(named, nodeId, existingNames);
+      if (make.length === 0) return { made: 0, skipped: skipped.length };
+
+      // Private copies of the pictures, for the reason applyCustomTemplate
+      // gives: a page sharing the template's filename loses its image the
+      // moment the template is deleted or re-saved.
+      const arriving = await Promise.all(
+        make.map(async (clone) => {
+          const [image, banner, blocks] = await Promise.all([
+            copyAssetFile(rootPath, clone.image),
+            copyAssetFile(rootPath, clone.banner),
+            withCopiedBlockPictures(clone.blocks, (fileName) => copyAssetFile(rootPath, fileName)),
+          ]);
+          return { ...clone, image, banner, blocks };
+        }),
+      );
+      const arrivingRootIds = arriving.filter((n) => n.parentId === nodeId).map((n) => n.id);
+
+      const add = (): void => {
+        const before = Object.values(get().nodes);
+        const nextNodes = { ...get().nodes };
+        for (const clone of arriving) nextNodes[clone.id] = clone;
+        set({ nodes: nextNodes });
+        // The page may be gaining its first child, which moves its own file
+        // into a directory — same reasoning as applyCustomTemplate.
+        cancelSave(nodeId);
+        track(() => fsService.addNodes(rootPath, [nextNodes[nodeId], ...arriving], before, Object.values(nextNodes)));
+      };
+      add();
+
+      let clonedAssets: CapturedAsset[] = [];
+      record(
+        `adding the "${source.name}" template's pages inside "${target.name}"`,
+        async () => {
+          const currentRootPath = get().rootPath;
+          if (currentRootPath) clonedAssets = await captureAssets(currentRootPath, arriving);
+          await get().deleteNodes(arrivingRootIds);
+        },
+        async () => {
+          const project = get().project;
+          if (project) await restoreNodes(arriving, clonedAssets, captureOrdering(project));
+        },
+      );
+      return { made: arrivingRootIds.length, skipped: skipped.length };
     },
 
     // One step for the whole selection, and its own action rather than a loop

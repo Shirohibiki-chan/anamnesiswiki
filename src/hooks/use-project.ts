@@ -212,3 +212,29 @@ export function useCustomTemplateTree(): TemplateTreeItem[] {
   const templates = useProjectStore((state) => state.templates);
   return useMemo(() => buildTemplateTree(templates), [templates]);
 }
+
+/**
+ * The names of the pages saved directly inside a template, for the naming
+ * rule's own control on the template's page (see `Node.namesChildren`) —
+ * which is only offered when there is something to name, and shows the
+ * first of them as its example.
+ */
+export function useTemplateChildNames(templateId: string): string[] {
+  const templates = useProjectStore((state) => state.templates);
+  return useMemo(
+    () =>
+      Object.values(templates.nodes)
+        .filter((node) => node.parentId === templateId)
+        .map((node) => node.name),
+    [templates, templateId],
+  );
+}
+
+/** Her templates that hold pages — the ones "Add Pages From Template" can offer. */
+export function useTemplatesWithPages(): Node[] {
+  const templates = useProjectStore((state) => state.templates);
+  return useMemo(() => {
+    const parents = new Set(Object.values(templates.nodes).map((node) => node.parentId));
+    return listTemplates(templates).filter((root) => parents.has(root.id));
+  }, [templates]);
+}

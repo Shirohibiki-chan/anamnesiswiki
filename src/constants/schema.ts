@@ -879,6 +879,32 @@ export type Node = {
    * template, the way anything a person set does.
    */
   styleClass?: string;
+  /**
+   * On a template root: the pages saved inside it are named after the page
+   * they land in — `Damien` getting `Damien_Pics`, `Damien_Sheets` — joined
+   * by `separator`, which may be empty. Absent means they keep the names the
+   * template gave them. Queued Adjustments, asked for 2026-08-31 by a
+   * botmaker who had built the same thing as an Obsidian plugin; the rule is
+   * on the template as a whole rather than per child, her call the same day.
+   *
+   * **A field on the node rather than a table in the library, so it travels
+   * with the template** — into a shared bundle, through `cloneSubtree`, and
+   * back out of "Save as Template" on a page whose children carry
+   * `nameFromParent`. Meaningless on an ordinary page, and ignored there.
+   */
+  namesChildren?: ChildNaming;
+  /**
+   * On a page made by a template with `namesChildren`: what its name is made
+   * of, so a rename of the parent can remake it. `base` is the name the
+   * template gave it ("Pics"); the separator is copied so a template edited
+   * later does not rewrite pages already made.
+   *
+   * **Cleared the moment the page is renamed by hand.** A name a person typed
+   * outranks the rule — that is what makes the cascade safe to run by
+   * default rather than something to ask about: a child she wanted left alone
+   * is a child she renames once, and it is hers from then on.
+   */
+  nameFromParent?: NameFromParent;
   // Filename of the uploaded portrait/sidebar image inside the project's
   // assets/ directory (see paths.ts's ASSETS_DIR), not a full path — Phase 6's
   // ImageSlot resolves it against the project root when it needs to display
@@ -1098,6 +1124,15 @@ export type Project = {
  * to remember to filter templates out, and the one that forgets is a bug that
  * puts scaffolding in her published world.
  */
+/** See `Node.namesChildren`. */
+export type ChildNaming = { separator: string };
+
+/** See `Node.nameFromParent`. */
+export type NameFromParent = { base: string; separator: string };
+
+/** What a new template's children are joined to the parent's name with, until changed. */
+export const DEFAULT_CHILD_NAME_SEPARATOR = "_";
+
 export type TemplateLibrary = {
   version: 1;
   // Keyed by id, matching the project store's `nodes`.

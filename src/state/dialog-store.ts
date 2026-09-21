@@ -19,6 +19,16 @@ import type { LinkMatch as AutoLinkMatch } from "../services/auto-link-service";
 
 type PendingConfirm = { message: string; resolve: (ok: boolean) => void };
 
+/**
+ * A name asked for before something is made from it. The one caller so far
+ * is a template whose pages are named after the page they land in, picked
+ * for a page still called "Untitled" — the children would be named after
+ * nothing, so the name is asked for first (child-naming.ts). Resolves with
+ * the name, or null for cancel.
+ */
+export type NamePrompt = { title: string; message: string; initial: string };
+type PendingName = NamePrompt & { resolve: (name: string | null) => void };
+
 /** The nodes to export, plus their descendants. Null when the modal is shut. */
 /**
  * Which export the modal that opens is for.
@@ -124,6 +134,9 @@ type DialogStoreState = {
   pendingTemplateScope: PendingTemplateScope | null;
   requestTemplateScope: (pageName: string) => Promise<TemplateScope | null>;
   resolveTemplateScope: (scope: TemplateScope | null) => void;
+  pendingName: PendingName | null;
+  requestName: (prompt: NamePrompt) => Promise<string | null>;
+  resolveName: (name: string | null) => void;
   /**
    * Which page's earlier versions are being looked at, or null (Phase 19).
    *
@@ -160,6 +173,7 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
   exportRequest: null,
   notice: null,
   pendingTemplateScope: null,
+  pendingName: null,
   pendingAssetPick: null,
   pendingNewPageLink: null,
   pendingAutoLink: null,
@@ -232,6 +246,19 @@ export const useDialogStore = create<DialogStoreState>((set, get) => ({
     if (!pending) return;
     set({ pendingTemplateScope: null });
     pending.resolve(scope);
+  },
+
+  requestName(prompt) {
+    return new Promise<string | null>((resolve) => {
+      set({ pendingName: { ...prompt, resolve } });
+    });
+  },
+
+  resolveName(name) {
+    const pending = get().pendingName;
+    if (!pending) return;
+    set({ pendingName: null });
+    pending.resolve(name);
   },
 
   showNotice(message) {

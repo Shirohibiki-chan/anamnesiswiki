@@ -11,6 +11,7 @@ import {
   ArrowDownUp,
   Brush,
   ChevronRight,
+  FolderPlus,
   ChevronsDownUp,
   ChevronsUpDown,
   Copy,
@@ -107,6 +108,13 @@ type ContextMenuProps = {
   /** Opens the style-name submenu (Phase 30). Single selection only. */
   onSetStyle: () => void;
   onSaveAsTemplate: () => void;
+  /**
+   * Opens the submenu of templates whose pages can be made inside this one.
+   * Absent when this world has no template holding pages, and the item is
+   * not drawn at all then — a submenu with nothing in it is a click for
+   * nothing. Single selection only.
+   */
+  onAddTemplatePages?: () => void;
   onSortChildren: () => void;
   onExpandAll: () => void;
   onCollapseAll: () => void;
@@ -151,6 +159,7 @@ export function ContextMenu({
   onSetColor,
   onSetStyle,
   onSaveAsTemplate,
+  onAddTemplatePages,
   onSortChildren,
   onExpandAll,
   onCollapseAll,
@@ -241,6 +250,15 @@ export function ContextMenu({
       {!isMultiple && (
         <button type="button" onClick={() => run(onSaveAsTemplate)}>
           <FileStack size={13} /> Save as Template
+        </button>
+      )}
+      {/* The other direction from Save as Template: a template's pages put
+          inside this one, leaving its own writing alone. Only offered when
+          some template has pages to give. */}
+      {!isMultiple && onAddTemplatePages && (
+        <button type="button" className="tree-context-menu-submenu" onClick={onAddTemplatePages}>
+          <FolderPlus size={13} /> Add Pages From Template
+          <ChevronRight size={13} className="tree-context-menu-chevron" />
         </button>
       )}
       {/* Single selection only, top-level rows only — see `universeAction`.

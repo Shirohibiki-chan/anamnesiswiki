@@ -59,11 +59,23 @@ export function cloneSubtree(sources: Node[], newParentId: string | null, newId:
   const idMap = new Map(sources.map((node) => [node.id, newId()]));
   const now = Date.now();
 
+  // **A millisecond apart each, in the order the sources were made.** Siblings
+  // not yet in a parent's `childOrder` are drawn by `createdAt` and then by
+  // id, and every clone stamped with the same instant fell through to the id
+  // — a fresh uuid — so the pages arriving from a template landed in a random
+  // order that changed from one page to the next (found 2026-09-21 by the
+  // naming scenario, which expected Pics before Sheets and got either).
+  const rank = new Map(
+    [...sources]
+      .sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id))
+      .map((source, index) => [source.id, index] as const),
+  );
+
   const clones = sources.map((source) => ({
     ...source,
     id: idMap.get(source.id)!,
     parentId: source.parentId && idMap.has(source.parentId) ? idMap.get(source.parentId)! : newParentId,
-    createdAt: now,
+    createdAt: now + (rank.get(source.id) ?? 0),
     updatedAt: now,
   }));
 

@@ -5781,6 +5781,15 @@ Phase 26, step 2. What binds the code:
   exists, so `AddBlockMenu` carries one too. Anything that hides the prompt has
   to keep that second route alive.
 
+- **A rename by hand clears `nameFromParent`; a rename by the rule keeps
+  it.** `renameNode(id, name, { byRule })` is how the cascade tells the two
+  apart, and the distinction is the whole safety of the feature: a child she
+  renamed once is hers from then on and never overwritten by a later rename
+  of its parent. Anything else that renames a page programmatically on the
+  rule's behalf must pass `byRule`, or the cascade runs exactly once. The
+  cascade itself lives in `renameNode`, sequential and folded onto the
+  parent's entry — do not add a second rename path that skips it.
+
 - **The `/` menu is assembled in one place and listed from it.**
   `services/editor-blocks/slash-menu.tsx` builds the list for the editor and
   for the shortcut sheet's Slash Commands tab, so a command added anywhere

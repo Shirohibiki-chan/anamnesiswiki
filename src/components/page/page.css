@@ -1975,6 +1975,68 @@
   outline: none;
 }
 
+/* The naming rule for the pages inside (TemplateView). The same quiet box the
+   settings toggles use, in the page's own column. */
+.template-view-naming {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel-alt);
+  font-size: var(--fs-sm);
+  color: var(--color-text-primary);
+}
+
+.template-view-naming-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  cursor: pointer;
+}
+
+.template-view-naming-row input {
+  accent-color: var(--color-accent-light);
+  cursor: pointer;
+}
+
+.template-view-naming-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md) var(--space-lg);
+  padding-left: calc(13px + var(--space-md));
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.template-view-naming-separator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Narrow, monospace: it holds a character or two, and an underscore in a
+   proportional face is easy to mistake for nothing at all. */
+.template-view-naming-separator input {
+  width: 4ch;
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.template-view-naming-separator input:focus {
+  outline: none;
+  border-color: var(--color-accent-light);
+}
+
 /* What kind of page this template makes. Sits after the name rather than under
    it so the title line reads as one thing at one height. */
 .template-view-kind {

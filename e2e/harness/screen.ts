@@ -1378,6 +1378,54 @@ export async function openTreeRowMenu(window: Page, rowName: string): Promise<vo
   await window.locator(TREE_CONTEXT_MENU).first().waitFor({ state: "visible", timeout: WAIT_MS });
 }
 
+/**
+ * Makes a page inside a row with the row's own "+", names it, and returns
+ * once the name is a heading. The row is found through the search box the
+ * way `openTreeRowMenu` finds one, and the search is cleared afterwards.
+ */
+export async function addPageInside(window: Page, parentName: string, name: string): Promise<void> {
+  await searchTree(window, parentName);
+  const row = treeRow(window, parentName).first();
+  await row.hover();
+  await row.locator(".tree-row-add").click();
+  await window.keyboard.type(name);
+  await window.keyboard.press("Enter");
+  await titleSettled(window);
+  await waitForPageTitle(window, name);
+  await clearTreeSearch(window);
+}
+
+/** Picks one item off the open row menu by its label. */
+export async function pickTreeMenuItem(window: Page, label: string): Promise<void> {
+  await window.locator(TREE_CONTEXT_MENU).getByRole("button", { name: label, exact: true }).click();
+}
+
+/** Saves a row's page as a template, with or without the pages inside it. */
+export async function saveRowAsTemplate(window: Page, rowName: string, withSubPages: boolean): Promise<void> {
+  await openTreeRowMenu(window, rowName);
+  await pickTreeMenuItem(window, "Save as Template");
+  await window.getByRole("button", { name: withSubPages ? "Include Sub-pages" : "Just This Page" }).click();
+  await window.waitForTimeout(600);
+  await clearTreeSearch(window);
+}
+
+/** Opens one of the world's own templates for editing, from the Templates panel. */
+export async function openTemplateForEditing(window: Page, name: string): Promise<void> {
+  await openRailPanel(window, "Templates");
+  await window.locator(".tree-templates-open").filter({ hasText: name }).first().click();
+  await window.locator(".template-view-title").waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** What the notice box is saying, waiting for it to appear, and dismisses it. */
+export async function readNotice(window: Page): Promise<string> {
+  const box = window.locator(".confirm-dialog-message").last();
+  await box.waitFor({ state: "visible", timeout: WAIT_MS });
+  const text = normalize((await box.textContent()) ?? "");
+  await window.getByRole("button", { name: "OK", exact: true }).click();
+  await box.waitFor({ state: "hidden", timeout: WAIT_MS });
+  return text;
+}
+
 /** The labels the open row menu is offering, so a missing item is a real absence. */
 export async function treeMenuItems(window: Page): Promise<string[]> {
   const labels = await window.locator(`${TREE_CONTEXT_MENU} button`).allInnerTexts();

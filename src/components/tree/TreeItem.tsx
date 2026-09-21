@@ -16,6 +16,7 @@ import {
   useProjectActions,
   useProjectHomeId,
   useSharedUniverseId,
+  useTemplatesWithPages,
 } from "../../hooks/use-project";
 import {
   useEffectiveColor,
@@ -38,10 +39,12 @@ import { MoveMenu } from "./MoveMenu";
 import { ExportMenu } from "./ExportMenu";
 import { SortMenu } from "./SortMenu";
 import { StyleMenu } from "./StyleMenu";
+import { TemplatePagesSubmenu } from "./TemplatePagesSubmenu";
+import { useNamedTemplate } from "../../hooks/use-named-template";
 import { TreePopover } from "./TreePopover";
 import { useEffectiveStyleClass, useStyleClassesInUse } from "../../hooks/use-style-class";
 
-type OpenPopover = "color" | "icon" | "menu" | "sort" | "move" | "database" | "export" | "style" | null;
+type OpenPopover = "color" | "icon" | "menu" | "sort" | "move" | "database" | "export" | "style" | "template-pages" | null;
 
 export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNodeData>) {
   // Narrow subscriptions on purpose: this renders once per visible tree row,
@@ -73,6 +76,8 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   const sharedUniverseId = useSharedUniverseId();
   const isSharedSection = useIsSharedSection(node.id);
   const { confirmDestructive, openHistory, requestExport, requestTemplateScope } = useDialogs();
+  const templatesWithPages = useTemplatesWithPages();
+  const { addTemplatePages } = useNamedTemplate();
   const createPageIn = useCreatePageIn();
   const doubleClickAction = useTreeDoubleClick();
   const revealNode = useRevealNode();
@@ -485,6 +490,22 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
           />
         </TreePopover>
       )}
+      {openPopover === "template-pages" && anchorRect && (
+        <TreePopover anchorRect={anchorRect} onClose={closePopover}>
+          <TemplatePagesSubmenu
+            templates={templatesWithPages}
+            onSelect={(templateRootId) => {
+              // Opened as well, for the reason Sort opens: pages arriving
+              // inside a collapsed row is a change with nothing to show for
+              // it. The count is said afterwards by the hook.
+              node.open();
+              void addTemplatePages(node.id, templateRootId);
+              closePopover();
+            }}
+            onBack={() => setOpenPopover("menu")}
+          />
+        </TreePopover>
+      )}
       {openPopover === "style" && anchorRect && (
         <TreePopover anchorRect={anchorRect} onClose={closePopover}>
           <StyleMenu
@@ -561,6 +582,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
             onSetIcon={() => setOpenPopover("icon")}
             onSetStyle={() => setOpenPopover("style")}
             onSaveAsTemplate={() => void handleSaveAsTemplate()}
+            onAddTemplatePages={templatesWithPages.length > 0 ? () => setOpenPopover("template-pages") : undefined}
             onSortChildren={() => setOpenPopover("sort")}
             onExpandAll={() => setSubtreeOpen(true)}
             onCollapseAll={() => setSubtreeOpen(false)}

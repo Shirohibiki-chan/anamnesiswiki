@@ -24,7 +24,7 @@ import {
 import { isOverrideModified } from "../services/template-library";
 import { normaliseStyleClass } from "../services/style-class";
 import { getDefaultTabs, getTemplate } from "../services/template-registry";
-import type { BlockNoteDocument, Node, Tab } from "../constants/schema";
+import type { BlockNoteDocument, ChildNaming, Node, Tab } from "../constants/schema";
 
 /** The template currently open for editing, or undefined. */
 export function useOpenTemplate(): Node | undefined {
@@ -125,6 +125,11 @@ export function useTemplateEditing(templateNodeId: string | null) {
       /** The template's style name, which every page of it inherits unless it names its own. */
       setStyleClass(styleClass: string | undefined) {
         if (templateNodeId) updateTemplateNode(templateNodeId, { styleClass: normaliseStyleClass(styleClass) });
+      },
+
+      /** Whether the pages inside are named after the page they land in, and with what between. */
+      setChildNaming(naming: ChildNaming | undefined) {
+        if (templateNodeId) updateTemplateNode(templateNodeId, { namesChildren: naming });
       },
 
       updateTabContent(tabId: string, content: BlockNoteDocument) {
