@@ -15,6 +15,7 @@
 // folder-shaped object: a page that holds pages is still one page here.
 import { UNIVERSE_TEMPLATE_KEY, type Block, type Node } from "../constants/schema";
 import { assetFileName } from "./asset-urls";
+import { boardPictureFileName, type BoardPictures } from "./board-export";
 import { createLossyTally, lossyCount, plural, walkPages, type LossyTally, type WalkedPage } from "./export-walk";
 import { sanitizeSegment } from "./filesystem-service";
 import { BLOCK_DROPPED, BLOCK_FLATTENED, pageToMarkdown, type MarkdownPageContext } from "./markdown-page";
@@ -37,6 +38,8 @@ export type VaultAsset = {
 
 export type VaultPlan = {
   files: VaultFile[];
+  /** The pictures of the boards, drawn for this export rather than copied from the library (Phase 32, step 7). */
+  binaries: { path: string; bytes: Uint8Array }[];
   /** Every folder the writer has to make, parents before children. */
   folders: string[];
   assets: VaultAsset[];
@@ -188,8 +191,10 @@ function assetOf(url: unknown): string | null {
   return assetFileName(url) ?? (url.includes("/") || url.includes("\\") ? null : url);
 }
 
-function describe(tally: LossyTally, assets: number): string[] {
+function describe(tally: LossyTally, assets: number, boards: number): string[] {
   const notes: string[] = [];
+
+  if (boards) notes.push(`${plural(boards, "board")} ${boards === 1 ? "goes" : "go"} in as a picture — the drawing as it looks here, with its cards and notes drawn in. It can be looked at, not drawn on.`);
 
   const flattened = lossyCount(tally, BLOCK_FLATTENED);
   if (flattened) {
@@ -220,6 +225,8 @@ export function planMarkdownVault(input: {
   rootIds: string[];
   orderedIdsFor: (parentId: string | null) => string[];
   rowsFor: (node: Node, block: Block) => Node[];
+  /** The boards' pictures, by board page id; a board without one gets no picture. */
+  boardPictures?: BoardPictures;
 }): VaultPlan {
   const walked = walkPages({ nodes: input.nodes, rootIds: input.rootIds, orderedIdsFor: input.orderedIdsFor });
   const placed = place(walked);
@@ -232,6 +239,7 @@ export function planMarkdownVault(input: {
 
   const files: VaultFile[] = [];
   const folders: string[] = [];
+  const binaries: VaultPlan["binaries"] = [];
 
   for (const entry of placed.values()) {
     if (entry.folder) folders.push(entry.folder);
@@ -253,6 +261,13 @@ export function planMarkdownVault(input: {
         assets.set(fileName, vaultPath);
         return relativePath(entry.dir, vaultPath);
       },
+      boardPictureAt: (node) => {
+        const bytes = input.boardPictures?.[node.id];
+        if (!bytes) return null;
+        const vaultPath = `${VAULT_ASSETS_DIR}/${boardPictureFileName(node.id)}`;
+        binaries.push({ path: vaultPath, bytes });
+        return relativePath(entry.dir, vaultPath);
+      },
       rowsFor: input.rowsFor,
       tally,
     };
@@ -260,13 +275,16 @@ export function planMarkdownVault(input: {
     files.push({ path: `${joinVault(entry.dir, entry.base)}.md`, text: pageToMarkdown(entry.page.node, ctx) });
   }
 
+  if (binaries.length > 0) folders.push(VAULT_ASSETS_DIR);
+
   return {
     files,
+    binaries,
     // Parents before children, so a writer can make them in order without
     // relying on a recursive mkdir it might not have.
     folders: [...new Set(folders)].sort((a, b) => a.split("/").length - b.split("/").length || (a < b ? -1 : 1)),
     assets: [...assets].map(([fileName, path]) => ({ fileName, path })),
     pageCount: files.length,
-    notes: describe(tally, assets.size),
+    notes: describe(tally, assets.size, binaries.length),
   };
 }

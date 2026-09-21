@@ -115,7 +115,7 @@
 |---|---|
 | Import — a `.lk`, a folder of Markdown, a zip of one or a single note: file and folder pickers, a drop on the window, preview of the parsed tree, warnings for what will convert lossily | `src/components/import/ImportModal.tsx`, `src/hooks/use-import.ts`, `src/hooks/use-import-drop.ts` |
 | LegendKeeper export — what to export, and the `.lk` file it writes | `src/components/export/ExportModal.tsx` |
-| Markdown export — a vault, or one big file | `src/components/export/MarkdownExportModal.tsx` |
+| Markdown export — a vault, or one big file; a board goes in as a picture | `src/components/export/MarkdownExportModal.tsx`, `src/hooks/use-board-export.ts`, `src/services/board-export.ts` |
 | Publish as a website — the count, what stays behind, where it went and where to host it | `src/components/export/WebsiteExportModal.tsx`, `src/hooks/use-site-export.ts`, `src/services/site-plan.ts`, `src/services/html-page.ts` |
 | Two-step confirm for destructive actions | `src/components/shell/ConfirmDialog.tsx` |
 | A message with nothing to decide — the one-way notices | `src/components/shell/NoticeDialog.tsx` |

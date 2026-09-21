@@ -29,6 +29,7 @@ import { UNIVERSE_TEMPLATE_KEY, type Block, type Node } from "../constants/schem
 import { SITE_SCRIPT } from "../constants/site-script";
 import { SITE_STYLE } from "../constants/site-style";
 import { assetFileName } from "./asset-urls";
+import { boardPictureFileName, type BoardPictures } from "./board-export";
 import { createLossyTally, lossyCount, plural, walkPages, type LossyTally, type WalkedPage } from "./export-walk";
 import { sanitizeSegment } from "./filesystem-service";
 import { BLOCK_FLATTENED, escapeHtml, HIDDEN_TAB_KEPT, pageIconHtml, pageListHtml, pageToHtml, SECRET_KEPT, type DatabaseTable, type HtmlPageContext } from "./html-page";
@@ -289,8 +290,10 @@ export function siteScript(): string {
 
 // ---- The notes ----
 
-function describe(tally: LossyTally, hidden: number, assets: number, fonts: number): string[] {
+function describe(tally: LossyTally, hidden: number, assets: number, fonts: number, boards: number): string[] {
   const notes: string[] = [];
+
+  if (boards) notes.push(`${plural(boards, "board")} ${boards === 1 ? "goes" : "go"} on the site as a picture — the drawing as it looks here, with its cards and notes drawn in. It can be looked at, not drawn on.`);
 
   if (hidden) notes.push(`${plural(hidden, "hidden page")} ${hidden === 1 ? "stays" : "stay"} off the site, along with everything inside ${hidden === 1 ? "it" : "them"}.`);
 
@@ -324,6 +327,8 @@ export function planSite(input: {
   projectName: string;
   homeNodeId: string | null | undefined;
   theme: SiteTheme;
+  /** The boards' pictures, by board page id; a board without one gets no picture. */
+  boardPictures?: BoardPictures;
 }): SitePlan {
   // Hidden pages go before the walk, so their descendants are never reached.
   const byId: Record<string, Node> = Object.fromEntries(input.nodes.map((node) => [node.id, node]));
@@ -339,6 +344,8 @@ export function planSite(input: {
   const tree = navTree(walked, placed);
   const tally = createLossyTally();
   const assets = new Map<string, string>();
+  // The boards' pictures, by their path on the site, each once.
+  const boardPictures = new Map<string, Uint8Array>();
   const files: SiteFile[] = [];
   const folders: string[] = [];
   const searchIndex: { t: string; u: string; p: string; x: string; a: string[]; g: string[] }[] = [];
@@ -392,6 +399,13 @@ export function planSite(input: {
         assets.set(fileName, sitePath);
         return relativeUrl(dir, sitePath);
       },
+      boardPictureAt: (node) => {
+        const bytes = input.boardPictures?.[node.id];
+        if (!bytes) return null;
+        const sitePath = `${SITE_ASSETS_DIR}/${boardPictureFileName(node.id)}`;
+        boardPictures.set(sitePath, bytes);
+        return relativeUrl(dir, sitePath);
+      },
       rowsFor: input.rowsFor,
       databaseFor: input.databaseFor,
       renderIcon: input.renderIcon,
@@ -436,7 +450,7 @@ export function planSite(input: {
 
   // Counted before the front door is written: the home page is rendered a
   // second time there and would otherwise count its secrets twice.
-  const notes = describe(tally, hiddenCount, assets.size, input.theme.fonts.length);
+  const notes = describe(tally, hiddenCount, assets.size, input.theme.fonts.length, boardPictures.size);
 
   if (home) {
     files.push({ path: "index.html", text: render(home, "", input.projectName) });
@@ -448,9 +462,12 @@ export function planSite(input: {
   files.push({ path: "site.js", text: siteScript() });
   files.push({ path: "search-index.js", text: `window.ANAMNESIS_INDEX = ${JSON.stringify(searchIndex).replace(/<\//g, "<\\/")};` });
 
-  const binaries: SiteBinary[] = input.theme.fonts.map((font) => ({ path: `${SITE_FONTS_DIR}/${font.fileName}`, bytes: font.bytes }));
-  if (binaries.length > 0) folders.push(SITE_FONTS_DIR);
-  if (assets.size > 0) folders.push(SITE_ASSETS_DIR);
+  const binaries: SiteBinary[] = [
+    ...input.theme.fonts.map((font) => ({ path: `${SITE_FONTS_DIR}/${font.fileName}`, bytes: font.bytes })),
+    ...[...boardPictures].map(([path, bytes]) => ({ path, bytes })),
+  ];
+  if (input.theme.fonts.length > 0) folders.push(SITE_FONTS_DIR);
+  if (assets.size > 0 || boardPictures.size > 0) folders.push(SITE_ASSETS_DIR);
 
   return {
     files,

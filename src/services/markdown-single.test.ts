@@ -22,8 +22,8 @@ function ordering(shape: Record<string, string[]>): (parentId: string | null) =>
   return (parentId) => shape[parentId ?? "root"] ?? [];
 }
 
-function plan(nodes: Node[], shape: Record<string, string[]>, rootIds = shape.root) {
-  return planSingleMarkdown({ projectName: "Valeraverse", nodes, rootIds, orderedIdsFor: ordering(shape), rowsFor: () => [] });
+function plan(nodes: Node[], shape: Record<string, string[]>, rootIds = shape.root, boardPictures?: Record<string, Uint8Array>) {
+  return planSingleMarkdown({ projectName: "Valeraverse", nodes, rootIds, orderedIdsFor: ordering(shape), rowsFor: () => [], boardPictures });
 }
 
 describe("anchorSlug", () => {
@@ -127,5 +127,14 @@ describe("what the summary says", () => {
     const nodes = [node("a", "Canon", null), node("k", "Kaine", "a", { tabs: [tab([para(text("hi"))])] })];
     const shape = { root: ["a"], a: ["k"] };
     expect(plan(nodes, shape).text).toBe(plan(nodes, shape).text);
+  });
+});
+
+describe("a board in one file", () => {
+  it("goes in as a picture written into the file itself, and the summary says so", () => {
+    const nodes = [node("b", "War room", null, { templateKey: "board" })];
+    const result = plan(nodes, { root: ["b"] }, ["b"], { b: new Uint8Array([1, 2, 3]) });
+    expect(result.text).toContain("![War room](data:image/png;base64,AQID)");
+    expect(result.notes.some((note) => note.includes("1 board goes in as a picture"))).toBe(true);
   });
 });

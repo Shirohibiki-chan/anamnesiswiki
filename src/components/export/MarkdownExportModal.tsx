@@ -11,8 +11,9 @@
 // has options. That one offers a picture switch because the format cannot hold
 // pictures and the file would otherwise be enormous; a markdown folder simply
 // takes them, and a single file simply cannot.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import type { BoardPictures } from "../../services/board-export";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useMarkdownExport } from "../../hooks/use-markdown-export";
 import { useProjectName } from "../../hooks/use-project";
@@ -22,13 +23,29 @@ type Status = "preview" | "saving" | "done" | "error";
 
 export function MarkdownExportModal({ rootIds, single, onClose }: { rootIds: string[]; single: boolean; onClose: () => void }) {
   const { pickFolder, pickSingleMarkdownSavePath, showFolder, fileManagerName } = useDialogs();
-  const { planVault, writeVault, planSingleFile, writeSingleFile } = useMarkdownExport();
+  const { planVault, writeVault, planSingleFile, writeSingleFile, renderBoardPictures } = useMarkdownExport();
   const projectName = useProjectName();
+
+  // The boards' pictures are drawn once the modal opens, by the drawing
+  // library, which takes a moment; the plan is built without them first —
+  // the page count is the same either way — and again when they land. The
+  // export itself waits for them.
+  const pictured = useMemo(() => renderBoardPictures(rootIds), [rootIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [pictures, setPictures] = useState<BoardPictures | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    void pictured.then((drawn) => {
+      if (live) setPictures(drawn);
+    });
+    return () => {
+      live = false;
+    };
+  }, [pictured]);
 
   // Built once per opening: it is a pure conversion of a snapshot, and
   // rebuilding it on every render would redo the whole world on each keystroke
   // behind the modal.
-  const plan = useMemo(() => (single ? planSingleFile(rootIds) : planVault(rootIds)), [rootIds, single]); // eslint-disable-line react-hooks/exhaustive-deps
+  const plan = useMemo(() => (single ? planSingleFile(rootIds, pictures) : planVault(rootIds, pictures)), [rootIds, single, pictures]); // eslint-disable-line react-hooks/exhaustive-deps
   const [status, setStatus] = useState<Status>("preview");
   const [error, setError] = useState<string | null>(null);
   const [savedTo, setSavedTo] = useState<string | null>(null);
@@ -51,11 +68,14 @@ export function MarkdownExportModal({ rootIds, single, onClose }: { rootIds: str
 
     setStatus("saving");
     try {
-      if (single && "text" in plan) {
-        await writeSingleFile(plan, destination);
+      // With the pictures, whether or not they had landed when she clicked.
+      const drawn = await pictured;
+      const final = (single ? planSingleFile(rootIds, drawn) : planVault(rootIds, drawn)) ?? plan;
+      if (single && "text" in final) {
+        await writeSingleFile(final, destination);
         setSavedTo(destination);
-      } else if (!single && "files" in plan) {
-        const result = await writeVault(plan, destination);
+      } else if (!single && "files" in final) {
+        const result = await writeVault(final, destination);
         setSavedTo(result.path);
         setMissing(result.missing.length);
       }

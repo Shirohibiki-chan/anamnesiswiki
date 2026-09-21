@@ -18,8 +18,8 @@ function ordering(shape: Record<string, string[]>): (parentId: string | null) =>
   return (parentId) => shape[parentId ?? "root"] ?? [];
 }
 
-function plan(nodes: Node[], shape: Record<string, string[]>, rootIds = shape.root) {
-  return planMarkdownVault({ nodes, rootIds, orderedIdsFor: ordering(shape), rowsFor: () => [] });
+function plan(nodes: Node[], shape: Record<string, string[]>, rootIds = shape.root, boardPictures?: Record<string, Uint8Array>) {
+  return planMarkdownVault({ nodes, rootIds, orderedIdsFor: ordering(shape), rowsFor: () => [], boardPictures });
 }
 
 describe("relativePath", () => {
@@ -179,5 +179,25 @@ describe("what the summary says", () => {
     const nodes = [node("a", "Canon", null), node("k", "Kaine", "a", { image: "face.png" })];
     const shape = { root: ["a"], a: ["k"] };
     expect(JSON.stringify(plan(nodes, shape))).toBe(JSON.stringify(plan(nodes, shape)));
+  });
+});
+
+describe("a board in the vault", () => {
+  it("goes in as a picture in the assets folder, shown at the top of its page, and the summary says so", () => {
+    const nodes = [node("a", "Canon", null), node("b", "War room", "a", { templateKey: "board" })];
+    const bytes = new Uint8Array([137, 80, 78, 71]);
+    const result = plan(nodes, { root: ["a"], a: ["b"] }, ["a"], { b: bytes });
+    expect(result.binaries).toEqual([{ path: "assets/board-b.png", bytes }]);
+    expect(result.folders).toContain("assets");
+    expect(result.files.find((file) => file.path.endsWith("War room.md"))?.text).toContain("![War room](../assets/board-b.png)");
+    expect(result.notes.some((note) => note.includes("1 board goes in as a picture"))).toBe(true);
+  });
+
+  it("gives a board with no picture nothing, and says nothing", () => {
+    const nodes = [node("b", "War room", null, { templateKey: "board" })];
+    const result = plan(nodes, { root: ["b"] });
+    expect(result.binaries).toEqual([]);
+    expect(result.files[0].text).not.toContain("![");
+    expect(result.notes).toEqual([]);
   });
 });

@@ -68,6 +68,8 @@ export type HtmlPageContext = {
    * path of its copy.
    */
   pictureAt: (url: unknown) => string | null;
+  /** The address of a board page's picture from this page, or null when it has none (Phase 32, step 7). */
+  boardPictureAt?: (node: Node) => string | null;
   /** The pages a collection block lists, already resolved and in its order. */
   rowsFor: (node: Node, block: Block) => Node[];
   /** The rows and columns of a page shown as a database, or null when it is not one. */
@@ -753,6 +755,11 @@ export function pageToHtml(node: Node, ctx: HtmlPageContext): PageHtml {
   // ---- Database
   const database = databaseToHtml(node, ctx);
 
+  // ---- A board's drawing, as a picture, where the app draws the board:
+  // above whatever else the page has.
+  const boardPicture = ctx.boardPictureAt?.(node);
+  const boardHtml = boardPicture ? `<figure class="board-picture"><img src=${attr(boardPicture)} alt=${attr(`${node.name} — the board`)}></figure>` : "";
+
   // ---- What is inside a folder
   // A folder's page in the app is the list of its pages, so it is here too.
   // Every other page holds pages through the tree and its own index blocks,
@@ -764,7 +771,7 @@ export function pageToHtml(node: Node, ctx: HtmlPageContext): PageHtml {
   const panelBlocks = (node.blocks ?? []).filter((block) => !inWriting.has(block.id)).map((block) => panelBlockToHtml(block, node, ctx)).filter((part): part is string => Boolean(part));
   const panel = panelBlocks.length > 0 ? `<aside class="page-panel"><dl>${panelBlocks.join("")}</dl></aside>` : "";
 
-  const body = `<div class="page-body">${database ?? ""}${strip}${sections.join("")}${listing}</div>`;
+  const body = `<div class="page-body">${boardHtml}${database ?? ""}${strip}${sections.join("")}${listing}</div>`;
   const article = `<article class=${attr(`page${panel ? " has-panel" : ""}`)}>${bannerHtml}${header}<div class="page-columns">${body}${panel}</div></article>`;
 
   return { article, text: texts.join("\n").replace(/\s+/g, " ").trim() };

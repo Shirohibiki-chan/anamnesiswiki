@@ -20,8 +20,9 @@ function ordering(shape: Record<string, string[]>): (parentId: string | null) =>
 
 const bare: SiteTheme = { tokens: { "--color-bg": "rgb(1, 2, 3)", "--font-ui": '"Inter", sans-serif' }, fonts: [] };
 
-function plan(nodes: Node[], shape: Record<string, string[]>, extra: { rootIds?: string[]; theme?: SiteTheme; homeNodeId?: string | null } = {}) {
+function plan(nodes: Node[], shape: Record<string, string[]>, extra: { rootIds?: string[]; theme?: SiteTheme; homeNodeId?: string | null; boardPictures?: Record<string, Uint8Array> } = {}) {
   return planSite({
+    boardPictures: extra.boardPictures,
     nodes,
     rootIds: extra.rootIds ?? shape.root,
     orderedIdsFor: ordering(shape),
@@ -184,5 +185,18 @@ describe("the stylesheet and the script", () => {
     new Function("window", "document", "history", "location", js)(scope.window, scope.document, {}, { hash: "" });
     const Fuse = scope.window.Fuse as new (list: unknown[], options: unknown) => { search: (q: string) => { item: unknown }[] };
     expect(new Fuse([{ t: "Kaine" }], { keys: ["t"] }).search("kain")[0]?.item).toEqual({ t: "Kaine" });
+  });
+});
+
+describe("a board on the site", () => {
+  it("goes on as a picture in the assets folder, above the page's writing, and the summary says so", () => {
+    const nodes = [node("a", "Canon", null), node("b", "War room", "a", { templateKey: "board" })];
+    const bytes = new Uint8Array([137, 80, 78, 71]);
+    const site = plan(nodes, { root: ["a"], a: ["b"] }, { boardPictures: { b: bytes } });
+    expect(site.binaries).toContainEqual({ path: "assets/board-b.png", bytes });
+    expect(site.folders).toContain("assets");
+    const page = site.files.find((file) => file.path === "Canon/War room.html")?.text ?? "";
+    expect(page).toContain('<figure class="board-picture"><img src="../assets/board-b.png" alt="War room — the board"></figure>');
+    expect(site.notes.some((note) => note.includes("1 board goes on the site as a picture"))).toBe(true);
   });
 });
