@@ -48,6 +48,7 @@ import { BlockAnchorArrival, BlockAnchorMenuItem } from "./BlockAnchor";
 import { CalloutColorMenuItem } from "./CalloutColorMenuItem";
 import { Infobox } from "../blocks/Infobox";
 import { PageBlock } from "../blocks/PageBlock";
+import { MediaEmbedBlock } from "../blocks/MediaEmbedBlock";
 import { ExpandImageButton } from "./ExpandImageButton";
 import { PageFilePanel } from "./PageFilePanel";
 import { SaveImageButton } from "./SaveImageButton";
@@ -197,7 +198,7 @@ function PageFormattingToolbar() {
  * built in `Editor` would be a new context value every keystroke, and every
  * block on the page would re-render for it.
  */
-const PAGE_BLOCK_RENDERERS = { Block: PageBlock, Infobox };
+const PAGE_BLOCK_RENDERERS = { Block: PageBlock, Infobox, Media: MediaEmbedBlock };
 
 /**
  * The controls beside a block on hover, and what its own menu holds.

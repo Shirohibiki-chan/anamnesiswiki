@@ -619,7 +619,16 @@ tokens and frames. So:
   what it is by its address, and tries the fetch again next time it is drawn
   online.
 
-### 1. The body block, with every way in
+### 1. ~~The body block, with every way in~~ Shipped 2026-09-21
+
+Shipped 2026-09-21 — `docs/shipped.md` § Phase 31, step 1. Built as
+scoped below, with two things learnt on the way: the thumbnail is a file in
+the world's library rather than a data URL on the block (the board's
+bookmark cards had settled that), and a link pasted on an empty line is put
+in *front* of the line rather than in its place — the editor refuses to
+turn a text block into one with no text — so the empty line stays as the
+line after the player when it is last, and is taken out when it is not.
+
 
 A `mediaEmbed` block in the page editor, ours in the way `pageColumns` and
 the callouts are ours, holding the pasted link, the service and kind it

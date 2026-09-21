@@ -221,6 +221,22 @@ export const COLUMN_TYPE = "pageColumn";
 export const PAGE_CONTENTS_TYPE = "pageContents";
 
 /**
+ * A player in the writing — a YouTube, YouTube Music, Spotify or SoundCloud
+ * link, drawn as its service's own player inside the page's frame (Phase 31).
+ *
+ * **The block is a link with a memory.** It holds the address, what it
+ * resolved to, and what the service said about it once — title, author, a
+ * thumbnail in `assets/` — so it draws whole with the internet off. The player
+ * is drawn from those each time and never stored. `services/media-service.ts`
+ * is the only thing that knows what each service's player address looks like.
+ *
+ * **Prefixed for the reason `pageColumns` is** — BlockNote has its own `video`
+ * and `audio` blocks, and a custom block wearing either name would get their
+ * plugins.
+ */
+export const MEDIA_EMBED_TYPE = "mediaEmbed";
+
+/**
  * How an infobox writes down which blocks it holds.
  *
  * **A joined string because BlockNote props are flat.** Its prop schema takes

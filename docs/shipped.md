@@ -7371,3 +7371,73 @@ page and expanded. Unit tests for the rows' shape and names, the unit
 of a move, the moves refused, and the hidden fields. Looked at in the
 real app.
 
+## Phase 31 — Embedded Players
+
+Scoped 2026-09-13 — the scoping and the condition it came with are in
+`docs/plan.md` § Phase 31 until the phase closes. Steps are logged here as
+they land.
+
+### Step 1 — The body block, with every way in ✅ Shipped 2026-09-21
+
+**What it delivered.** `mediaEmbed`, a BlockNote block of ours holding a
+link with a memory: the address as pasted (tidied — `si=`, `t=` and the
+rest dropped), what it resolved to (service, kind, id), what the service
+said about it once (title, author, a thumbnail as a file in `assets/`), a
+caption and a width. `services/media-service.ts` is the pure half —
+`parseMediaLink` knows every form the four services hand out and refuses
+the rest; `playerUrl` is the only thing that knows what each service's
+player address looks like; `playerShape` and `defaultMediaWidth` are the
+look's two numbers. `hooks/use-media.ts` does the asking, through the host's
+fetch and each service's oEmbed endpoint (YouTube Music is asked on
+youtube.com, since its ids are YouTube's), and puts the thumbnail in the
+library the way a bookmark card's picture goes in. `components/blocks/
+MediaPlayer.tsx` draws it — the still, the player, the offline card — and
+`MediaEmbedBlock.tsx` is the block's life in the document: the link box an
+empty one is, the fetch written back outside the undo history, the caption,
+the `⋯` menu (Open on the service, Copy Link, Fetch Again, Remove) and the
+same width handles a page block has.
+
+**Two ways in.** A lone link pasted on an empty line becomes the block
+(`pasteMediaLink` in `use-editor.ts`, on the capture phase like the block-
+link paste beside it); a link among words is left to the editor. And four
+slash entries — `/YouTube`, `/Spotify`, `/SoundCloud`, `/Embed` — put down
+the empty block with its box, which takes a link on Enter, Add or paste and
+turns away one from anywhere else with a line naming the four.
+
+**What the look settled.** The player sits in a `block-frame`, so the page's
+theme and any snippet reach it. YouTube is a still until clicked: the
+thumbnail at 16:9, the service mark, the title and author over a shade, a
+play disc; the click loads the `youtube-nocookie` player with autoplay,
+since a player that loads and waits to be clicked again is two clicks for
+one play. Spotify's card loads at once, `theme=0` on a dark surface and the
+artwork-coloured one on a light, 152 tall for a track or episode and 352
+for anything with a list; SoundCloud's at 166 for a track and 300 for a
+set, with the bold accent (`--color-accent-light`, not `--color-accent`,
+which is the 15% tint) as its colour. A track starts at 60% of the column,
+a video at the whole of it. The caption line is folded away until the
+pointer, the focus or words — the first cut left an empty strip along the
+bottom of every frame, which read as a box with a hole in it. Which of the
+two looks the theme wants is read off the frame's own surface with the
+hook the board used, lifted into `hooks/use-surface-theme.ts` for both.
+
+**Two things learnt in the running app.** Retyping an empty paragraph as
+the player — `updateBlock` with a new `type`, which is what the slash menu's
+`insertOrUpdateBlockForSlashMenu` does — throws "cannot join blockGroup
+onto blockContainer" from a paste handler, so the block is inserted in
+front of the empty line instead and the line is kept when it is last (the
+line after every block of ours) and removed when it is not. And Enter at
+the end of the Note template's last paragraph, the one after its callout,
+throws the same error before any of this runs; it is not this step's and is
+noted rather than chased.
+
+**Verified.** `services/media-service.test.ts` — every link form, the
+oEmbed and player addresses, the shapes and widths. `e2e/plays-music-in-
+the-page.e2e.ts` — a pasted YouTube link becomes a still that stores the
+tidied link, service, kind and id; the still loads the real player only
+when clicked; a link among words stays a link; `/spot` offers Spotify, the
+box refuses a link from elsewhere and takes a Spotify one, which loads at
+the theme's address at 60%; the caption and the four menu rows; and both
+players and the caption come back after Ctrl+R from the file. Nothing in
+the scenario needs the internet — what the services say is fetched in the
+background and the card draws either way — though on this machine the
+fetch answered and the still drew Rick Astley's title and picture.

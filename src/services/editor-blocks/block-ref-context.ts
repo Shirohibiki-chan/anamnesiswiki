@@ -42,10 +42,33 @@ export type InfoboxRenderer = ComponentType<{
   wrap: string;
 }>;
 
-/** Both renderers, which arrive together and are never useful apart. */
+/**
+ * Draws a player block — the frame, the still or the player, the caption
+ * (Phase 31). It takes the block's id because fetching what the service says
+ * writes the title and thumbnail back onto the block, and the caption and
+ * width are edited in place.
+ */
+export type MediaEmbedRenderer = ComponentType<{ editorBlockId: string; props: MediaEmbedProps }>;
+
+/** The player block's props as the document stores them — media-embed.tsx's schema, named for the renderer. */
+export type MediaEmbedProps = {
+  url: string;
+  service: string;
+  kind: string;
+  mediaId: string;
+  title: string;
+  author: string;
+  thumbnail: string;
+  fetched: boolean;
+  caption: string;
+  width: number;
+};
+
+/** The renderers, which arrive together and are never useful apart. */
 export type PageBlockRenderers = {
   Block: BlockRefRenderer;
   Infobox: InfoboxRenderer;
+  Media: MediaEmbedRenderer;
 };
 
 /**
