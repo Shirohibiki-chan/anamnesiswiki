@@ -730,9 +730,9 @@ is built; it is all checked as present and not switched off.
    § Phase 32, step 7. A PNG of each board in the Markdown folder and on
    the site, inline in the one big file; the LK export names boards in
    its lossy list.
-8. **Theme follows while open.** A board reads light or dark once, when it
-   is opened; a theme switched with a board open is caught on the next
-   visit. Small, and nobody has noticed.
+8. ~~**Theme follows while open.**~~ Shipped 2026-09-20 — `docs/shipped.md`
+   § Phase 32, step 8. The board measures its surface again whenever the
+   theme moves.
 9. **A moving GIF moves.** The library draws pictures to a canvas, so an
    animated one shows its first frame; LK's tutorial has one playing. The
    same kind of change as step 3 — the library's drawing, not the app —

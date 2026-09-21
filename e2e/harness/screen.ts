@@ -1204,6 +1204,17 @@ export async function openSettingsSection(window: Page, name: string): Promise<v
   await window.getByRole("tab", { name, exact: true }).click();
 }
 
+/** Picks the theme called `label` in the Theme section, which must be open. */
+export async function pickTheme(window: Page, label: string): Promise<void> {
+  await window.locator(".appearance-theme-pick").filter({ has: window.locator(".appearance-theme-name", { hasText: label }) }).first().click();
+}
+
+/** Which of the drawing library's two looks the open board is drawn in — its own class says. */
+export async function boardLook(window: Page): Promise<"light" | "dark"> {
+  const dark = await window.locator(".board .excalidraw").first().evaluate((element) => element.classList.contains("theme--dark"));
+  return dark ? "dark" : "light";
+}
+
 /** Collapses runs of whitespace, the way the browser already has by render time. */
 function normalize(text: string): string {
   return text.replace(/\s+/g, " ").trim();
