@@ -10,7 +10,7 @@ describe("boardLayers", () => {
   it("lists the board top to bottom, each named by its kind or its words", () => {
     const elements = [
       box("r", "rectangle"),
-      box("t", "text", { text: "Hello there\nsecond line" }),
+      box("t", "text", { text: "**Hello** [there](https://x.org)\nsecond line" }),
       box("f", "freedraw"),
       box("h", "freedraw", { customData: { highlight: true } }),
       box("i", "image"),

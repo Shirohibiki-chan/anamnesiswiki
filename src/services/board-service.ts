@@ -24,6 +24,7 @@ import {
 } from "../constants/board";
 import { BOARD_TEMPLATE_KEY, UNIVERSE_TEMPLATE_KEY, type Board, type Node } from "../constants/schema";
 import { noteOf, notePageIds } from "./board-notes";
+import { textPageIds } from "./board-text";
 import { mimeForFileName, storedPicture } from "./board-pictures";
 import { linkTargets } from "./storyline-service";
 import { orderSiblings } from "./tree-service";
@@ -229,6 +230,10 @@ export function boardPageLinks(board: Board, nodes: Record<string, Node>, target
       notePageIds(note).filter((pageId) => nodes[pageId]).forEach(add);
       continue;
     }
+    // A text box's words may link to pages too (Phase 32, step 14), on
+    // top of any link the box itself carries.
+    const record = element as { type?: unknown; text?: unknown };
+    if (record.type === "text" && typeof record.text === "string") textPageIds(record.text).filter((pageId) => nodes[pageId]).forEach(add);
     const link = elementLink(element);
     if (!link) continue;
     const target = resolveLink(link, nodes, targets);

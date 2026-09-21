@@ -769,13 +769,11 @@ other people's cursors. In the order they would matter:
     every board: the board and the boards inside it, read off the tree,
     with a + that makes one; the same strip from any sheet of the
     workbook. Nothing new on disk.
-14. **Bold, italic and links in ordinary text.** The one on this list that
-    is the library's own text drawing and so a patch, like step 3: the
-    library lays text out on a canvas from one style per box. Notes (step
-    10) carry rich text from the start, which covers the sticky-note case
-    and most of what she would reach for; this step is the plain text box
-    catching up, and comes last because it is the heaviest patch of the
-    phase for the smallest visible change.
+14. ~~**Bold, italic and links in ordinary text.**~~ Shipped 2026-09-21 —
+    `docs/shipped.md` § Phase 32, step 14. Markdown's marks in the
+    library's own text string, hidden and drawn by the patch, measured
+    with the marks hidden through the library's own metrics hook; a
+    toolbar and Ctrl+B/I/K over the box being written in.
 
 15. ~~**A Layers panel.**~~ Shipped 2026-09-20 — `docs/shipped.md` §
     Phase 32, step 15. The app's own list on the board's right of

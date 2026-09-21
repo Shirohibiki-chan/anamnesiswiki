@@ -19,6 +19,7 @@
 // and the words bound to it, a frame and everything in it) to beside the
 // row it was dropped on, in the drawing's list; the library re-numbers.
 import { isNote, noteOf, noteText } from "./board-notes";
+import { plainText } from "./board-text";
 import { cardPageId, isHidden, isHighlight, isPageCard } from "./board-service";
 import { videoOf } from "./board-videos";
 import { bookmarkOf } from "./bookmark-service";
@@ -156,7 +157,7 @@ export function boardLayers(elements: readonly unknown[]): BoardLayer[] {
   const boundWords = new Map<string, string>();
   for (const element of live) {
     if (element.type === "text" && element.containerId && byId.has(element.containerId)) {
-      boundWords.set(element.containerId, firstLine(element.text));
+      boundWords.set(element.containerId, firstLine(plainText(element.text ?? "")));
     }
   }
   const row = (element: ElementLike): BoardLayer => {
@@ -180,7 +181,8 @@ export function boardLayers(elements: readonly unknown[]): BoardLayer[] {
         break;
       }
       case "text":
-        name = firstLine(element.text);
+        // The words as drawn: a mark's stars and brackets are not a name.
+        name = firstLine(plainText(element.text ?? ""));
         break;
       case "frame":
         name = (element.name ?? "").trim();

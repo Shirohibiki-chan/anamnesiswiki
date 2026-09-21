@@ -149,3 +149,10 @@ export const BOARD_EXPORT_INK = "#1e1e1e";
 
 /** The size of the words drawn on a card or a note in an export's picture, in the drawing's units. */
 export const BOARD_EXPORT_FONT_SIZE = 16;
+
+/**
+ * The gap between a text box being written in and the small toolbar over
+ * it (Phase 32, step 14), in screen pixels — the toolbar sits in the
+ * window, not in the drawing, so it stays one size at every zoom.
+ */
+export const BOARD_TEXT_TOOLS_GAP = 8;

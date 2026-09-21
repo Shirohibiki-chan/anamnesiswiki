@@ -24,18 +24,26 @@
 // this file owns when a note is being written in, which is the app's own
 // state rather than the library's "active embed" — the library keeps that
 // by the element's identity, and every keystroke here makes a new element.
+//
+// **Ordinary text takes bold, italic and links** (Phase 32, step 14), as
+// Markdown's marks in the library's own text string — `services/board-text`
+// reads them, the patched library draws them. This file owns the small
+// toolbar over a text box being written in and its shortcuts, which put
+// the marks around the selected words, and the click on a drawn link.
 import {
   CaptureUpdateAction,
   Excalidraw,
   MainMenu,
   convertToExcalidrawElements,
   newElementWith,
+  setCustomTextMetricsProvider,
   viewportCoordsToSceneCoords,
 } from "@excalidraw/excalidraw";
+import * as excalidrawLibrary from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { AppState, BinaryFileData, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, UIAppState } from "@excalidraw/excalidraw/types";
-import { FilePlus2, Grip, Highlighter, Layers, Link2, Maximize2, Minimize2, PanelLeftOpen, StickyNote, Unlink } from "lucide-react";
+import { Bold, FilePlus2, Grip, Highlighter, Italic, Layers, Link2, Maximize2, Minimize2, PanelLeftOpen, StickyNote, Unlink } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   BOARD_CARD_CASCADE,
@@ -49,6 +57,7 @@ import {
   BOARD_NOTE_SIZE,
   BOARD_PAGE_LINK_PREFIX,
   BOARD_PICTURE_MAX_SIDE,
+  BOARD_TEXT_TOOLS_GAP,
   BOARD_VIDEO_HEIGHT,
   BOARD_VIDEO_LINK,
   BOARD_VIDEO_WIDTH,
@@ -58,16 +67,28 @@ import { ASSET_DRAG_TYPE } from "../../constants/paths";
 import { DEFAULT_NOTE_COLOUR, NOTE_COLOURS, emptyNote, isNote, noteColourName, noteOf, type NoteColour, type NoteLine } from "../../services/board-notes";
 import { boardLayers, hiddenFields, layerOffScreen, movedLayer, shownFields, type BoardLayer } from "../../services/board-layers";
 import { fittedSize, type PictureFile } from "../../services/board-pictures";
+import { BOLD_MARK, ITALIC_MARK, linkedWords, textLinkAt, toggledMark } from "../../services/board-text";
 import { cardPageId, cardPlacement, draggedPageIds, elementLink, isHidden, isHighlight, isOpenPageCard, isPageCard, lockedButtonAt, sunkUnderInk } from "../../services/board-service";
 import { isVideo, isVideoFileName, videoOf } from "../../services/board-videos";
 import { bookmarkOf, isBookmarkCard, placeholderBookmark, webAddressIn, type Bookmark } from "../../services/bookmark-service";
 import { BoardNote, type NoteEditor } from "./BoardNote";
 import type { BoardLinks } from "../../hooks/use-board-links";
+import { installBoardTextMetrics, measureBoardText } from "../../hooks/board-text-metrics";
 import { NodeIcon } from "../blocks/IconPicker";
 import { BoardBookmarkCard } from "./BoardBookmarkCard";
 import { BoardLayersPanel } from "./BoardLayersPanel";
 import { BoardPageCard } from "./BoardPageCard";
 import { BoardVideo } from "./BoardVideo";
+
+// The library measures text through the app from here on (Phase 32, step
+// 14): a mark's stars and brackets take no room, and a bold word takes
+// bold's. Before any board mounts, since a box is measured as it is made.
+installBoardTextMetrics({ setCustomTextMetricsProvider });
+
+// The library's own font string for a text box — what it measures and draws
+// with. Exported at run time — by the dev build as it comes and by the prod
+// build through the patch — and left out of its typings, so read by name.
+const { getFontString } = excalidrawLibrary as unknown as { getFontString: (element: { fontSize: number; fontFamily: number }) => string };
 
 // The app holds a drawing opaquely (see `Board` in constants/schema.ts); this
 // is the one file that knows what the library's shape is, so the cast lives
@@ -186,6 +207,21 @@ function isWritable(element: Element | null): boolean {
   return tag === "INPUT" || tag === "TEXTAREA" || (element as HTMLElement).isContentEditable || (element as HTMLElement).dataset.type === "wysiwyg";
 }
 
+/** The library's textarea for the text box being written in, if it is up in `surface`. */
+function textEditorIn(surface: HTMLDivElement | null): HTMLTextAreaElement | null {
+  return surface?.querySelector<HTMLTextAreaElement>(".excalidraw-wysiwyg") ?? null;
+}
+
+/**
+ * Writes `next` into the library's textarea and tells the library, the way
+ * its own indent does, so it sizes the box to the words as typed.
+ */
+function writeWords(box: HTMLTextAreaElement, next: { value: string; start: number; end: number }): void {
+  box.value = next.value;
+  box.setSelectionRange(next.start, next.end);
+  box.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 /**
  * A picture's own size, read by letting the browser decode it — the only
  * way to know how big a data URL's picture is, and what the library does
@@ -284,6 +320,15 @@ export default function BoardCanvas({
   const layersSignatureRef = useRef("");
   const [layersNotice, setLayersNotice] = useState<string | null>(null);
   const layersNoticeTimerRef = useRef<number | null>(null);
+  // The text box being written in, if one is (step 14) — the library's
+  // own textarea, found in the surface when needed. State so the small
+  // toolbar over it draws, a ref so the change reports can read it, and
+  // the library's own end-on-blur put aside while the link picker has the
+  // keyboard, since the words are not done being written.
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  const editingTextRef = useRef<string | null>(null);
+  const textToolsRef = useRef<HTMLDivElement | null>(null);
+  const textBlurRef = useRef<((this: GlobalEventHandlers, event: FocusEvent) => unknown) | null>(null);
   // The viewed page, readable from the library's change reports.
   const viewedPageRef = useRef(viewedPageId);
   useEffect(() => {
@@ -294,11 +339,21 @@ export default function BoardCanvas({
   useEffect(() => {
     if (picker === null) return;
     function onPointerDown(event: PointerEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) setPicker(null);
+      if (!pickerRef.current || pickerRef.current.contains(event.target as Node)) return;
+      setPicker(null);
+      // The link picker was open over a text box being written in: the
+      // click is elsewhere, so the words are done, as the library's own
+      // rule has it — its end-on-blur, held off for the picker, is called.
+      const endWords = textBlurRef.current;
+      if (endWords) {
+        textBlurRef.current = null;
+        const box = textEditorIn(surface);
+        if (box) endWords.call(box, new FocusEvent("blur"));
+      }
     }
     window.addEventListener("pointerdown", onPointerDown, true);
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
-  }, [picker]);
+  }, [picker, surface]);
 
   /** Writes `link` (or none) into the shape with `elementId`, as one undoable edit. */
   function setLink(elementId: string, link: string | null) {
@@ -309,6 +364,104 @@ export default function BoardCanvas({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     });
     setPicker(null);
+  }
+
+  // ---- A text box being written in: the marks and the link (step 14) ----
+
+  /**
+   * Puts the small toolbar just over the library's textarea, or just under
+   * it when there is no room above. Told on every change report while
+   * writing, since the textarea follows the box as it grows, scrolls and
+   * zooms; in the window's pixels, on the board's own box.
+   */
+  const placeTextTools = useCallback(() => {
+    const tools = textToolsRef.current;
+    const box = textEditorIn(surface);
+    if (!tools || !box || !surface) return;
+    const home = surface.getBoundingClientRect();
+    const at = box.getBoundingClientRect();
+    const above = at.top - home.top - tools.offsetHeight - BOARD_TEXT_TOOLS_GAP;
+    tools.style.left = `${Math.max(0, at.left - home.left)}px`;
+    tools.style.top = `${above >= 0 ? above : at.bottom - home.top + BOARD_TEXT_TOOLS_GAP}px`;
+  }, [surface]);
+  useLayoutEffect(placeTextTools, [editingTextId, placeTextTools]);
+
+  /** Bold or italic put around the selected words, or taken off them. */
+  const markWords = useCallback(
+    (mark: string) => {
+      const box = textEditorIn(surface);
+      if (!box) return;
+      writeWords(box, toggledMark({ value: box.value, start: box.selectionStart, end: box.selectionEnd }, mark));
+      box.focus();
+    },
+    [surface],
+  );
+
+  /**
+   * The link picker for the words. The library ends the writing the
+   * moment its textarea loses the keyboard, and the picker takes it; so
+   * its end-on-blur is put aside until the picker is done.
+   */
+  const wantWordsLink = useCallback(() => {
+    const box = textEditorIn(surface);
+    if (!box) return;
+    if (box.onblur) {
+      textBlurRef.current = box.onblur;
+      box.onblur = null;
+    }
+    setPicker({ mode: "link", query: "" });
+  }, [surface]);
+
+  /** The keyboard back in the words where it was, and the library's end-on-blur put back. */
+  const backToWords = useCallback(() => {
+    const box = textEditorIn(surface);
+    if (!box) return;
+    box.focus();
+    if (textBlurRef.current) {
+      box.onblur = textBlurRef.current;
+      textBlurRef.current = null;
+    }
+  }, [surface]);
+
+  /** The selected words linked to `href`, or `text` put in linked at the caret. */
+  const linkWords = useCallback(
+    (href: string, text: string) => {
+      const box = textEditorIn(surface);
+      if (box) writeWords(box, linkedWords({ value: box.value, start: box.selectionStart, end: box.selectionEnd }, href, text));
+      setPicker(null);
+      backToWords();
+    },
+    [surface, backToWords],
+  );
+
+  // Ctrl+B, Ctrl+I and Ctrl+K in the library's textarea: the marks around
+  // the selected words, and the link picker. Caught before the library's
+  // own keys, among which Ctrl+K is a shape's link.
+  useEffect(() => {
+    if (!surface) return;
+    function onKeyDown(event: KeyboardEvent) {
+      const box = textEditorIn(surface);
+      if (!box || document.activeElement !== box || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
+      const key = event.key.toLowerCase();
+      if (key !== "b" && key !== "i" && key !== "k") return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (key === "b") markWords(BOLD_MARK);
+      else if (key === "i") markWords(ITALIC_MARK);
+      else wantWordsLink();
+    }
+    surface.addEventListener("keydown", onKeyDown, true);
+    return () => surface.removeEventListener("keydown", onKeyDown, true);
+  }, [surface, markWords, wantWordsLink]);
+
+  /** The address of the link drawn under `point` in some text box's words, or null. A hidden box has no links. */
+  function wordsLinkAt(elements: readonly ExcalidrawElement[], point: { x: number; y: number }): string | null {
+    return textLinkAt(
+      elements.filter((element) => !isHidden(element)),
+      point,
+      measureBoardText,
+      (element) => getFontString(element as { fontSize: number; fontFamily: number }),
+    );
   }
 
   /**
@@ -927,6 +1080,14 @@ export default function BoardCanvas({
         const selectedId = soleSelection(appState);
         const selected = selectedId ? elements.find((element) => element.id === selectedId) : undefined;
         onCardSelected(!!selected && (isPageCard(selected) || isNote(selected) || isVideo(selected)));
+        // A text box being written in (step 14): the toolbar over it comes
+        // and goes with the library's editor, and follows its textarea.
+        const editingText = appState.editingTextElement?.id ?? null;
+        if (editingText !== editingTextRef.current) {
+          editingTextRef.current = editingText;
+          setEditingTextId(editingText);
+        }
+        if (editingText !== null) placeTextTools();
         // Writing in a note ends when the note stops being selected — a
         // click on the canvas, on another shape, or its deletion.
         // Ended from outside this callback, for the woken state's reason
@@ -1036,6 +1197,13 @@ export default function BoardCanvas({
         }
         const elements = apiRef.current?.getSceneElements() ?? [];
         const hit = pointerDownState.hit.element;
+        // A link among a text box's words opens on a click on the link
+        // itself (step 14) — a click, since a drag moves the box as ever.
+        const wordsLink = wordsLinkAt(elements, pointerDownState.origin);
+        if (wordsLink) {
+          links.openLink(wordsLink);
+          return;
+        }
         // The library skips locked shapes and reports whatever lies beneath,
         // so the button wins whenever it is drawn above what was hit.
         const button = lockedButtonAt(elements, pointerDownState.origin);
@@ -1056,7 +1224,8 @@ export default function BoardCanvas({
       // locked shapes, which are few.
       onPointerUpdate={({ pointer }) => {
         const api = apiRef.current;
-        onOverButton(!!api && lockedButtonAt(api.getSceneElements(), pointer) !== null);
+        const elements = api?.getSceneElements() ?? [];
+        onOverButton(!!api && (lockedButtonAt(elements, pointer) !== null || wordsLinkAt(elements, pointer) !== null));
       }}
       // An embed whose address is a page link is a card of ours, and so is
       // one whose address is a web page: a bookmark. The library asks by
@@ -1135,14 +1304,20 @@ export default function BoardCanvas({
         // into the words at the caret. A note not being written in has no
         // link button at all.
         const writingNote = !!selected && isNote(selected) && editingNoteId === selected.id;
+        // A text box being written in has no selection, so no link button
+        // of its own up here; the picker is opened from the toolbar over
+        // the words, and its picks go into them (step 14).
+        const writingWords = editingTextId !== null;
         const linkable = !!selected && (!isNote(selected) || writingNote);
         const selectedNotes = apiRef.current?.getSceneElements().filter((element) => appState.selectedElementIds[element.id] && isNote(element)) ?? [];
         const selectedNoteColour = selectedNotes.length > 0 ? (noteOf(selectedNotes[0])?.colour ?? DEFAULT_NOTE_COLOUR) : null;
-        const typedAddress = picker?.mode === "link" && writingNote ? webAddressIn(picker.query) : null;
+        const typedAddress = picker?.mode === "link" && (writingNote || writingWords) ? webAddressIn(picker.query) : null;
         const pickLink = (href: string, text: string) => {
           if (writingNote) {
             noteEditorRef.current?.insertLink(href, text);
             setPicker(null);
+          } else if (writingWords) {
+            linkWords(href, text);
           } else if (selected) {
             setLink(selected.id, href);
           }
@@ -1154,7 +1329,7 @@ export default function BoardCanvas({
               ? "Add a note in a colour"
               : picker?.mode === "colour"
                 ? "Colour the selected notes"
-                : writingNote
+                : writingNote || writingWords
                   ? "Link the words to a page"
                   : "Link this shape to a page";
         const swatches = (mode: "note" | "colour") => (
@@ -1273,11 +1448,14 @@ export default function BoardCanvas({
               {picker?.mode === "note" && swatches("note")}
               {picker?.mode === "colour" && swatches("colour")}
               {(picker?.mode === "put" || picker?.mode === "link") && (
-                <div className="board-picker" role="dialog" aria-label={pickerLabel}>
+                // Writing words, the picker wears the library's own class for a
+                // popup with the keyboard, so the library's editor does not take
+                // the keyboard back from it on the next redraw.
+                <div className={writingWords ? "board-picker properties-content" : "board-picker"} role="dialog" aria-label={pickerLabel}>
                   <input
                     type="text"
                     className="property-field-input"
-                    placeholder={writingNote && picker.mode === "link" ? "Search pages, or paste an address…" : "Search pages…"}
+                    placeholder={(writingNote || writingWords) && picker.mode === "link" ? "Search pages, or paste an address…" : "Search pages…"}
                     aria-label={picker.mode === "put" ? "Search pages to put on this board" : "Search pages to link this shape to"}
                     value={picker.query}
                     autoFocus
@@ -1291,6 +1469,7 @@ export default function BoardCanvas({
                       if (event.key === "Escape") {
                         setPicker(null);
                         if (writingNote) noteEditorRef.current?.focus();
+                        else if (writingWords) backToWords();
                       }
                       if (event.key === "Enter" && picker.mode === "link" && typedAddress) pickLink(typedAddress, typedAddress);
                       else if (event.key === "Enter" && candidates.length > 0) {
@@ -1359,6 +1538,22 @@ export default function BoardCanvas({
         <MainMenu.DefaultItems.ChangeCanvasBackground />
       </MainMenu>
     </Excalidraw>
+    {/* The toolbar over a text box being written in (step 14): the marks
+        around the selected words, and a link for them. Its buttons take no
+        focus, so the keyboard stays in the words. */}
+    {editingTextId !== null && (
+      <div className="board-text-tools" ref={textToolsRef} role="toolbar" aria-label="Text style" data-testid="board-text-tools">
+        <button type="button" className="board-text-tool" title="Bold (Ctrl+B)" aria-label="Bold" onMouseDown={(event) => event.preventDefault()} onClick={() => markWords(BOLD_MARK)}>
+          <Bold size={14} />
+        </button>
+        <button type="button" className="board-text-tool" title="Italic (Ctrl+I)" aria-label="Italic" onMouseDown={(event) => event.preventDefault()} onClick={() => markWords(ITALIC_MARK)}>
+          <Italic size={14} />
+        </button>
+        <button type="button" className="board-text-tool" title="Link (Ctrl+K)" aria-label="Link" aria-expanded={picker?.mode === "link"} onMouseDown={(event) => event.preventDefault()} onClick={wantWordsLink}>
+          <Link2 size={14} />
+        </button>
+      </div>
+    )}
     {/* Beside the library's element, not inside it: the board's grid places
         the panel on the right by name. */}
     {layersOpen && (

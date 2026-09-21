@@ -6934,6 +6934,46 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 14 — Bold, italic and links in ordinary text ✅ Shipped 2026-09-21
+
+**What it delivered.** A text box on a board takes bold, italic and
+links: a toolbar over the box being written in (Bold, Italic, Link) and
+Ctrl+B/I/K put Markdown's marks around the selected words; the drawn
+words hide the marks and come out bold, slanted or underlined; a click
+on a drawn link opens its page or address, and the pointer says so
+first; the Layers panel names the box by its words alone; the pages
+linked are in the link index; the exports and Save as Image draw the
+same.
+
+**How.** `services/board-text.ts` reads the marks into runs (forgiving
+one way only: a star that could not be a mark is a star), toggles a
+mark on a selection by counting stars, makes a link of a selection, and
+hit-tests a drawn link by laying the runs out as the drawing does.
+`hooks/board-text-metrics.ts` is the library's text metrics provider,
+installed through its own `setCustomTextMetricsProvider`: every width
+the library asks for is answered with the marks hidden and a bold run
+measured bold, and the provider carries `richLines` and `runFont` for
+the patch. The patch (`scripts/excalidraw-patch.mjs`, last section)
+draws the runs on the canvas and in the SVG, widens or heightens the
+library's textarea to fit the marks while writing, and exports
+`getFontString` from the prod build. `BoardCanvas` owns the toolbar,
+the shortcuts, the link picker's use while writing (the library's
+end-on-blur held off while the picker has the keyboard), the click on a
+drawn link and the cursor. `docs/handoff.md` § Boards has the rules.
+
+**Verified.** 20 unit tests on the service; `e2e/a-board-rich-text.e2e.ts`
+(3 scenarios): Bold from the toolbar lands as `**Hello**` in the
+library's box and the drawn words come out heavier and no wider than
+the stars would be; Ctrl+I puts the third star on and takes it off; the
+Layers panel reads "Hello"; Link from the toolbar through the page
+picker lands as `[**Hello**](anamnesis://page/…)` with the box still
+open, and a click on the drawn word opens the page. Found on the way:
+the prod build of the library does not export `getFontString` where the
+dev build does, so the click handler threw in the built app and only
+there — the patch now exports it. Looked at in the real app: the
+toolbar over the box, bold and an underlined link drawn in free text,
+slanted wrapped words centred in a rectangle.
+
 ### Step 9 — A moving GIF moves ✅ Shipped 2026-09-20
 
 **What it delivered.** An animated GIF on a board plays, and a GIF
