@@ -1332,8 +1332,13 @@
 /* The `?` sheet — see components/shell/ShortcutSheet.tsx. Read-only, so none
    of the settings screen's controls apply: no recording state, no reset
    buttons, and the keys are `kbd` rather than buttons that look like one. */
+/* One height whichever tab is open, so switching tabs does not re-centre the
+   dialog and move the strip under the pointer — the Markdown list is half the
+   length of the keys, and a dialog sized to its content jumped. The body
+   scrolls inside it either way. */
 .shortcut-sheet {
   gap: var(--space-lg);
+  height: calc(100vh - var(--space-3xl) * 2);
 }
 
 .shortcut-sheet-header {
@@ -1348,6 +1353,42 @@
   font-family: var(--font-display);
   font-size: var(--fs-lg);
   color: var(--color-text-primary);
+}
+
+/* The strip between the title and the lists — the same shape as the version
+   strip on Patch Notes. */
+.shortcut-sheet-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  border-bottom: 1px solid var(--color-border-subtle, var(--color-border));
+}
+
+.shortcut-sheet-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: var(--space-sm) var(--space-md);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.shortcut-sheet-tab:hover {
+  color: var(--color-text-secondary);
+}
+
+.shortcut-sheet-tab-active,
+.shortcut-sheet-tab-active:hover {
+  border-bottom-color: var(--color-accent-light);
+  color: var(--color-text-primary);
+}
+
+/* What a slash command does, under its name. */
+.shortcut-sheet-subtext {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
 }
 
 /* Scrolls inside the dialog rather than growing it: the list grows every time

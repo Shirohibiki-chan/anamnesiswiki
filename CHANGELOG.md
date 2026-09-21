@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-21 — The shortcut sheet knows the slash commands and the markdown
+
+### Additions
+
+- **The `?` sheet has three tabs now: Keys, Slash Commands, Markdown.** *Slash Commands* lists every `/` command the editor offers, in the menu's own groups, with what each does and the short form to type — read from the menu itself, so a command added later appears on its own. *Markdown* lists what turns into formatting as you type: `# ` for a heading, `- ` for a list, `**text**` for bold, and the rest. *Keys* gained a *While writing* list of the editor's own chords — Ctrl+B, Ctrl+Alt+2 for a heading, Ctrl+Shift+8 for a list — under the fixed keys it already showed.
+
+### Changes
+
+- **The sheet is the same height whichever tab is open**, so switching tabs doesn't move the strip under the pointer.
+
 ## 2026-09-21 — About
 
 ### Additions
@@ -145,11 +155,3 @@
 - **Paste a web address onto a board and it becomes a card.** The card fills in with the page's title, description, picture and site name a moment later, and it lands where the mouse is. Click a card twice to open the address in your browser — the first click selects it, like any shape — or lock the card and one click does it. Before, a pasted address was a line of text with a link on it.
 - **The card keeps what it fetched.** Title, words and picture are stored on the board, and the picture goes into *Library* like any other, so the card draws the same with no internet, and in a world you hand to someone else. A page that will not answer, or says nothing about itself, gives a card with just the address on it.
 - Only a lone address becomes a card; a sentence with an address in it is still pasted as text.
-
-## 2026-09-19 — A board's pictures live in the Library
-
-### Changes
-
-- **A picture on a board is now a picture in the world's Library, like a page's portrait.** Paste one onto a board, drop a file on it, or add one with the picture tool, and it goes into *Library* and the board only points at it. Before, the picture's bytes were written into the board's own file: three photos made a three-megabyte board, and the Library could not see them. Boards drawn before this move their pictures across the first time they are opened, on their own.
-- **Drag a picture from the Library onto a board.** It lands where it was dropped, at its own size — a big photograph scaled to fit — with no second copy made: one picture on six boards is one file.
-- **The Library counts a board's pictures as in use.** A picture that is only on a board says so on its tile and cannot be deleted out from under the board.

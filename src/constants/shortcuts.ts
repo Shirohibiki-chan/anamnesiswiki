@@ -117,6 +117,39 @@ export const FIXED_KEYS: readonly FixedKey[] = [
 ];
 
 /**
+ * The keys that work while writing — the editor's own, shown on the same
+ * sheet as ours (Queued Adjustments, 2026-09-21).
+ *
+ * **A written list, and it says so on the sheet.** These are BlockNote's and
+ * tiptap's bindings, not ours, so nothing in the app can read them off a
+ * registry the way the rows above are read off the shortcut store — they
+ * were taken from the installed BlockNote 0.52 by grep, the same way
+ * `EDITOR_RESERVED_BINDINGS` was, and `e2e/writes-with-shortcuts.e2e.ts`
+ * presses a handful of them to catch a rename. A cheat sheet that left out
+ * the keys used while writing was half a cheat sheet, which is why the list
+ * is here at all despite being the kind that can drift.
+ */
+export const EDITOR_KEYS: readonly FixedKey[] = [
+  { key: "B", mod: true, what: "Bold" },
+  { key: "I", mod: true, what: "Italic" },
+  { key: "U", mod: true, what: "Underline" },
+  { key: "Shift+S", mod: true, what: "Strikethrough" },
+  { key: "E", mod: true, what: "Code" },
+  { key: "Alt+1 … 6", mod: true, what: "Heading 1 to 6" },
+  { key: "Alt+0", mod: true, what: "Back to a plain paragraph" },
+  { key: "Shift+8", mod: true, what: "Bullet list" },
+  { key: "Shift+7", mod: true, what: "Numbered list" },
+  { key: "Shift+9", mod: true, what: "Check list" },
+  { key: "Shift+6", mod: true, what: "Toggle list" },
+  { key: "Alt+Q", mod: true, what: "Quote" },
+  { key: "Alt+C", mod: true, what: "Code block" },
+  { key: "Tab", what: "Nest the line under the one above" },
+  { key: "Shift+Tab", what: "Un-nest it" },
+  { key: "Z", mod: true, what: "Undo, inside the writing" },
+  { key: "Y", mod: true, what: "Redo, inside the writing" },
+];
+
+/**
  * What opens the list. Two keys rather than one, and neither is rebindable.
  *
  * `?` is the convention every app with a cheat sheet uses, and it is the one

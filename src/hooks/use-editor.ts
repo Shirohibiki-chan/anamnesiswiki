@@ -12,7 +12,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { filterSuggestionItems } from "@blocknote/core";
-import { getDefaultReactSlashMenuItems, useCreateBlockNote } from "@blocknote/react";
+import { useCreateBlockNote } from "@blocknote/react";
 import type { DefaultReactSuggestionItem, FloatingUIOptions } from "@blocknote/react";
 import { MAX_IMAGE_BYTES } from "../constants/limits";
 import { isGlyph } from "../constants/glyphs";
@@ -25,21 +25,15 @@ import { blocksToRelink, findLinkMatches, linkableNames, withLinkedMatches } fro
 import { BlockAnchorContext } from "../services/editor-blocks/block-anchor-context";
 import { BlockRefRenderContext } from "../services/editor-blocks/block-ref-context";
 import { editorSchema } from "../services/editor-blocks/editor-schema";
-import { getCalloutSlashMenuItems, withoutBuiltInQuote } from "../services/editor-blocks/callout-slash-menu";
 import { IconPickContext } from "../services/editor-blocks/icon-pick-context";
-import { getIconSlashMenuItems } from "../services/editor-blocks/icon-slash-menu";
 import { getIconMenuItems } from "../services/editor-blocks/icon-menu-items";
 import { ICON_MIN_QUERY, ICON_TRIGGER, iconMenuOpens, isIconPickerChord } from "../services/editor-blocks/icon-trigger";
 import { handleImageKeys } from "../services/editor-blocks/image-keys";
 import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-items";
-import { getNewPageSlashMenuItems } from "../services/editor-blocks/new-page-slash-menu";
 import { applyColumnRepairs, type RepairableEditor } from "../services/editor-blocks/apply-column-repairs";
 import { applyPointerClones, type PointerEditor } from "../services/editor-blocks/apply-pointer-clones";
-import { getAutoLinkSlashMenuItems } from "../services/editor-blocks/auto-link-slash-menu";
-import { getColumnSlashMenuItems } from "../services/editor-blocks/column-slash-menu";
-import { getMediaSlashMenuItems } from "../services/editor-blocks/media-slash-menu";
 import { selectAllExtension } from "../services/editor-blocks/select-all";
-import { getPageBlockSlashMenuItems } from "../services/editor-blocks/page-block-slash-menu";
+import { slashMenuItems } from "../services/editor-blocks/slash-menu";
 import { slashOpensCommandMenu } from "../services/editor-blocks/slash-trigger";
 import { handleSuggestionListKeys } from "../services/editor-blocks/suggestion-list-keys";
 import { linkWikilink, resolveWikilinks, unknownWikilinkAt } from "../services/editor-blocks/wikilink";
@@ -486,27 +480,17 @@ export function useEditor(
     });
   }
 
+  // The list itself is assembled in slash-menu.tsx, because the shortcut
+  // sheet lists the same commands and the two must not drift. `addBlock`
+  // makes the sidebar record and hands back its id; the item points the
+  // document at it.
   async function getSlashMenuItems(query: string): Promise<DefaultReactSuggestionItem[]> {
     return filterSuggestionItems(
-      [
-        ...withoutBuiltInQuote(getDefaultReactSlashMenuItems(editor)),
-        ...getCalloutSlashMenuItems(editor),
-        ...getNewPageSlashMenuItems(() => void insertNewPageLink("")),
-        ...getIconSlashMenuItems(editor),
-        // The sidebar's blocks, offered in the page. `addBlock` makes the
-        // record and hands back its id; the menu item points the document at
-        // it. See page-block-slash-menu.tsx.
-        ...getPageBlockSlashMenuItems(editor, (kind, extra) => addBlock(nodeId, kind, extra)),
-        // Side-by-side lanes. Nothing to make first — a row is made of blocks
-        // the editor already knows how to draw. See column-slash-menu.tsx.
-        ...getColumnSlashMenuItems(editor),
-        // A player, for a link not on the clipboard yet. Phase 31. Pasting
-        // the link on an empty line is the other way in — see onPasteCapture.
-        ...getMediaSlashMenuItems(editor),
-        // The one entry that inserts nothing: it acts on prose already written.
-        // See auto-link-slash-menu.tsx.
-        ...getAutoLinkSlashMenuItems(() => void linkPageNames()),
-      ],
+      slashMenuItems(editor, {
+        newPage: () => void insertNewPageLink(""),
+        addPageBlock: (kind, extra) => addBlock(nodeId, kind, extra),
+        linkPageNames: () => void linkPageNames(),
+      }),
       query,
     );
   }

@@ -156,23 +156,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   so the tests arrive with a reason to trust them. A rewrite of the whole file
   in one go trades a working 3,000-line file for an untested one.
 
-- **The shortcut sheet shows keys and nothing else.** Noticed 2026-08-28 when
-  the user asked whether we had the reference's Shortcuts window and sent a
-  screenshot of it. We have a sheet — `ShortcutSheet.tsx`, on `?` — and in one
-  way it is better than theirs: every shortcut here is rebindable, so it reads
-  the same store the key listener does and shows *her* keys rather than a fixed
-  list nobody can trust. What theirs has and ours does not is two tabs' worth of
-  the rest: a **Slash Commands** list, and the **markdown shortcuts** (`**bold**`,
-  `# heading`, `* item`, `[] item`) which are real behaviour in our editor and
-  written down nowhere.
-
-  **The slash list should be generated, not typed out.** `getSlashMenuItems` in
-  `use-editor.ts` already assembles the whole menu with titles and subtexts; a
-  hand-written second copy would be wrong within a month, and it is the same
-  mistake the rebindable-keys design was built to avoid. The markdown list is the
-  opposite case — those are BlockNote's input rules, not ours, so that half is a
-  written list and should say where it came from.
-
 - **Watch the update button on the release after v0.6.0.** One link in the
   chain has never run: an installed Electron build finding a newer one and
   installing it. Everything up to it is proven — the pipeline, the three
@@ -268,11 +251,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
     goes through. The `build` box prefills by matching a field id; if that ever
     silently stops working, the only sign is reports arriving with an empty
     box.
-  - **The `?` sheet lists nothing the editor owns.** Ctrl+B, the heading keys,
-    the callout keys are BlockNote's and would have to be typed out by hand —
-    which is the drift the sheet exists to avoid. Worth deciding rather than
-    leaving: a cheat sheet that omits the keys used while writing is half a
-    cheat sheet.
   - **Named checkpoints, with pinning, were on her list and are not built.**
     Phase 19 shipped the automatic kind: copies taken on a timer, listed by
     when. "Mark this state, name it, come back to it" is a different feature
