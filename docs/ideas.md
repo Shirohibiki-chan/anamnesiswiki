@@ -231,9 +231,53 @@ What they reported, in the order it hurt:
 4. **Round trip is the test, not import.** The acceptance question is "paste it
    out and is it the same", not "does it look right on screen".
 
-**Paste is a different code path from file import and has to be checked
-separately.** BlockNote does its own clipboard handling and nothing here has
-ever tested it — see Queued Adjustments.
+**Paste is a different code path from file import, and it was measured on
+2026-09-21.** Ten clipboards dispatched into the real app — plain text of
+several shapes, Google Docs' HTML, Word's HTML — and the page read back, then
+copied out again. What was found, against the four anti-goals above:
+
+- **Plain text is read as Markdown, always.** BlockNote's default
+  (`plainTextAsMarkdown`, in `pasteExtension.ts`) runs every plain-text paste
+  through its Markdown parser. So `*She smiles.*` arrives as *She smiles.* in
+  italics with the asterisks gone; `2*3*4` becomes 2, an italic 3, 4;
+  `# 1 fan` at the start of a line becomes a heading; `1. ` and `- ` become
+  lists; and `<Kalla>` **vanishes entirely**, read as an HTML tag. Anti-goals
+  1 and 3, broken by the default. Roleplay text is the worst case, because
+  asterisks are how it marks actions.
+- **Text with single line breaks becomes one paragraph.** `Line one.⏎Line
+  two.` — the shape of chat, of notepad, of most lorebook fields — is joined
+  into a single paragraph with soft breaks. It *looks* right on screen and is
+  wrong on the way out (below).
+- **A deliberately empty paragraph is dropped from plain text.** Two blank
+  lines between paragraphs collapse to none; Markdown does not have empty
+  paragraphs. Anti-goal 2. (From Google Docs and Word the empty paragraph
+  *is* kept — both send it as HTML and HTML keeps it.)
+- **If the plain text merely looks like Markdown, the HTML is ignored.**
+  `prioritizeMarkdownOverHTML` checks the plain-text copy against a set of
+  regexes (`detectMarkdown.ts`), and one asterisk-wrapped word or one
+  `snake_case_name` anywhere in a Google Docs document is enough to throw the
+  whole document's real formatting away and use the Markdown reading instead
+  — headings, bold and blank lines from the source lost, Markdown's invented.
+- **Google Docs and Word, when their HTML is used, come through well.**
+  Paragraphs, blank lines, headings, bold, italic and bullets all correct.
+  One quiet leftover: every run from Google Docs is stored with
+  `textColor: "rgb(0, 0, 0)"` and `backgroundColor: "transparent"`, the
+  colours Docs puts on its spans. Nothing in the app draws an unnamed colour
+  (`html-page.ts` looks names up in a table), so it is invisible and harmless
+  here, and it only reappears in the HTML copied back out.
+- **Copying out gives Markdown as the plain text**, not text. A page with a
+  heading, a bold word and a bulleted list copies as `# Heading`,
+  `**bold**`, `* item`; a paragraph with soft line breaks copies as
+  `Line one.\⏎Line two.` — a backslash before every break, which is the
+  "watch the line breaks die" round trip named above. An empty paragraph
+  copies as three blank lines. The HTML copy is clean and a rich target
+  (Docs, Word, an email) is fine; it is the plain-text targets — lorebook
+  fields, character cards, a text box — that get the litter.
+
+**What follows for the fix, when it is built** (Queued Adjustments): paste
+plain text as text — off with both defaults — and decide separately what the
+plain-text *copy* should be, since Markdown out is litter in a text box and
+exactly right in Discord.
 
 **Two things about the tools they're leaving, both worth not repeating:**
 
