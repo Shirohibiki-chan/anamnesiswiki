@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-21 — Start writing and the template offer gets out of the way
+
+### Changes
+
+- **A new page can simply be written in.** The tab strip and the writing area are there from the moment the page is made, above the "what kind of page is this?" offer rather than instead of it. Type a word and the offer goes away on its own, with the word where you typed it; the sidebar still offers a template afterwards, as it did after *Skip this*, and *Skip this* is still there for sending the offer away without writing. Before, the offer was the whole page and the link under it was the only way past it.
+- **A page whose offer was sent away from the sidebar now has somewhere to write.** Pressing the ✕ on the sidebar's "this page doesn't have a template yet" used to leave the offer standing in the middle of the page anyway; now the page shows its writing area instead.
+
 ## 2026-09-21 — Players come in and go out with the world
 
 ### Additions
@@ -153,9 +160,3 @@
 - **The board's toolbar, styles panel, menus and popups wear the app's own colours and type.** They were the drawing library's stock look — its own greys, its own blue, its own font — sitting inside a window that is otherwise all one theme. They now take the panel colour, the accent and the UI font from whatever theme is on, including ones you write yourself. The drawing itself is untouched.
 - **The right-click menu is drawn like the app's other menus** — same surface, same row spacing, same hover — with the keyboard shortcut as a quiet key on the right, and every row in Title Case: *Send to Back*, *Copy Styles*, *Wrap Selection in Frame*. The styles panel's headings are Title Case too (*Stroke Width*, *Font Family*).
 - **Two rows are gone from that menu:** the library's *Stats for nerds* readout, and, on a page card, *Edit embeddable link*, which would have shown the card's raw address — a card's page is changed from the *Link to Page* button instead.
-
-## 2026-09-19 — A locked card is a button
-
-### Additions
-
-- **Lock a card or a linked shape and it opens with one click.** Select it, press Ctrl+Shift+L (or *Lock* in the right-click menu), and from then on a single click anywhere on it goes to its page — or its website, for a shape linked to one. The mouse turns into a hand over it so you can tell before clicking. Unlocked, a card still takes two clicks: the first selects, the second opens. A locked card lying on top of other shapes still wins the click.

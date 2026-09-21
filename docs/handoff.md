@@ -5781,6 +5781,15 @@ Phase 26, step 2. What binds the code:
   exists, so `AddBlockMenu` carries one too. Anything that hides the prompt has
   to keep that second route alive.
 
+- **An unstarted page's first tab is drawn before it exists, under a fixed
+  id.** PageView shows a blank, tabless page with a tab strip and an editor
+  standing in for a tab the store does not hold yet, and the first keystroke
+  makes it with that same id (`hooks/use-first-tab.ts`). The id is the point:
+  the editor is keyed by tab id, so a tab that arrived under a new one would
+  remount the editor mid-word. Anything that adds a page's first tab from
+  elsewhere while that page is open should go through `ensureFirstTab`, or the
+  draft and the real tab will be two tabs.
+
 - **`updateNode` takes `{ touch: false }` for changes that are not edits.**
   The sidebar prints "Updated <date>", so marking a page edited because
   somebody closed a box in it is a lie she can read. Dismissing the template

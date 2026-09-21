@@ -36,9 +36,34 @@ export function withTabDeleted(tabs: Tab[], tabId: string): Tab[] {
  * the callers keep using `crypto.randomUUID()` the way the rest of the store
  * does.
  */
-export function withTabAdded(tabs: Tab[], id: string, label: string): { tabs: Tab[]; tab: Tab } {
-  const tab = createTab({ id, label });
+export function withTabAdded(
+  tabs: Tab[],
+  id: string,
+  label: string,
+  content?: BlockNoteDocument,
+): { tabs: Tab[]; tab: Tab } {
+  const tab = createTab({ id, label, content });
   return { tabs: [...tabs, tab], tab };
+}
+
+/**
+ * Whether a tab's writing is still the nothing an editor starts with.
+ *
+ * **"Nothing" is one empty paragraph, not an empty list.** BlockNote will not
+ * hold an empty document — hand it `[]` and it puts a blank paragraph there,
+ * and that is what comes back from the first `onChange`. So a page that has
+ * been opened and not typed in reports one paragraph with nothing in it, and
+ * that has to count as untouched or the template grid would leave the moment
+ * the page opened. Anything else — a second block, a word, a picture, a block
+ * with children — is writing, whether or not it has any text in it.
+ */
+export function contentIsUntouched(content: BlockNoteDocument): boolean {
+  if (!Array.isArray(content) || content.length === 0) return true;
+  if (content.length > 1) return false;
+  const only = content[0] as { type?: unknown; content?: unknown; children?: unknown } | null;
+  if (!only || typeof only !== "object" || only.type !== "paragraph") return false;
+  if (Array.isArray(only.children) && only.children.length > 0) return false;
+  return !Array.isArray(only.content) || only.content.length === 0;
 }
 
 /**

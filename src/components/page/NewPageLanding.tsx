@@ -7,18 +7,20 @@
 // made first and this is what's on it. Rendered by PageView; the condition for
 // showing it is there.
 //
-// "Blank" isn't in the grid because the page already is blank. It's the skip
-// button underneath, and all it does is give the page somewhere to write —
-// which is the difference between an unanswered question and an answered one.
-import { BLANK_TEMPLATE_KEY, FIRST_TAB_LABEL, PAGE_TEMPLATE_KEYS, type Node } from "../../constants/schema";
+// "Blank" isn't in the grid because the page already is blank. The editor is
+// above this, ready to be typed into, and the first word makes the page's
+// first tab and takes the grid away (hooks/use-first-tab.ts). The skip link
+// underneath does the same thing without the word — which is the difference
+// between an unanswered question and an answered one.
+import { BLANK_TEMPLATE_KEY, PAGE_TEMPLATE_KEYS, type Node } from "../../constants/schema";
 import { X } from "lucide-react";
 import { getTemplateIcon } from "../../constants/icons";
 import { useCustomTemplates, useProjectActions } from "../../hooks/use-project";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useTemplates } from "../../hooks/use-templates";
 
-export function NewPageLanding({ node }: { node: Node }) {
-  const { applyTemplate, applyCustomTemplate, addTab, deleteTemplate } = useProjectActions();
+export function NewPageLanding({ node, onSkip }: { node: Node; onSkip: () => void }) {
+  const { applyTemplate, applyCustomTemplate, deleteTemplate } = useProjectActions();
   const customTemplates = useCustomTemplates();
   const { confirmDestructive } = useDialogs();
   const { templates, getLabel } = useTemplates();
@@ -43,8 +45,8 @@ export function NewPageLanding({ node }: { node: Node }) {
   return (
     <div className="new-page-landing">
       <p className="new-page-landing-hint">
-        What kind of page is this? It fills in headings and properties to write against — and you can change it, or add
-        your own, at any point.
+        Start writing above, or say what kind of page this is. A kind fills in headings and properties to write against
+        — and you can change it, or add your own, at any point.
       </p>
 
       <h3 className="new-page-landing-heading">Special Pages</h3>
@@ -134,7 +136,7 @@ export function NewPageLanding({ node }: { node: Node }) {
         </>
       )}
 
-      <button type="button" className="new-page-landing-skip" onClick={() => addTab(node.id, FIRST_TAB_LABEL)}>
+      <button type="button" className="new-page-landing-skip" onClick={onSkip}>
         Skip this — just start writing
       </button>
     </div>

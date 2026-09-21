@@ -18,6 +18,7 @@ import { EmptyPageView } from "./EmptyPageView";
 import { FolderView } from "./FolderView";
 import { useEffectiveStyleClass } from "../../hooks/use-style-class";
 import { useCreatePageIn } from "../../hooks/use-new-page";
+import { useFirstTab } from "../../hooks/use-first-tab";
 import { NewPageLanding } from "./NewPageLanding";
 import { PageBanner } from "./PageBanner";
 import { PageTabs } from "./PageTabs";
@@ -55,6 +56,8 @@ export function PageView({ nodeId }: { nodeId?: string } = {}) {
   const { openPageGraph } = useGraphOverlayActions();
   const shownId = nodeId ?? project?.selectedId ?? null;
   const node = shownId ? nodes[shownId] : undefined;
+  // The tab a blank page is written into before it has one — see the hook.
+  const { draftTab, ensureFirstTab, onDraftChange } = useFirstTab(shownId);
   // What a snippet aims at — see `styleClass` on Node. Read here, above the
   // early returns, because it is a hook.
   const styleClass = useEffectiveStyleClass(node);
@@ -95,14 +98,31 @@ export function PageView({ nodeId }: { nodeId?: string } = {}) {
   // written in it since. Both halves matter — a blank page *with* tabs is one
   // that deliberately skipped the templates and is being written in, and
   // shoving the grid back in front of that would undo the choice every time
-  // the page was reopened. Picking a template adds that template's tabs, so
-  // either answer moves the page out of this state on its own.
-  const isUnanswered = node.templateKey === BLANK_TEMPLATE_KEY && node.tabs.length === 0;
+  // the page was reopened. Picking a template adds that template's tabs, and
+  // the first word typed makes the first tab (see useFirstTab), so either
+  // answer moves the page out of this state on its own.
+  //
+  // Unstarted is the wider state: blank and tabless, whether or not the grid
+  // has been sent away. Such a page draws a first tab and an editor it does
+  // not have yet, so there is always somewhere to write — with the grid under
+  // them until it is answered or dismissed. Before this the sidebar's "don't
+  // ask again" left the grid standing in the middle of the page.
+  const isUnstarted = node.templateKey === BLANK_TEMPLATE_KEY && node.tabs.length === 0;
+  const isUnanswered = isUnstarted && !node.hideTemplatePrompt;
 
   function handleAddTab() {
+    ensureFirstTab();
     const tab = addTab(node!.id, "New Tab");
     setActiveTabId(tab.id);
   }
+
+  // The tab strip is drawn from the draft while the page has no tabs, and
+  // every control on it makes the tab real before acting on it. That is what
+  // keeps the page from moving under her when she starts to type: the strip,
+  // the editor and its key are all already in place, so the first word
+  // changes what the store holds and nothing about what is on screen.
+  const shownTabs = isUnstarted ? [draftTab] : node.tabs;
+  const shownActiveTab = isUnstarted ? draftTab : activeTab;
 
   return (
     // `data-template` beside `data-style`: the page's kind is a fact worth a
@@ -111,7 +131,10 @@ export function PageView({ nodeId }: { nodeId?: string } = {}) {
     // window's — a skin describes a page, not the app around it.
     <div className="page-view-shell" data-style={styleClass} data-template={node.templateKey}>
       <PageBanner node={node} />
-      <div className="page-view">
+      {/* `page-view-unstarted` shrinks the editor from filling the page to a
+          few lines, so the offer under it is in view rather than a screen
+          down. Its top edge is where it stays either way. */}
+      <div className={isUnanswered ? "page-view page-view-unstarted" : "page-view"}>
         {/* The one page whose name is worth interrupting for: it was created a
             second ago called "Untitled", and the user is the only one who
             knows what it should be. Everywhere else — including coming back to
@@ -137,9 +160,7 @@ export function PageView({ nodeId }: { nodeId?: string } = {}) {
             under her. */}
         {isStoryline && <PageStoryline node={node} />}
         {node.templateKey === BOARD_TEMPLATE_KEY && <PageBoard node={node} />}
-        {isCanvasPage || (node.view && node.tabs.length === 0) ? null : isUnanswered ? (
-          <NewPageLanding node={node} />
-        ) : node.tabs.length === 0 ? (
+        {isCanvasPage || (node.view && node.tabs.length === 0) ? null : node.tabs.length === 0 && !isUnstarted ? (
           // A universe is a container, not a page you write in, so the offer
           // is a page inside it rather than a tab on it. It still comes
           // through the page shell rather than FolderView, because the title
@@ -167,16 +188,16 @@ export function PageView({ nodeId }: { nodeId?: string } = {}) {
         ) : (
           <>
             <PageTabs
-              tabs={node.tabs}
-              activeTabId={activeTab?.id ?? null}
+              tabs={shownTabs}
+              activeTabId={shownActiveTab?.id ?? null}
               onSelect={setActiveTabId}
-              onToggleHidden={(tabId) => toggleTabHidden(node.id, tabId)}
+              onToggleHidden={(tabId) => toggleTabHidden(node.id, isUnstarted ? ensureFirstTab() : tabId)}
               onAdd={handleAddTab}
-              onRename={(tabId, label) => renameTab(node.id, tabId, label)}
-              onDelete={(tabId) => deleteTab(node.id, tabId)}
+              onRename={(tabId, label) => renameTab(node.id, isUnstarted ? ensureFirstTab() : tabId, label)}
+              onDelete={(tabId) => deleteTab(node.id, isUnstarted ? ensureFirstTab() : tabId)}
               onReorder={(orderedTabIds) => reorderTabs(node.id, orderedTabIds)}
             />
-            {activeTab && (
+            {shownActiveTab && (
               <Editor
                 // The revision is in the key so that replacing this page's
                 // writing from outside the editor — restoring an earlier
@@ -185,13 +206,20 @@ export function PageView({ nodeId }: { nodeId?: string } = {}) {
                 // the next keystroke saves that back over the restore. It is
                 // deliberately not `updatedAt`, which changes on every
                 // keystroke and would remount the editor on each one.
-                key={`${activeTab.id}:${contentRevisions[node.id] ?? 0}`}
+                key={`${shownActiveTab.id}:${contentRevisions[node.id] ?? 0}`}
                 nodeId={node.id}
-                tabId={activeTab.id}
-                content={activeTab.content}
-                onContentChange={(content) => updateTabContent(node.id, activeTab.id, content)}
+                tabId={shownActiveTab.id}
+                content={shownActiveTab.content}
+                onContentChange={
+                  isUnstarted ? onDraftChange : (content) => updateTabContent(node.id, shownActiveTab.id, content)
+                }
               />
             )}
+            {/* Under the writing, not instead of it: the page can be typed
+                into with the offer still up, and the first word takes the
+                offer away. The link at its foot does the same without the
+                word. */}
+            {isUnanswered && <NewPageLanding node={node} onSkip={ensureFirstTab} />}
           </>
         )}
       </div>
