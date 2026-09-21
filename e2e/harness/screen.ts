@@ -2910,17 +2910,36 @@ export async function setAsShortcut(window: Page, rowName: string): Promise<void
 }
 
 /**
- * Makes a new page with Ctrl+N, names it, and gives it a built-in template
- * from the grid a fresh page opens on. Returns once the page's title is up.
+ * Makes a new page with Ctrl+N and names it, leaving it on the "what kind of
+ * page is this?" offer. Returns once the name is a heading.
  */
-export async function makePageOfTemplate(window: Page, name: string, template: string): Promise<void> {
+export async function makeBlankPage(window: Page, name: string): Promise<void> {
   await window.keyboard.press("Control+n");
   await window.keyboard.type(name);
   await window.keyboard.press("Enter");
   await titleSettled(window);
+  await waitForPageTitle(window, name);
+}
+
+/**
+ * Makes a new page with Ctrl+N, names it, and gives it a built-in template
+ * from the grid a fresh page opens on. Returns once the page's title is up.
+ */
+export async function makePageOfTemplate(window: Page, name: string, template: string): Promise<void> {
+  await makeBlankPage(window, name);
   await window.locator(NEW_PAGE_GRID).getByRole("button", { name: template, exact: true }).click();
   await waitForPageTitle(window, name);
   await window.waitForTimeout(500);
+}
+
+/** Whether the open page is showing the "what kind of page is this?" offer. */
+export async function templateOfferShown(window: Page): Promise<boolean> {
+  return window.locator(NEW_PAGE_GRID).isVisible();
+}
+
+/** The labels on the open page's tab strip, in order. */
+export async function pageTabLabels(window: Page): Promise<string[]> {
+  return window.locator(".page-tab-label").allInnerTexts();
 }
 
 /** The names of the snippets Settings → Snippets lists, and whether each is on. */

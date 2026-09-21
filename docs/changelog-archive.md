@@ -2,6 +2,12 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-19 — A locked card is a button
+
+### Additions
+
+- **Lock a card or a linked shape and it opens with one click.** Select it, press Ctrl+Shift+L (or *Lock* in the right-click menu), and from then on a single click anywhere on it goes to its page — or its website, for a shape linked to one. The mouse turns into a hand over it so you can tell before clicking. Unlocked, a card still takes two clicks: the first selects, the second opens. A locked card lying on top of other shapes still wins the click.
+
 ## 2026-09-19 — Click inside a shape to pick it up
 
 ### Fixes

@@ -7661,3 +7661,44 @@ map is its own phase); no fifth service (her call, and the list is
 closed); no LK block for Spotify or SoundCloud in the writing (the key is
 not known from any real export, and a guessed one is a file LK may
 refuse).
+
+## Queued Adjustments — typing past the template grid ✅ Shipped 2026-09-21
+
+The first item taken off Queued Adjustments as a run of its own: a page made
+blank can be written into straight away, and the first word sends the "what
+kind of page is this?" offer away — asked for 2026-09-06, and what
+LegendKeeper does.
+
+**What it does.** An unstarted page (blank, no tabs) draws a tab strip and an
+editor above the offer rather than the offer alone. The tab and the editor
+stand in for a first tab the page does not have yet; the first real keystroke
+makes that tab, with the words in it, under the id it was drawn with
+(`hooks/use-first-tab.ts`). Making the tab is what dismisses the offer — a
+blank page with a tab has answered for itself, which is the rule PageView
+already had — so no new flag was needed and nothing has to be unset when a
+template is picked later. `hideTemplatePrompt` keeps its old meaning, the
+sidebar's own "don't ask again", and PageView now honours it too: a page
+dismissed from the sidebar shows its editor rather than the offer it had
+supposedly sent away. The sidebar keeps offering a template after the page is
+typed in, as it did after *Skip this*, which is the route back `schema.ts`
+insists on.
+
+**Why the id is passed in.** PageView keys the editor by tab id, so a tab
+arriving under a fresh id would remount the editor mid-word and drop the
+caret. The strip, the editor and its key are all in place before the first
+word; the word changes what the store holds and nothing on screen. The
+scenario (`e2e/types-past-the-template-grid.e2e.ts`) is built around that
+handover — the words typed have to be on screen afterwards, in the file, and
+the offer gone — and around the other half: clicking into the editor without
+typing must *not* count, because BlockNote reports the blank paragraph it puts
+in an empty document as a change (`contentIsUntouched` in `tab-service.ts`).
+
+**Layout.** `page-view-unstarted` shrinks the editor from filling the page to
+a few lines so the offer sits in view under it; the editor's top edge is the
+same either way. Every control on the draft strip makes the tab real before
+acting, so renaming or hiding the "Overview" tab of an unstarted page does
+what it looks like it does.
+
+**Verified** with the scenario and by screenshots of the built app before and
+after typing: the sentence stays where it was typed, the offer is gone, the
+sidebar's prompt remains.

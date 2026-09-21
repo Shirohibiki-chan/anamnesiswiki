@@ -488,7 +488,14 @@ export type ProjectStoreState = {
   bumpContentRevision: (id: string) => void;
   updateTabContent: (nodeId: string, tabId: string, content: Tab["content"]) => void;
   toggleTabHidden: (nodeId: string, tabId: string) => void;
-  addTab: (nodeId: string, label: string) => Tab;
+  /**
+   * The id and starting content are optional and only one caller passes them:
+   * a blank page's first tab is drawn before it exists, so the page can be
+   * typed into under the template grid — see `useFirstTab`. Handing the id in
+   * is what keeps the editor from remounting under her hands when the tab
+   * becomes real.
+   */
+  addTab: (nodeId: string, label: string, first?: { id: string; content: Tab["content"] }) => Tab;
   renameTab: (nodeId: string, tabId: string, label: string) => void;
   deleteTab: (nodeId: string, tabId: string) => void;
   reorderTabs: (nodeId: string, orderedTabIds: string[]) => void;
@@ -2106,10 +2113,10 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       patchNode("hiding a tab", nodeId, { tabs: withTabHiddenToggled(existing.tabs, tabId) });
     },
 
-    addTab(nodeId, label) {
+    addTab(nodeId, label, first) {
       const existing = get().nodes[nodeId];
       if (!existing) throw new Error("addTab: node not found");
-      const { tabs, tab } = withTabAdded(existing.tabs, crypto.randomUUID(), label);
+      const { tabs, tab } = withTabAdded(existing.tabs, first?.id ?? crypto.randomUUID(), label, first?.content);
       patchNode(`adding the ${label} tab`, nodeId, { tabs });
       return tab;
     },

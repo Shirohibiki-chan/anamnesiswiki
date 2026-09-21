@@ -874,6 +874,16 @@
   cursor: text;
 }
 
+/* An unstarted page (PageView) has the template offer under its editor, so
+   the editor is a few lines rather than the rest of the page — twenty rems of
+   nothing above the offer would put it a screen down. The top edge is the
+   same either way, which is what keeps the writing still when the offer goes. */
+.page-view-unstarted .editor-shell-wrapper {
+  flex: none;
+  min-height: 6rem;
+  margin-bottom: var(--space-xl);
+}
+
 /* **The icon sits beside the writing, not above it.** This was a column until
    2026-09-06, which put the icon on a line of its own — and because an
    uncoloured callout derives no icon (see constants/callout-colors.ts), the

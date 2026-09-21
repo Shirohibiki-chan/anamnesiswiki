@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  contentIsUntouched,
   withTabAdded,
   withTabContent,
   withTabDeleted,
@@ -65,6 +66,35 @@ describe("withTabAdded", () => {
     const { tabs: after, tab } = withTabAdded(tabs(), "new", "Notes");
     expect(after.map((t) => t.id)).toEqual(["a", "b", "c", "new"]);
     expect(tab).toMatchObject({ id: "new", label: "Notes", hidden: false, content: [] });
+  });
+
+  it("takes the writing it should start with", () => {
+    const content = [{ type: "paragraph", content: [{ type: "text", text: "hi" }] }];
+    const { tab } = withTabAdded([], "first", "Overview", content);
+    expect(tab.content).toBe(content);
+  });
+});
+
+describe("contentIsUntouched", () => {
+  const empty = { type: "paragraph", props: {}, content: [], children: [] };
+
+  it("treats nothing, and the one blank paragraph an editor starts with, as untouched", () => {
+    expect(contentIsUntouched([])).toBe(true);
+    expect(contentIsUntouched([empty])).toBe(true);
+  });
+
+  it("counts a word as writing", () => {
+    expect(contentIsUntouched([{ ...empty, content: [{ type: "text", text: "a" }] }])).toBe(false);
+  });
+
+  it("counts a block with no text in it as writing", () => {
+    expect(contentIsUntouched([{ type: "image", props: { url: "x" }, children: [] }])).toBe(false);
+    expect(contentIsUntouched([{ ...empty, type: "heading" }])).toBe(false);
+  });
+
+  it("counts a second block, or a nested one, as writing", () => {
+    expect(contentIsUntouched([empty, empty])).toBe(false);
+    expect(contentIsUntouched([{ ...empty, children: [empty] }])).toBe(false);
   });
 });
 
