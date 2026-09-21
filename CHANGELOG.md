@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-20 — A moving GIF moves on a board
+
+### Fixes
+
+- **An animated GIF on a board now plays.** The drawing library draws pictures onto a canvas, which only ever takes an animated picture's first frame, so a GIF stood still; its frames are now decoded and drawn one after the other while it is on screen. Also: a GIF pasted or dropped onto a board used to be quietly re-saved as a still PNG on the way in — it now keeps its file, and its frames.
+
 ## 2026-09-20 — A board follows the theme
 
 ### Fixes
@@ -155,9 +161,3 @@
 ### Changes
 
 - **The board's link button reads *Link to Page* and the picker's unlink row reads *Remove the Link*,** in Title Case with the rest of the app.
-
-## 2026-09-17 — Tab between a scene's name and its description
-
-### Additions
-
-- **Tab on a storyline card goes from the name to the description, and Shift+Tab goes back.** Double-click a scene's name, type it, press Tab, and the description box opens under it with what you typed already kept — the way two fields on a form work. Shift+Tab from the description reopens the name. Before, Tab only left the box: the card shows one box at a time, so leaving saved it and closed it, and there was nowhere for Tab to go. It still doesn't jump to another card — a canvas has no order for it to follow.
