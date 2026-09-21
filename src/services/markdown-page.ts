@@ -52,6 +52,13 @@ export type MarkdownPageContext = {
    * the vault copies pictures in rather than pointing at addresses.
    */
   pictureAt: (url: unknown) => string | null;
+  /**
+   * Where the picture of a board page ended up, or null for a page that is
+   * not a board, a board with nothing on it, or an export with no pictures
+   * (Phase 32, step 7). The vault answers with a path, the one big file
+   * with a `data:` address.
+   */
+  boardPictureAt?: (node: Node) => string | null;
   /** The pages a collection block lists, already resolved and in its order. */
   rowsFor: (node: Node, block: Block) => Node[];
   tally: LossyTally;
@@ -651,6 +658,10 @@ export function pageBody(node: Node, ctx: MarkdownPageContext, titleLevel: numbe
   const contentBase = named ? sectionLevel + 1 : sectionLevel;
 
   const sections: string[] = [];
+
+  // A board's drawing, as a picture, first: it is what the page is for.
+  const boardPicture = ctx.boardPictureAt?.(node);
+  if (boardPicture) sections.push(`![${escapeText(node.name)}](${boardPicture})`);
 
   for (const tab of tabs) {
     const smallest = minHeadingLevel(tab.content);

@@ -242,6 +242,8 @@ html.js .tab.is-active { display: block; }
 .page-body figure { margin: 1.2em 0; }
 .page-body figure img { display: block; border-radius: 8px; }
 .page-body figcaption, .caption { font-size: 13px; color: var(--color-text-muted); margin-top: 6px; font-family: var(--font-ui); }
+.board-picture { margin: 0 0 24px; }
+.board-picture img { width: 100%; border: 1px solid var(--color-border); background: #fff; }
 .page-body table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 14px; }
 .page-body td, .page-body th { border: 1px solid var(--color-border); padding: 6px 10px; text-align: left; vertical-align: top; }
 .page-body th { background: var(--color-panel-alt); font-family: var(--font-ui); font-weight: 600; }

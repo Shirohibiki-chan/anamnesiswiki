@@ -726,10 +726,10 @@ is built; it is all checked as present and not switched off.
    name, tabs and writing, and a double-click makes the box the page's
    real editor; a *View* button opens the page's whole view in a panel
    beside the board; *Open* is the page in full.
-7. **Boards in the exports.** A board is not in the Markdown, website or LK
-   export. The Markdown and site exports carry a picture of it (the library
-   draws PNG and SVG); the LK export names it in its lossy list, since LK's
-   file has no shape for a drawing.
+7. ~~**Boards in the exports.**~~ Shipped 2026-09-20 — `docs/shipped.md`
+   § Phase 32, step 7. A PNG of each board in the Markdown folder and on
+   the site, inline in the one big file; the LK export names boards in
+   its lossy list.
 8. **Theme follows while open.** A board reads light or dark once, when it
    is opened; a theme switched with a board open is caught on the next
    visit. Small, and nobody has noticed.

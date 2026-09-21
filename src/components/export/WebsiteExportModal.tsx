@@ -17,6 +17,7 @@ import { createPortal } from "react-dom";
 import { useDialogs } from "../../hooks/use-dialogs";
 import { useProjectName } from "../../hooks/use-project";
 import { useSiteExport } from "../../hooks/use-site-export";
+import type { BoardPictures } from "../../services/board-export";
 import type { SitePlan, SiteTheme } from "../../services/site-plan";
 import "./export.css";
 
@@ -24,8 +25,23 @@ type Status = "preview" | "saving" | "done" | "error";
 
 export function WebsiteExportModal({ rootIds, onClose }: { rootIds: string[]; onClose: () => void }) {
   const { pickFolder, showFolder, previewSite, fileManagerName } = useDialogs();
-  const { readTheme, plan, write } = useSiteExport();
+  const { readTheme, plan, write, renderBoardPictures } = useSiteExport();
   const projectName = useProjectName();
+
+  // The boards' pictures, drawn by the drawing library once the modal
+  // opens — the theme's shape exactly: the plan is built without them
+  // first and again when they land, and the export waits for them.
+  const pictured = useMemo(() => renderBoardPictures(rootIds), [rootIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [pictures, setPictures] = useState<BoardPictures | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    void pictured.then((drawn) => {
+      if (live) setPictures(drawn);
+    });
+    return () => {
+      live = false;
+    };
+  }, [pictured]);
 
   // The theme is read once the modal opens rather than at click time, so the
   // fonts have usually arrived by the time she has read the summary. Until
@@ -42,7 +58,7 @@ export function WebsiteExportModal({ rootIds, onClose }: { rootIds: string[]; on
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const site = useMemo<SitePlan | null>(() => plan(rootIds, theme ?? { tokens: {}, fonts: [] }), [rootIds, theme]); // eslint-disable-line react-hooks/exhaustive-deps
+  const site = useMemo<SitePlan | null>(() => plan(rootIds, theme ?? { tokens: {}, fonts: [] }, pictures), [rootIds, theme, pictures]); // eslint-disable-line react-hooks/exhaustive-deps
   const [status, setStatus] = useState<Status>("preview");
   const [error, setError] = useState<string | null>(null);
   const [savedTo, setSavedTo] = useState<string | null>(null);
@@ -63,7 +79,9 @@ export function WebsiteExportModal({ rootIds, onClose }: { rootIds: string[]; on
 
     setStatus("saving");
     try {
-      const result = await write(site, destination);
+      // With the pictures, whether or not they had landed when she clicked.
+      const final = plan(rootIds, theme ?? { tokens: {}, fonts: [] }, await pictured) ?? site;
+      const result = await write(final, destination);
       setSavedTo(result.path);
       setMissing(result.missing.length);
       setStatus("done");

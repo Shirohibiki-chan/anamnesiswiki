@@ -10,7 +10,7 @@ import { normalizeCodeLanguage } from "../constants/code-languages";
 import { READING_COLUMN_WIDTH } from "../constants/layout";
 import { getGlyph } from "../constants/glyphs";
 import { COLOR_PALETTE } from "../constants/palette";
-import { FOLDER_TEMPLATE_KEY, ICON_INLINE_TYPE, type Node, type Project, type Tab } from "../constants/schema";
+import { BOARD_TEMPLATE_KEY, FOLDER_TEMPLATE_KEY, ICON_INLINE_TYPE, type Node, type Project, type Tab } from "../constants/schema";
 import type { AssetSources } from "./asset-sources";
 import {
   bumpLossy,
@@ -150,6 +150,10 @@ function describeLossy(tally: LossyTally): string[] {
   const folders = lossyCount(tally, "folderTabs");
   if (folders) {
     notes.push(`${plural(folders, "folder")} export as pages with an empty Main tab — LegendKeeper has no folder-only concept.`);
+  }
+  const boards = lossyCount(tally, "boards");
+  if (boards) {
+    notes.push(`${plural(boards, "board")} ${boards === 1 ? "goes" : "go"} across as an empty page — LegendKeeper's file has no shape for a drawing. The board stays here as it is.`);
   }
   return notes;
 }
@@ -644,6 +648,7 @@ export function buildExportFile(input: {
 
   function emit(node: Node, parentLkId: string | null, pos: string): void {
     if (node.templateKey === FOLDER_TEMPLATE_KEY) bumpLossy(lossy, "folderTabs");
+    if (node.templateKey === BOARD_TEMPLATE_KEY) bumpLossy(lossy, "boards");
 
     // Folders hold no content in our model and LK has no folder-only concept,
     // so they go across as pages with one empty tab. Same for any page that

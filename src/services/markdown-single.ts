@@ -19,6 +19,7 @@
 //     nowhere to point, so it goes and is counted. That is the inverse of the
 //     vault's rule and the reason the two are separate exports.
 import type { Block, Node } from "../constants/schema";
+import { boardPictureDataUrl, type BoardPictures } from "./board-export";
 import { bumpLossy, createLossyTally, lossyCount, plural, walkPages, type LossyTally } from "./export-walk";
 import { BLOCK_DROPPED, BLOCK_FLATTENED, pageBody, printedProperties, type MarkdownPageContext } from "./markdown-page";
 
@@ -67,8 +68,10 @@ function anchors(names: { id: string; name: string }[]): Map<string, string> {
   return out;
 }
 
-function describe(tally: LossyTally): string[] {
+function describe(tally: LossyTally, boards: number): string[] {
   const notes: string[] = [];
+
+  if (boards) notes.push(`${plural(boards, "board")} ${boards === 1 ? "goes" : "go"} in as a picture, written into the file itself — the drawing as it looks here, with its cards and notes drawn in. It can be looked at, not drawn on.`);
 
   const flattened = lossyCount(tally, BLOCK_FLATTENED);
   if (flattened) {
@@ -96,8 +99,11 @@ export function planSingleMarkdown(input: {
   rootIds: string[];
   orderedIdsFor: (parentId: string | null) => string[];
   rowsFor: (node: Node, block: Block) => Node[];
+  /** The boards' pictures, by board page id; a board without one gets no picture. */
+  boardPictures?: BoardPictures;
 }): SingleFilePlan {
   const walked = walkPages({ nodes: input.nodes, rootIds: input.rootIds, orderedIdsFor: input.orderedIdsFor });
+  let boards = 0;
   const slugs = anchors(walked.map((page) => ({ id: page.node.id, name: page.node.name })));
   const tally = createLossyTally();
 
@@ -116,6 +122,14 @@ export function planSingleMarkdown(input: {
       if (typeof url === "string" && (/^https?:\/\//i.test(url) || url.startsWith("data:"))) return url;
       if (url) bumpLossy(tally, PICTURE_LEFT_BEHIND);
       return null;
+    },
+    // One file has no folder beside it, so the picture goes in as a `data:`
+    // address, which every markdown reader draws.
+    boardPictureAt: (node) => {
+      const bytes = input.boardPictures?.[node.id];
+      if (!bytes) return null;
+      boards += 1;
+      return boardPictureDataUrl(bytes);
     },
     rowsFor: input.rowsFor,
     tally,
@@ -136,7 +150,7 @@ export function planSingleMarkdown(input: {
     parts.push(...pageBody(page.node, ctx, level));
   }
 
-  return { text: `${parts.join("\n\n")}\n`, pageCount: walked.length, notes: describe(tally) };
+  return { text: `${parts.join("\n\n")}\n`, pageCount: walked.length, notes: describe(tally, boards) };
 }
 
 /**

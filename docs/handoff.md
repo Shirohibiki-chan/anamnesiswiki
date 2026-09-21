@@ -2282,6 +2282,24 @@ which is the state this was extracted out of.
   is structural — see §Editor & templates. A filter that looks necessary means
   something upstream merged the records, and that is the bug to fix.
 
+- **A board's picture is drawn before the plan, and the plan is built
+  twice** (Phase 32, step 7). The drawing library is what draws the PNG,
+  in the window, asynchronously, and it is loaded late the way `PageBoard`
+  loads it — so `renderBoardPictures` (`hooks/use-board-export.ts`) runs
+  when the export modal opens, the plan is made without pictures first
+  (same page count, no note) and again when they land, and the write
+  itself awaits them, so a quick click never exports without them. The
+  planners take `boardPictures` by board page id and know nothing of how
+  they were drawn. **The app's embeds are swapped before the picture is
+  taken:** the library draws an embed it does not know as an empty box,
+  so `board-export.ts` turns a page card, a note, a bookmark and a video
+  into a labelled rectangle skeleton in the same place, keeping the
+  embed's id so an arrow bound to a card stays bound, and hands the
+  library's `convertToExcalidrawElements` in as a function — the service
+  never imports the library. A board with nothing on it gets no picture
+  and no note, which is the outcome from before this existed; a board
+  whose picture will not draw is logged and treated the same.
+
 ## Publishing
 
 **Hidden means not published, with no switch** (Phase 1.5, 2026-09-10). A

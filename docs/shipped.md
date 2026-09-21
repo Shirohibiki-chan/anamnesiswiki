@@ -6934,6 +6934,38 @@ the box the key just changed, and the caret is saved from the box's
 own key and mouse events as well as the document's selection event.
 Three pushes went to the PR on guesses before that logging.
 
+### Step 7 — Boards in the exports ✅ Shipped 2026-09-20
+
+**What it delivered.** The Markdown folder and the website carry a PNG of
+each board, drawn by the drawing library from the board as stored, with
+the app's embeds (page card, note, bookmark, video) swapped for labelled
+boxes in their places; the board's page shows the picture first. The one
+big Markdown file carries it as a `data:` address. Each export's summary
+counts the boards that went in as pictures. The LegendKeeper export
+counts boards in its lossy list — an empty page across, the board kept
+here. An empty board gets no picture and no note.
+
+**How.** `services/board-export.ts` (`exportSkeletonFor`,
+`exportableElements`, the picture's name and data address),
+`hooks/use-board-export.ts` (`renderBoardPictures`: the library loaded
+late, `exportToBlob`), `boardPictures` into the vault, single-file and
+site planners, `boardPictureAt` on the two page contexts, a `boards`
+tally in `lk-export.ts`, the modals drawing the pictures on open and
+awaiting them on save. `docs/handoff.md` § Exports in general has the
+rules.
+
+**Verified.** `e2e/a-board-export.e2e.ts` against the built app, with a
+board holding a rectangle, a page card and a note: the Markdown folder's
+note points at a PNG in `assets/` that is a real PNG well past a blank
+tile, and the summary says one board went in as a picture; the one big
+file carries `data:image/png;base64`; the site's page has the figure and
+the PNG; the LegendKeeper modal names the board as left out. Unit tests
+for the swaps (card, note, video, bookmark, the library's own shapes left
+alone), order and deletion in `exportableElements`, the picture's home,
+and each planner's picture, folder and note. Looked at: the exported PNG
+itself — the rectangle, the teal note with its words, the card's paper
+under it.
+
 ### Step 15 — A Layers panel ✅ Shipped 2026-09-20
 
 **What it delivered.** A **Layers** button in the board's top-right slot

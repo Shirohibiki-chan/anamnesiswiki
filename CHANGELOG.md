@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-20 — Boards in the exports
+
+### Additions
+
+- **A board goes into the exports as a picture.** The Markdown folder and the website carry a PNG of each board — the drawing as it looks, with page cards, notes, bookmarks and videos drawn in as labelled boxes, in their places — and the board's page shows it. The one big Markdown file carries the picture inside itself. The export window says how many boards went in as pictures. The LegendKeeper export can't carry a drawing, so it says a board goes across as an empty page and the board stays here as it is. A board with nothing on it gets no picture.
+
 ## 2026-09-20 — A Layers panel on the board
 
 ### Additions
@@ -166,10 +172,3 @@
 ### Changes
 
 - **Every button, menu row, tab and option in the app is Title Case.** *Add a Page*, *New Page Inside*, *Save as Template*, *Check for Updates*, *Choose Where to Save* — about two hundred labels that had drifted into sentence case. Tooltips and explanations stay sentences.
-
-## 2026-09-17 — Canvas pages are the whole page
-
-### Changes
-
-- **A storyline or a board fills the page.** Title and breadcrumb at the top, then the canvas to the bottom edge and out to the column's edges — the way a board fills the window elsewhere — instead of a fixed-height box inside the reading column with empty page around it. Never shorter than 24rem in a short window; the page scrolls then. *Fill the window* still takes the sidebars too.
-- **A dashboard uses the full width of the page** rather than the reading column.

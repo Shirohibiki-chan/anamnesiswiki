@@ -115,3 +115,37 @@ export const BOARD_VIDEO_HEIGHT = 270;
 export const BOARD_HIGHLIGHT_COLOUR = "#ffd43b";
 export const BOARD_HIGHLIGHT_WIDTH = 6;
 export const BOARD_HIGHLIGHT_OPACITY = 50;
+
+/**
+ * The twelve note fills, as `board.css` draws them, for the picture of a
+ * board an export carries (Phase 32, step 7): the drawing library draws
+ * that picture, and a note in it is a filled box in the note's own colour.
+ * `board.css` is the copy the screen reads; the two are kept the same.
+ */
+export const BOARD_NOTE_FILLS: Record<string, string> = {
+  yellow: "#fff3a1",
+  orange: "#ffd9a3",
+  red: "#ffc2bd",
+  pink: "#ffc9e6",
+  violet: "#e2ccff",
+  blue: "#c7d9ff",
+  sky: "#c4ecff",
+  teal: "#bdf0e6",
+  green: "#c8f0be",
+  lime: "#e9f5aa",
+  grey: "#e4e4e4",
+  white: "#ffffff",
+};
+
+/** The fill a page card, a bookmark and a video get in an export's picture: paper, a shade off the board. */
+export const BOARD_EXPORT_CARD_FILL = "#f1f3f5";
+
+/** The room left around the drawing in an export's picture, in the drawing's units. */
+export const BOARD_EXPORT_PADDING = 24;
+
+/** The line around a card in an export's picture, and the ink its words are in. */
+export const BOARD_EXPORT_CARD_STROKE = "#868e96";
+export const BOARD_EXPORT_INK = "#1e1e1e";
+
+/** The size of the words drawn on a card or a note in an export's picture, in the drawing's units. */
+export const BOARD_EXPORT_FONT_SIZE = 16;

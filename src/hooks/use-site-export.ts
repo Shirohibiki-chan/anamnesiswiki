@@ -3,10 +3,12 @@
 import type { LucideIcon } from "lucide-react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import type { BoardPictures } from "../services/board-export";
 import { assetPath, writeFileTree, type FileTreeResult } from "../services/filesystem-service";
 import { planSite, type SitePlan, type SiteTheme } from "../services/site-plan";
 import { readSiteTheme } from "../services/site-theme";
 import { useProjectStore } from "../state/project-store";
+import { renderBoardPictures } from "./use-board-export";
 import { readExportWorld } from "./use-export-world";
 
 export function useSiteExport() {
@@ -33,10 +35,10 @@ export function useSiteExport() {
     return renderToStaticMarkup(createElement(Icon, { className, size: "1em", "aria-hidden": true }));
   }
 
-  function plan(rootIds: string[], theme: SiteTheme): SitePlan | null {
+  function plan(rootIds: string[], theme: SiteTheme, boardPictures?: BoardPictures): SitePlan | null {
     const world = readExportWorld();
     if (!world) return null;
-    return planSite({ ...world, rootIds, projectName: world.project.name, homeNodeId: world.project.homeNodeId, theme, renderIcon });
+    return planSite({ ...world, rootIds, projectName: world.project.name, homeNodeId: world.project.homeNodeId, theme, renderIcon, boardPictures });
   }
 
   /**
@@ -54,5 +56,5 @@ export function useSiteExport() {
     });
   }
 
-  return { readTheme, plan, write };
+  return { readTheme, plan, write, renderBoardPictures };
 }

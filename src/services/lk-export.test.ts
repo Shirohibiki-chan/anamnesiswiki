@@ -106,6 +106,13 @@ describe("buildExportFile", () => {
     expect(plan.lossyNotes.some((n) => n.includes("folder"))).toBe(true);
   });
 
+  it("leaves a board's drawing out, as an empty page, and says so", () => {
+    const nodes = [node({ id: "b", name: "War room", parentId: null, templateKey: "board" })];
+    const plan = exportOf(nodes, ["b"]);
+    expect(findResource(plan, "War room").documents.map((d) => d.name)).toEqual(["Main"]);
+    expect(plan.lossyNotes.some((n) => n.includes("1 board goes across as an empty page"))).toBe(true);
+  });
+
   it("carries tags and maps a palette colour back to its hex", () => {
     const nodes = [
       node({ id: "a", name: "Sampo", parentId: null, templateKey: "note", tabs: [tab("Main")], tags: ["npc"], color: "teal" }),
