@@ -6,8 +6,16 @@
 import { AlertTriangle } from "lucide-react";
 import type { CustomStylesheet, ThemeStoreState } from "../../state/theme-store";
 
-/** The "we stripped some URLs" notice. Names them — see sanitizeCustomCss. */
-export function BlockedNotice({ sheet }: { sheet: CustomStylesheet }) {
+/**
+ * The "we stripped some URLs" notice. Names them — see sanitizeCustomCss.
+ *
+ * **With a way to say "I know".** It is a fact about a file and so was there
+ * every time its panel was, with no way to stop it — the second repeating
+ * warning after the load warning, and the less annoying of the two, but the
+ * same idea. Acknowledging it is for the file as it is now: edit the file
+ * and it speaks up again (services/acknowledgements.ts).
+ */
+export function BlockedNotice({ sheet, onAcknowledge }: { sheet: CustomStylesheet; onAcknowledge: () => void }) {
   return (
     <p className="appearance-blocked">
       <AlertTriangle size={12} />
@@ -20,7 +28,10 @@ export function BlockedNotice({ sheet }: { sheet: CustomStylesheet }) {
             <code>{what}</code>
           </span>
         ))}
-        . Everything else in it works normally.
+        . Everything else in it works normally.{" "}
+        <button type="button" className="ui-link" onClick={onAcknowledge}>
+          I Know, Stop Telling Me
+        </button>
       </span>
     </p>
   );

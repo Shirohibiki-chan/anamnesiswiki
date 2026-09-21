@@ -15,6 +15,13 @@ import {
 } from "../constants/themes";
 import * as appSettings from "../services/app-settings-service";
 import {
+  acknowledge,
+  contentMark,
+  parseAcknowledgements,
+  stylesheetNoticeKey,
+  type Acknowledgements,
+} from "../services/acknowledgements";
+import {
   backupCssFile,
   deleteCssFile,
   ensureCssDir,
@@ -136,6 +143,14 @@ export type ThemeStoreState = {
   customThemes: CustomStylesheet[];
   snippets: CustomStylesheet[];
   /**
+   * The "this file asked to load something from the internet" notices she
+   * has said she knows about, from the same record the load warning uses
+   * (services/acknowledgements.ts). Keyed by folder and filename, marked by
+   * the file's text, so a file that changes speaks up again and a file that
+   * has not stays quiet. Read at every scan; nothing else reads the record.
+   */
+  acknowledgedNotices: Acknowledgements;
+  /**
    * The selected custom theme's editable values, for the colour and gradient
    * pickers. Null whenever a built-in is selected — those aren't files, so
    * there's nothing to write and nothing to edit.
@@ -194,6 +209,8 @@ export type ThemeStoreState = {
   setContentScale: (scale: number) => Promise<void>;
   setMutedCovers: (muted: boolean) => Promise<void>;
   toggleSnippet: (file: string) => Promise<void>;
+  /** "I know about that one, stop telling me" — for one file's notice, in its current state. */
+  acknowledgeStylesheetNotice: (kind: "themes" | "snippets", sheet: CustomStylesheet) => Promise<void>;
   resetAppearance: () => Promise<void>;
   openThemesFolder: () => Promise<void>;
   openSnippetsFolder: () => Promise<void>;
@@ -586,6 +603,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
     mutedCovers: defaultMutedCovers(),
     customThemes: [],
     snippets: [],
+    acknowledgedNotices: {},
     draft: null,
     themesDir: "",
     snippetsDir: "",
@@ -700,6 +718,10 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
 
         const customThemes = themeFiles.map(toStylesheet);
         const snippets = snippetFiles.map(toStylesheet);
+        // Read with the files rather than once at start-up, so an
+        // acknowledgement made in another window is honoured on rescan; a
+        // failed read shows every notice, which is the safe direction.
+        const acknowledgedNotices = await appSettings.getAcknowledgedWarnings().then(parseAcknowledgements, () => ({}));
 
         // A theme whose file has been deleted since it was chosen falls back
         // to the default rather than leaving the app on a `data-theme` nothing
@@ -722,6 +744,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
         set({
           customThemes,
           snippets,
+          acknowledgedNotices,
           themesDir,
           snippetsDir,
           isScanning: false,
@@ -831,6 +854,21 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => {
       set({ mutedCovers: muted });
       apply();
       await persist();
+    },
+
+    async acknowledgeStylesheetNotice(kind, sheet) {
+      const key = stylesheetNoticeKey(kind, sheet.file);
+      const mark = contentMark(sheet.raw);
+      // Gone from the screen first, for the reason the load warning's
+      // acknowledgement is: a settings write that fails on a read-only disk
+      // must not leave the notice standing after she said she knows.
+      set({ acknowledgedNotices: { ...get().acknowledgedNotices, [key]: mark } });
+      try {
+        const stored = parseAcknowledgements(await appSettings.getAcknowledgedWarnings());
+        await appSettings.setAcknowledgedWarnings(acknowledge(stored, [key], { [key]: mark }));
+      } catch {
+        // This session is quiet either way; the next scan asks again.
+      }
     },
 
     async toggleSnippet(file) {

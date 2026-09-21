@@ -25,6 +25,7 @@ import { MARKDOWN_SHORTCUTS } from "../../constants/markdown-shortcuts";
 import { EDITOR_KEYS, FIXED_KEYS, SHEET_KEYS, type FixedKey } from "../../constants/shortcuts";
 import { useShortcutSettings } from "../../hooks/use-shortcuts";
 import { useSlashCatalogue } from "../../hooks/use-slash-catalogue";
+import { SettingsModal } from "./SettingsModal";
 
 const TABS = ["Keys", "Slash Commands", "Markdown"] as const;
 type SheetTab = (typeof TABS)[number];
@@ -55,6 +56,7 @@ export function ShortcutSheet({ onClose }: { onClose: () => void }) {
   const { rows, modifierName } = useShortcutSettings();
   const slashGroups = useSlashCatalogue();
   const [tab, setTab] = useState<SheetTab>("Keys");
+  const [reporting, setReporting] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   function onTabsKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -186,8 +188,23 @@ export function ShortcutSheet({ onClose }: { onClose: () => void }) {
             </>
           )}
           <kbd>{SHEET_KEYS.question}</kbd> opens this and closes it again, and <kbd>{SHEET_KEYS.function}</kbd> does
-          the same while you&rsquo;re writing, where a question mark is just a question mark.
+          the same while you&rsquo;re writing, where a question mark is just a question mark. Something wrong?{" "}
+          <button type="button" className="ui-link" onClick={() => setReporting(true)}>
+            Report a Bug
+          </button>
+          .
         </p>
+        {/* The help key is where somebody goes when something has gone wrong,
+            which made this the second place to put a way to the bug report
+            from — the first is the save warning. */}
+        {reporting && (
+          // Portaled to the body but a child of this dialog in React's tree,
+          // so its keystrokes would bubble here and an Escape in Settings
+          // would close both. The wrapper keeps Settings' keys its own.
+          <div onKeyDown={(event) => event.stopPropagation()}>
+            <SettingsModal initialTab="report" onClose={() => setReporting(false)} />
+          </div>
+        )}
       </div>
     </div>,
     document.body,

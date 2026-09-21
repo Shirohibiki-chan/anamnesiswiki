@@ -62,7 +62,7 @@ import { EXAMPLE_WORLD_NAME } from "../constants/example-world";
 import type { ProjectTemplateFile } from "../constants/project-template";
 import { buildExampleWorld } from "../services/example-world";
 import * as fsService from "../services/filesystem-service";
-import { acknowledge, parseAcknowledgements, unacknowledged } from "../services/acknowledgements";
+import { acknowledge, keyWithin, parseAcknowledgements, pruned, unacknowledged } from "../services/acknowledgements";
 import { getAcknowledgedWarnings, setAcknowledgedWarnings } from "../services/app-settings-service";
 import { isReservedWorldName } from "../services/world-scan";
 import { tabHoldingBlock } from "../services/anchor-service";
@@ -314,6 +314,9 @@ export type ProjectStoreState = {
   // in the component, so nothing downstream has to remember the distinction.
   // `loadWasIncomplete` below is deliberately *not* filtered.
   skippedFiles: string[];
+  // Every file the last load skipped, acknowledged or not — what the
+  // acknowledgement record is pruned against. Nothing on screen reads it.
+  allSkippedFiles: string[];
   // Whether the last load failed to read at least one page file. Deliberately
   // *not* the same thing as `skippedFiles.length > 0`: that list is emptied
   // when she dismisses the notice, and dismissing a notice must not be what
@@ -1341,11 +1344,15 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
  * properly returns the whole list: a warning about unreadable pages is not
  * something to swallow because a settings read went wrong.
  */
-async function stillWorthShowing(skipped: string[]): Promise<string[]> {
+async function stillWorthShowing(rootPath: string, skipped: string[]): Promise<string[]> {
   if (skipped.length === 0) return skipped;
   try {
     const [marks, stored] = await Promise.all([fsService.fileMarks(skipped), getAcknowledgedWarnings()]);
-    return unacknowledged(skipped, marks, parseAcknowledgements(stored));
+    // Keyed inside the world rather than by absolute path, so a moved world
+    // keeps what was acknowledged — see keyWithin. The marks stay by path.
+    const keyed = Object.fromEntries(Object.entries(marks).map(([path, mark]) => [keyWithin(rootPath, path), mark]));
+    const shown = new Set(unacknowledged(skipped.map((path) => keyWithin(rootPath, path)), keyed, parseAcknowledgements(stored)));
+    return skipped.filter((path) => shown.has(keyWithin(rootPath, path)));
   } catch {
     return skipped;
   }
@@ -1580,6 +1587,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     storylines: {},
     boards: {},
     skippedFiles: [],
+    allSkippedFiles: [],
     loadWasIncomplete: false,
     saveErrors: [],
     recoveredCount: 0,
@@ -1630,7 +1638,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
       // through as known-broken never flashes on screen on the way to being
       // filtered out. Costs two reads on a world that has skipped files, and
       // nothing at all on one that hasn't.
-      const visibleSkipped = await stillWorthShowing(result.skipped);
+      const visibleSkipped = await stillWorthShowing(rootPath, result.skipped);
       // And the fourth: pictures she took out of the library that a page still
       // needs. Absent for almost every project, which reads as "nothing is
       // hidden" — the state everything starts in.
@@ -1655,6 +1663,7 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
         openTemplateId: null,
         isLoaded: true,
         skippedFiles: visibleSkipped,
+        allSkippedFiles: result.skipped,
         loadWasIncomplete: result.skipped.length > 0,
         recoveredCount: result.recoveredCount,
         reunitedNames: result.reunited,
@@ -1699,15 +1708,29 @@ async function stillWorthShowing(skipped: string[]): Promise<string[]> {
     },
 
     async acknowledgeSkippedFiles() {
-      const { skippedFiles } = get();
-      if (skippedFiles.length === 0) return;
+      const { skippedFiles, allSkippedFiles, rootPath } = get();
+      if (skippedFiles.length === 0 || !rootPath) return;
       // Cleared first: the acknowledgement is a settings write that can fail on
       // a read-only disk, and leaving the notice up because the bookkeeping
       // failed would be answering "I know" with "no you don't".
       set({ skippedFiles: [] });
       try {
-        const [marks, stored] = await Promise.all([fsService.fileMarks(skippedFiles), getAcknowledgedWarnings()]);
-        await setAcknowledgedWarnings(acknowledge(parseAcknowledgements(stored), skippedFiles, marks));
+        // Marks for everything the load skipped, not only what is on screen:
+        // a file acknowledged last month and still broken is in the first
+        // list and not the second, and pruning against the second alone
+        // would forget it and ask again next launch.
+        const [marks, stored] = await Promise.all([fsService.fileMarks(allSkippedFiles), getAcknowledgedWarnings()]);
+        const keyed = Object.fromEntries(Object.entries(marks).map(([path, mark]) => [keyWithin(rootPath, path), mark]));
+        // The one time the record is written is the time to drop what is
+        // gone from *this* world: an entry under this world's name whose file
+        // the load did not skip, or the disk does not describe. Entries for
+        // other worlds cannot be checked from here and are kept.
+        const worldName = keyWithin(rootPath, rootPath).replace(/\/$/, "");
+        const present = new Set(Object.keys(keyed));
+        const record = pruned(parseAcknowledgements(stored), (key) =>
+          key.startsWith(`${worldName}/`) ? present.has(key) : undefined,
+        );
+        await setAcknowledgedWarnings(acknowledge(record, skippedFiles.map((path) => keyWithin(rootPath, path)), keyed));
       } catch {
         // The notice is gone for this session either way; next launch asks
         // again, which is the right way round for a failure nobody saw.

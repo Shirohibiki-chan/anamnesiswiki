@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { acknowledge, parseAcknowledgements, unacknowledged } from "./acknowledgements";
+import { acknowledge, contentMark, keyWithin, parseAcknowledgements, pruned, unacknowledged } from "./acknowledgements";
 
 const marks = { "/w/Broken.json": "120:1000", "/w/Odd.json": "44:2000" };
 
@@ -60,5 +60,39 @@ describe("reading the settings file back", () => {
     expect(parseAcknowledgements(null)).toEqual({});
     expect(parseAcknowledgements(["a"])).toEqual({});
     expect(parseAcknowledgements("nope")).toEqual({});
+  });
+});
+
+describe("keying a file inside a world", () => {
+  it("is the world's name and the path inside it, whatever the slashes", () => {
+    expect(keyWithin("C:\\Users\\shiro\\Documents\\Anamnesis\\Valeraverse", "C:\\Users\\shiro\\Documents\\Anamnesis\\Valeraverse\\Canon\\Main Story.json")).toBe(
+      "Valeraverse/Canon/Main Story.json",
+    );
+    expect(keyWithin("/home/x/Anamnesis/Valeraverse/", "/home/x/Anamnesis/Valeraverse/Canon/a.json")).toBe("Valeraverse/Canon/a.json");
+  });
+
+  it("survives the world moving", () => {
+    expect(keyWithin("D:\\Worlds\\Valeraverse", "D:\\Worlds\\Valeraverse\\Canon\\a.json")).toBe(
+      keyWithin("C:\\Old\\Valeraverse", "C:\\Old\\Valeraverse\\Canon\\a.json"),
+    );
+  });
+
+  it("leaves a path outside the world as it is", () => {
+    expect(keyWithin("C:\\World", "D:\\elsewhere.json")).toBe("D:\\elsewhere.json");
+  });
+});
+
+describe("marking text", () => {
+  it("changes when the text does and not otherwise", () => {
+    expect(contentMark("a { color: red }")).toBe(contentMark("a { color: red }"));
+    expect(contentMark("a { color: red }")).not.toBe(contentMark("a { color: blue }"));
+  });
+});
+
+describe("pruning", () => {
+  it("drops what is known to be gone and keeps what cannot be checked", () => {
+    const record = { "a/one.json": "1:1", "a/two.json": "2:2", "b/three.json": "3:3" };
+    const out = pruned(record, (key) => (key === "a/one.json" ? true : key === "a/two.json" ? false : undefined));
+    expect(out).toEqual({ "a/one.json": "1:1", "b/three.json": "3:3" });
   });
 });

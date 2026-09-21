@@ -3,12 +3,18 @@
 // that couldn't be *written* looks exactly like a file that saved fine — the
 // text is still on screen, and the last successful save already flashed
 // "Saved". Nothing else in the app would ever tell them.
+import { useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { useProjectActions, useSaveErrors } from "../../hooks/use-project";
+import { SettingsModal } from "./SettingsModal";
 
 export function SaveWarning() {
   const saveErrors = useSaveErrors();
   const { dismissSaveErrors } = useProjectActions();
+  // The bug report, from where somebody is when something has just gone
+  // wrong. Settings → Report a Bug was the only way in, and somebody who has
+  // just watched a save fail is not in Settings.
+  const [reporting, setReporting] = useState(false);
   if (saveErrors.length === 0) return null;
 
   return (
@@ -24,7 +30,15 @@ export function SaveWarning() {
             <li key={message}>{message}</li>
           ))}
         </ul>
+        <p className="save-warning-message">
+          If this keeps happening,{" "}
+          <button type="button" className="ui-link" onClick={() => setReporting(true)}>
+            Report a Bug
+          </button>
+          .
+        </p>
       </div>
+      {reporting && <SettingsModal initialTab="report" onClose={() => setReporting(false)} />}
       <button type="button" className="ui-icon-btn ui-icon-btn-sm" aria-label="Dismiss" onClick={dismissSaveErrors}>
         <X size={13} />
       </button>

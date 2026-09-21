@@ -93,10 +93,10 @@ export function ThemeSettings() {
     openThemesFolder,
     deleteTheme,
     setMutedCovers,
+    blockedThemes,
+    acknowledgeStylesheetNotice,
   } = useTheme();
   const { confirmDestructive } = useDialogs();
-
-  const blocked = customThemes.filter((theme) => theme.blocked.length > 0);
 
   // Names the file, not just the theme, because that's what's being removed and
   // it's the thing she can go and check for afterwards. No undo to offer — the
@@ -175,8 +175,8 @@ export function ThemeSettings() {
       <FolderErrorNotice error={folderError} folder="themes" />
       <DeleteErrorNotice error={deleteError} />
       <ImportErrorNotice error={importError} />
-      {blocked.map((sheet) => (
-        <BlockedNotice key={sheet.file} sheet={sheet} />
+      {blockedThemes.map((sheet) => (
+        <BlockedNotice key={sheet.file} sheet={sheet} onAcknowledge={() => void acknowledgeStylesheetNotice("themes", sheet)} />
       ))}
 
       {/* Raised as a joke and kept because it's correct: bright colour on the

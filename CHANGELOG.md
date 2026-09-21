@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-21 — Loose ends
+
+### Additions
+
+- **Two more ways to a bug report.** The "couldn't be saved to disk" warning ends with *Report a Bug*, and so does the footnote of the `?` sheet — both open Settings on the Report a Bug section, from where you actually are when something has gone wrong.
+- **The "this file asked to load something from the internet" line can be acknowledged.** *I Know, Stop Telling Me* on it, in Theme and in Snippets, and it stays quiet until the file changes.
+
+### Fixes
+
+- **A world that has been moved or renamed no longer asks again about files it had already been told about.** The record of acknowledged warnings is kept by the world's name and the file's place inside it rather than by the full path, and it now tidies itself when something new is acknowledged rather than growing forever.
+
 ## 2026-09-21 — A dotted line under a name that could be a link
 
 ### Additions
@@ -144,13 +155,3 @@
 ### Fixes
 
 - On an expanded board, the *Note* and *View* buttons in the top-right row were squeezed to their first letter, and with a card selected the row ran off the edge of the window. The buttons take their width and the row wraps.
-
-## 2026-09-20 — A page on a board can be written in
-
-### Additions
-
-- **A page opened on a board takes typing.** Double-click it, or click it again once it is selected, and the box becomes the page's real editor — the same one as the page's own tab, with the slash menu, mentions, callouts, columns and the formatting bar — and what you type is saved to the page as it would be there. Escape or a click elsewhere puts the page back to being drawn. Undo inside the box is the page's; outside it, the board's. Earlier today the box was read-only; now it is where the page is written, and *Open* is still the way to the page in full.
-
-### Changes
-
-- A locked opened page is open for writing from the start rather than for reading, since a locked page cannot be moved anyway.

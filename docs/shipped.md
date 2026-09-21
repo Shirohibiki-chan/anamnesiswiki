@@ -7995,3 +7995,43 @@ transitive package cannot be imported by name.
 `e2e/marks-names-while-writing.e2e.ts`: a sentence naming Kalla Reyes gets
 one mark and no link; the setting takes it away and brings it back with the
 page still open.
+
+## Queued Adjustments — the 2026-08-27 loose ends ✅ Shipped 2026-09-21
+
+Five of the eight loose ends written down on 2026-08-27, done as one run;
+the bug report form still waits for one real submission, named checkpoints
+are their own item, and the orphaned property value stays a second look.
+
+**A way to the bug report from where something went wrong.** The save
+warning — the one notice that means the writing may not be on disk — now
+ends with *Report a Bug*, which opens Settings on that section; the `?`
+sheet's footnote has the same, since the help key is where somebody goes
+when something is wrong. Both open the settings dialog in place; the sheet
+wraps it so an Escape inside Settings does not close both.
+
+**The stylesheet notice can be acknowledged.** *I Know, Stop Telling Me* on
+the "asked to load something from the internet" line in Theme and Snippets,
+through the same record the load warning uses (`services/acknowledgements.ts`),
+keyed `stylesheet:<folder>:<file>` and marked by the file's text
+(`contentMark`), so an edited file speaks up again. The theme store reads
+the record with every scan and filters the notices in `use-theme`
+(`blockedThemes`, `blockedSnippets`).
+
+**The record is keyed inside the world and pruned.** Skipped-file
+acknowledgements were keyed by absolute path, so a moved or renamed world
+asked again about every file it had already been told about; `keyWithin`
+keys them `<world>/<relative path>` instead, and a move on the same disk
+keeps the size-and-modified-time mark. The record is pruned the one time it
+is written — on an acknowledgement — against every file the load skipped
+(`allSkippedFiles`, kept in the store for this alone): entries under this
+world's name whose file no longer fails, or no longer exists, go; entries
+for other worlds are kept, since a drive that is not plugged in is not a
+file that is gone.
+
+**Two hand measurements became rules, and Settings is swept.** `clipped-field`
+(a one-line box scrolling its own text out of sight, or a multi-line box
+hiding the rest with no scrollbar) and `narrow-centre` (the centre column
+under `CENTER_MIN_WIDTH`) joined the layout harness, both at an allowance of
+zero on every screen from the day they were written. Settings is now swept
+at both widths, one section at a time, with its counts recorded from the
+first run the way every other screen's were.
