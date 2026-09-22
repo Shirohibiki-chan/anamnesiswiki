@@ -4229,3 +4229,25 @@ export async function mediaMenuItems(window: Page, index: number): Promise<strin
   await window.keyboard.press("Escape");
   return items;
 }
+
+/**
+ * Opens BlockNote's own side menu — the handle beside a block in the writing
+ * — for the block `block` points at.
+ *
+ * Hovered twice on purpose. The menu appears on the first hover, and the
+ * hover's own scroll-into-view lands a moment later; BlockNote hides the
+ * menu on any scroll, and nothing re-summons it until the mouse moves
+ * again. On a window tall enough that nothing scrolls, once was enough,
+ * which is why this only ever failed on CI (2026-09-22, read off a
+ * diagnostic: the button there for 300ms, then gone for good).
+ */
+export async function openSideMenuOf(window: Page, block: Locator): Promise<void> {
+  await block.scrollIntoViewIfNeeded();
+  await block.hover();
+  await window.waitForTimeout(500);
+  const box = await block.boundingBox();
+  if (box) await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 1);
+  const handle = window.getByLabel("Open block menu");
+  await handle.waitFor({ state: "visible", timeout: WAIT_MS });
+  await handle.click();
+}
