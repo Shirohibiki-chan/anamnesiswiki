@@ -2,6 +2,12 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-20 — Boards inside a board, as tabs
+
+### Additions
+
+- **A strip of tabs along the bottom of every board:** the board itself and the boards inside it, like sheets in a workbook, with a **+** that makes another. Click a tab to open that board; the strip reads the same from any of them. The new boards are ordinary pages inside the first one — they show up in the tree, and renaming one there (or by its title) renames its tab. Nothing new is stored: the tabs are the tree, read the boards' way.
+
 ## 2026-09-20 — Video on a board
 
 ### Additions

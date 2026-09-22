@@ -1598,18 +1598,15 @@ async function stillWorthShowing(rootPath: string, skipped: string[]): Promise<s
     focusedId: null,
     navHistory: EMPTY_NAV_HISTORY,
 
-    // Resolves null for anything that means "this isn't an openable project"
-    // — missing or unreadable project.json, an unreadable folder — so callers
-    // have exactly one failure case to handle instead of a mix of nulls and
-    // thrown errors. Individually damaged node files don't fail the load; they
-    // come back in `skippedFiles` for the UI to report.
+    // Resolves null when there is no project here — no project.json, the
+    // folder gone — and **throws `ProjectUnreadableError` when there is one
+    // that could not be read**: a damaged project.json, a folder that will
+    // not list. Two answers rather than one because they want two different
+    // things done: a world that is gone is forgotten, a world that is damaged
+    // is still hers and is told about. Individually damaged node files don't
+    // fail the load; they come back in `skippedFiles` for the UI to report.
     async loadProject(rootPath) {
-      let result: Awaited<ReturnType<typeof fsService.loadProject>>;
-      try {
-        result = await fsService.loadProject(rootPath);
-      } catch {
-        return null;
-      }
+      const result = await fsService.loadProject(rootPath);
       if (!result) return null;
 
       // Any entry still on the stack closes over the project being replaced,

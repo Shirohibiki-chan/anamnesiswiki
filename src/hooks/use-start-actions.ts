@@ -179,11 +179,24 @@ export function useStartActions(): StartActions {
   // Split from the check so "open it anyway" has something to call that skips
   // it — one path that actually opens, reachable with or without the guard.
   const load = useCallback(
-    async (path: string, onFailure: (name: string) => Promise<void> | void) => {
+    async (path: string, onFailure: (name: string, reason: string | null) => Promise<void> | void) => {
       setIsBusy(true);
-      const result = await loadProject(path).finally(() => setIsBusy(false));
+      // Two ways to fail (project-store `loadProject`): null is a world that
+      // is not there, and a thrown `ProjectUnreadableError` is one that is
+      // there and could not be read, with the reason in it. The 2026-08-21
+      // report — a click on a listed world that did nothing she could see —
+      // was as much about the app having nothing to say as about not opening.
+      let result: Awaited<ReturnType<typeof loadProject>>;
+      try {
+        result = await loadProject(path);
+      } catch (e) {
+        setIsBusy(false);
+        await onFailure(fsService.fileNameFromPath(path), e instanceof Error ? e.message : String(e));
+        return;
+      }
+      setIsBusy(false);
       if (!result) {
-        await onFailure(fsService.fileNameFromPath(path));
+        await onFailure(fsService.fileNameFromPath(path), null);
         return;
       }
       setError(null);
@@ -197,8 +210,12 @@ export function useStartActions(): StartActions {
   const openFound = useCallback(
     async (path: string) => {
       const force = () =>
-        load(path, () => {
-          setError("That project's files couldn't be read. Try a different folder, or create a new one instead.");
+        load(path, (_name, reason) => {
+          setError(
+            reason
+              ? `That project couldn't be opened: ${reason}.`
+              : "That project's files couldn't be read. Try a different folder, or create a new one instead.",
+          );
           setOpenAnyway(null);
         });
       if (await refuseIfHeldElsewhere(path, fsService.fileNameFromPath(path), force)) return;
@@ -210,9 +227,15 @@ export function useStartActions(): StartActions {
   const openListed = useCallback(
     async (path: string, name: string) => {
       const force = () =>
-        load(path, async () => {
-          setError(`Couldn't open "${name}" — it may have moved, been deleted, or its files may be damaged.`);
+        load(path, async (_name, reason) => {
           setOpenAnyway(null);
+          if (reason) {
+            // Still hers and still where it was: a damaged file or a folder a
+            // sync client is holding is not a reason to drop it off the list.
+            setError(`Couldn't open "${name}": ${reason}. It's still in the list — try again once the folder can be read.`);
+            return;
+          }
+          setError(`Couldn't open "${name}" — it may have moved or been deleted.`);
           await forgetProject(path);
         });
       if (await refuseIfHeldElsewhere(path, name, force)) return;
