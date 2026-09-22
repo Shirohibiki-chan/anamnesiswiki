@@ -152,27 +152,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Known Bugs
 
-- **A project that refuses to open can say nothing at all.** Reported from use
-  2026-08-21: clicking Valeraverse on the start screen did nothing visible, and
-  the world stayed shut. The likely trigger was a stale open-claim — a
-  `pnpm tauri dev` build had been restarted under her while its marker was
-  still live, and the world opened normally once the marker aged past
-  `PROJECT_CLAIM_STALE_MS` — so the *refusal* was correct. **What is wrong is
-  that she saw no reason for it.** `openListed` and `openFound` both set an
-  error for every failure path, and `refuseIfHeldElsewhere` sets a specific one
-  naming the other window, so either that message is not rendering where she
-  was looking or the click never reached the handler. Find out which before
-  changing any of the copy.
-
-  **Two things make this worse than a missing message.** `loadProject` catches
-  everything and returns `null`, so a genuine exception and a missing folder
-  are indistinguishable by the time the UI sees them — there is nothing in the
-  app that can say *why*. And `openListed` calls `forgetProject` on failure, so
-  one silent failure also drops the world from the recent list, and every click
-  after that is against an entry that is already gone. Whatever the root cause
-  turns out to be, that pairing turns a transient refusal into something that
-  looks permanent.
-
 - **The error boundary at the root exists; the ones that would save the session
   do not.** `ErrorBoundary.tsx` went in 2026-08-27 and turned a blank window
   into a screen that says what happened — but it wraps the whole app, so all it

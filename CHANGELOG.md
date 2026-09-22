@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-21 — A world that won't open says why
+
+### Fixes
+
+- **A world that can't be opened now says what's wrong, and a damaged one stays on the list.** Before, a world whose `project.json` was damaged and a world whose folder had gone got the same one-line refusal, and both were dropped from the start screen's list — so the next click was against nothing, and there was no way to know which of the two had happened. Now a world that is there but can't be read says so with the reason (which file, and what the disk said) and stays listed for when the folder can be read again; a world that has genuinely moved or been deleted says that, and is forgotten.
+
 ## 2026-09-21 — A storyline opens showing all of itself
 
 ### Fixes
@@ -138,9 +144,3 @@
 ### Additions
 
 - **A Layers panel:** a **Layers** button at the top right of every board opens a list on the board's right of everything on it, top to bottom, each named — a page card by its page, a text or a note by its words, a video by its file, anything else by what it is (Rectangle, Arrow, Drawing, Highlight…). A shape with words on it takes the words as its name, and a frame's shapes are listed under the frame's row. Click a row to select the shape (Shift+click to add it to the selection); the board scrolls to it if none of it was on screen. Drag a row up or down to change what is in front of what — the move is undoable like any other. The eye on a row hides a shape (see-through and locked, so nothing can bump it) and shows it again as it was; the lock locks and unlocks it. The panel stays on the right whether the board is in the page or expanded.
-
-## 2026-09-20 — Boards inside a board, as tabs
-
-### Additions
-
-- **A strip of tabs along the bottom of every board:** the board itself and the boards inside it, like sheets in a workbook, with a **+** that makes another. Click a tab to open that board; the strip reads the same from any of them. The new boards are ordinary pages inside the first one — they show up in the tree, and renaming one there (or by its title) renames its tab. Nothing new is stored: the tabs are the tree, read the boards' way.

@@ -67,7 +67,7 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
   },
 }));
 
-const { loadProject } = await import("./filesystem-service");
+const { loadProject, ProjectUnreadableError } = await import("./filesystem-service");
 const { MOVE_TEMP_PREFIX } = await import("../constants/paths");
 
 const ROOT = "/World";
@@ -97,9 +97,13 @@ describe("loadProject", () => {
     expect(await loadProject(ROOT)).toBeNull();
   });
 
-  it("returns null when project.json itself is corrupt, rather than throwing", async () => {
+  // This used to resolve null, the same as no project.json at all, and the
+  // start screen could not tell a world that had moved from one whose file
+  // was damaged — so it forgot both. The reason is the whole point now.
+  it("throws, saying why, when project.json is there but corrupt", async () => {
     put("project.json", "{ not json");
-    expect(await loadProject(ROOT)).toBeNull();
+    await expect(loadProject(ROOT)).rejects.toThrow(ProjectUnreadableError);
+    await expect(loadProject(ROOT)).rejects.toThrow(/project\.json file couldn't be read/);
   });
 
   it("loads leaf pages, nestable pages, and folders", async () => {

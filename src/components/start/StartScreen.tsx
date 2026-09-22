@@ -188,6 +188,15 @@ export function StartScreen() {
   // actually gone. `healRefs` keeps a ref it can't match on purpose — a project
   // on an unplugged drive comes back to the same chips it left — so a failed
   // delete that had already unfiled it would quietly lose her filing.
+  // A refusal is the one time the list is worth looking at again: a world
+  // that has gone was just forgotten (use-start-actions), and its tile must
+  // go with the message saying so rather than sit there for one more click.
+  // After a successful open this screen is gone before the scan lands.
+  async function openProject(project: ListedWorld) {
+    await actions.openListed(project.path, project.name);
+    void refreshWorlds();
+  }
+
   async function confirmProjectDelete(project: ListedWorld) {
     const ok = await confirmDestructive(
       `Delete "${project.name}" and everything in it? The whole folder goes to your recycle bin, so you can still get it back from there.`,
@@ -273,7 +282,7 @@ export function StartScreen() {
             total={worlds.length}
             now={scannedAt}
             disabled={actions.isBusy}
-            onOpen={(project) => void actions.openListed(project.path, project.name)}
+            onOpen={(project) => void openProject(project)}
             onManage={() => setIsManagingPins(true)}
           />
         )}
@@ -340,7 +349,7 @@ export function StartScreen() {
           isScanning={isScanning}
           now={scannedAt}
           disabled={actions.isBusy}
-          onOpen={(project) => void actions.openListed(project.path, project.name)}
+          onOpen={(project) => void openProject(project)}
           onSetCover={(project) =>
             void actions.setProjectCover(project).then((changed) => {
               if (changed) void refreshWorlds();
@@ -407,7 +416,7 @@ export function StartScreen() {
         releases={releases}
         now={scannedAt}
         disabled={actions.isBusy}
-        onOpen={(project) => void actions.openListed(project.path, project.name)}
+        onOpen={(project) => void openProject(project)}
         onStartFromTemplate={() => setIsPickingTemplate(true)}
         onOpenFolder={() => void actions.pickFolderToOpen()}
         onImport={() => openImport()}

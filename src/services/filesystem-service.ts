@@ -413,12 +413,32 @@ export type LoadedProject = {
   boards: Record<string, Board>;
 };
 
+/**
+ * A world whose folder is there but could not be read — `project.json`
+ * damaged, or the folder itself refusing to be listed. Distinct from null,
+ * which means *no world here*: the two want different answers from whoever
+ * asked. A world that is gone is forgotten; a world that is damaged or
+ * locked is still hers and stays listed, with the reason said. (Known Bug,
+ * 2026-08-21: a refusal with no reason and a list that forgot the world.)
+ */
+export class ProjectUnreadableError extends Error {
+  constructor(
+    /** What could not be read, in her terms. */
+    public readonly what: string,
+    cause: unknown,
+  ) {
+    super(`${what} — ${cause instanceof Error ? cause.message : String(cause)}`);
+    this.name = "ProjectUnreadableError";
+  }
+}
+
 // A project folder is plain JSON on the user's own disk, synced by whatever
 // they like and editable by hand — so a malformed file is a question of when,
 // not if (a Dropbox conflict copy, a crash mid-write, a stray edit). One bad
 // file must never cost the user the other 74 pages, so unreadable nodes are
 // skipped and reported rather than thrown. `project.json` itself is the one
-// exception: without it there's no project to open at all.
+// exception: without it there's no project to open at all — and a damaged
+// one is not "no project", it is a refusal with a reason, thrown as such.
 export async function loadProject(rootPath: string): Promise<LoadedProject | null> {
   const projectPath = joinPath(rootPath, PROJECT_FILE);
   if (!(await exists(projectPath))) return null;
@@ -426,8 +446,8 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
   let project: Project;
   try {
     project = JSON.parse(await readTextFile(projectPath)) as Project;
-  } catch {
-    return null;
+  } catch (cause) {
+    throw new ProjectUnreadableError(`its ${PROJECT_FILE} file couldn't be read`, cause);
   }
 
   // Every world saved before ids existed arrives here without one. Mint it and
@@ -459,7 +479,12 @@ export async function loadProject(rootPath: string): Promise<LoadedProject | nul
     boards: new Map(),
     limited: createReadLimiter(READ_CONCURRENCY),
   };
-  const rootEntries = await ctx.limited(() => readDir(rootPath));
+  let rootEntries: Awaited<ReturnType<typeof readDir>>;
+  try {
+    rootEntries = await ctx.limited(() => readDir(rootPath));
+  } catch (cause) {
+    throw new ProjectUnreadableError("its folder couldn't be listed", cause);
+  }
   const walked = await walkEntries(rootPath, rootEntries, null, ctx);
 
   // Before anything else looks at the graph: two files claiming one id have to

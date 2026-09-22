@@ -6353,3 +6353,17 @@ Gap cursors *between* blocks (in the block group) are left alone: beside a
 table or a picture they are the only way to type before it. Don't widen the
 guard to those, and don't remove it when a callout's chrome changes — any
 non-editable padding on any custom block brings the case back.
+
+## A world that won't open
+
+`loadProject` (the store's, over the service's) has two failure answers on
+purpose, since 2026-09-21: **null** means *no world here* — no
+`project.json`, the folder gone — and a thrown **`ProjectUnreadableError`**
+means *a world is here and could not be read*, with the reason in its
+message (which file, and what the disk said). The start screen forgets a
+world on the first and keeps it listed on the second, because a damaged file
+or a folder a sync client is holding is not a reason to drop the world off
+the list, and the 2026-08-21 report was as much about the app having nothing
+to say as about not opening. Don't collapse the two back into one null —
+that was the shape that produced the bug — and don't catch the throw
+anywhere that can't put the reason in front of her.
