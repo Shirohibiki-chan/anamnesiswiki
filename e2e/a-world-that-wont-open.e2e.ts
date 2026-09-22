@@ -35,6 +35,9 @@ describe("a world that won't open", () => {
 
   it("says what is wrong with a damaged one, and keeps it on the list", async () => {
     await writeFile(projectFile, "{ not json", "utf8");
+    // The list is scanned off the disk after the screen appears; counted
+    // before the first tile is there, it is zero on a slow enough runner.
+    await app.window.locator(TILE).first().waitFor({ state: "visible", timeout: 10_000 });
     const tiles = await app.window.locator(TILE).count();
     await app.window.locator(TILE).first().click();
     const line = app.window.locator(ERROR_LINE);
