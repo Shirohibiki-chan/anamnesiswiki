@@ -283,9 +283,18 @@ the other way. Plain text is the default, on the grounds that its worst case
 is missing bold and Markdown's is litter in a box about to be fed to a bot.
 See `docs/handoff.md` § What Ctrl+C leaves behind.
 
-**What is left is pasting in** (Queued Adjustments): plain text read as text,
-with both of BlockNote's defaults off. Nothing there needs deciding — the
-anti-goals above already say what it should do.
+**The pasting-in half was built the same day**, and it took one thing the
+plan did not know: turning BlockNote's two Markdown options off is not
+enough. tiptap's Bold, Italic, Strike and Code marks each carry a *paste
+rule* — a regex over whatever was just pasted — and those run whatever the
+paste handler decided, so asterisks were still being eaten after the options
+were off. Found by instrumenting the real app rather than by reading, which
+is the only way it could have been found. The literal reading now avoids the
+paste pipeline entirely. Ctrl+Shift+V asks for the Markdown one.
+
+**What is left of this entry is the file importer**, which is a different
+code path from the clipboard and still has to be checked against the same
+four anti-goals.
 
 **Two things about the tools they're leaving, both worth not repeating:**
 

@@ -147,6 +147,12 @@ export const EDITOR_KEYS: readonly FixedKey[] = [
   { key: "Shift+Tab", what: "Un-nest it" },
   { key: "Z", mod: true, what: "Undo, inside the writing" },
   { key: "Y", mod: true, what: "Redo, inside the writing" },
+  // The one row here that is ours rather than the editor's (2026-09-22).
+  // Pasting is otherwise literal, so this is the way to ask for the other
+  // reading — see services/editor-blocks/paste-clipboard.ts. It is on this
+  // sheet rather than in the rebindable list above because it is not a
+  // command the app runs: it changes how the browser's own paste is read.
+  { key: "Shift+V", mod: true, what: "Paste as Markdown — reads ** and # as formatting" },
 ];
 
 /**
@@ -199,6 +205,7 @@ export const EDITOR_RESERVED_BINDINGS: Binding[] = [
   { key: "Enter", mod: true },
   { key: "ArrowUp", mod: true },
   { key: "ArrowDown", mod: true },
+  { key: "v", mod: true, shift: true }, // paste as Markdown, ours since 2026-09-22
 ];
 
 // Not the editor's, but not ours to take either — the OS and the webview
