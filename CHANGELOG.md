@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-21 — A click beside a callout's words
+
+### Fixes
+
+- **Clicking the coloured edge of a callout used to leave you with a caret that wasn't in it.** The strip of padding between a callout's border and its first word counted as "beside the block" rather than "in it", so a click there put an invisible caret next to the words: typing landed nowhere, Ctrl+End didn't move, and Enter did nothing at all. This was the bug written down as "Enter at the end of a fresh Note page's last line does nothing" — the caret was never on that line. A click there now puts the caret at the start of the callout's words, where you can see it.
+
 ## 2026-09-21 — A version you name is kept
 
 ### Additions
@@ -143,9 +149,3 @@
 ### Adjustments
 
 - Internal: the drawing library's patch now also keeps its link icon off a video box, as it does off a sticky note. **After updating, restart the launcher rather than reloading the window.**
-
-## 2026-09-20 — A highlighter for boards
-
-### Additions
-
-- **A *Highlighter* button in the board's top-right row, and Shift+P.** It is the pen with a marker's settings — wide, half see-through, yellow to start with — so it is a tool you pick, not three settings to remember. Each stroke goes *under* everything already drawn, so a highlight over words or a shape leaves them readable. It stays in hand for the next stroke; Escape or any other tool puts it down, and the pen gets its own colour, width and opacity back. Pick a different colour from the styles panel while it is in hand and the highlighter remembers it.

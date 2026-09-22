@@ -6329,3 +6329,22 @@ Deferred on purpose, not forgotten:
 - Not built and not scoped: theme switcher and the five extra palettes, cloud
   sync, mobile, user-editable templates, interactive atlas, timeline views, and
   any LLM feature in the editor.
+
+## Callouts and the gap cursor
+
+Every block made with BlockNote's `createBlockSpec` is `isolating`, and
+ProseMirror's gap cursor treats the edge of an isolating block as a place a
+caret may sit *beside* the block. A callout has padding and an icon between
+its border and its first word, so a click there lands on that edge and the
+result is an invisible caret inside the block container but outside the
+block's words — typing goes nowhere, Ctrl+End does not move it, and Enter
+throws (`Cannot join blockGroup onto blockContainer`). This was the
+2026-09-21 "Enter does nothing on a fresh Note page" bug, misread at the
+time as being about the last line.
+
+`editor-blocks/callout-caret.ts` moves any gap cursor that lands *inside a
+block container* into the nearest words and forces the drawn caret there.
+Gap cursors *between* blocks (in the block group) are left alone: beside a
+table or a picture they are the only way to type before it. Don't widen the
+guard to those, and don't remove it when a callout's chrome changes — any
+non-editable padding on any custom block brings the case back.

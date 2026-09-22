@@ -1195,6 +1195,25 @@ export async function editorBoldText(window: Page): Promise<string[]> {
   return (await window.locator(`${EDITOR} strong`).allInnerTexts()).map(normalize);
 }
 
+/** How many lines — top-level blocks — the open page's writing has. */
+export async function editorLineCount(window: Page): Promise<number> {
+  return window.locator(`${EDITOR} > .bn-block-group > ${EDITOR_BLOCK}`).count();
+}
+
+/** The words in the first callout on the open page. */
+export async function firstCalloutText(window: Page): Promise<string> {
+  return normalize(await window.locator(`${EDITOR} [data-content-type^="callout"]`).first().innerText());
+}
+
+/**
+ * Clicks the coloured edge of the first callout on the open page — its
+ * padding, left of the words — which is where a caret used to land *beside*
+ * the block rather than in it (2026-09-21).
+ */
+export async function clickFirstCalloutEdge(window: Page): Promise<void> {
+  await window.locator(`${EDITOR} [data-content-type^="callout"]`).first().click({ position: { x: 4, y: 6 } });
+}
+
 /** Every run of italic text in the open page, in order. */
 export async function editorItalicText(window: Page): Promise<string[]> {
   return (await window.locator(`${EDITOR} em`).allInnerTexts()).map(normalize);
