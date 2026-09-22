@@ -2,6 +2,17 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-20 — Video on a board
+
+### Additions
+
+- **Drop a video file on a board and it plays there.** The file goes into *Library* like a picture would, the board only points at it, and it lands where you dropped it as a wide-screen box showing its first frame with a play mark. Click the mark and it plays with the usual controls; when it is paused or finished it is a still again, which is when it moves, resizes and locks like any shape. MP4, WebM, MOV, M4V and Ogg.
+- **A video in Library can be dragged onto a board** like a picture, with no second copy of the file made. Library shows a video's first frame on its tile and counts a board using it, so it cannot be deleted from under the board.
+
+### Adjustments
+
+- Internal: the drawing library's patch now also keeps its link icon off a video box, as it does off a sticky note. **After updating, restart the launcher rather than reloading the window.**
+
 ## 2026-09-20 — A highlighter for boards
 
 ### Additions
