@@ -25,6 +25,7 @@ import {
 import type { StorylineBand, StorylineEdge } from "../constants/schema";
 import { scenesOnBand, type DrawnNote, type DrawnScene, type StorylineModel,
   clampNodeSize,
+  canvasBounds,
   sceneHeight,
   sceneWidth,
   type SceneHeights,
@@ -35,41 +36,8 @@ type Point = { x: number; y: number };
 /** An edge with both ends resolved to where its scenes actually are. */
 export type PlacedStorylineEdge = StorylineEdge & { x1: number; y1: number; x2: number; y2: number };
 
-export type StorylineBounds = { minX: number; minY: number; width: number; height: number };
-
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
-}
-
-/**
- * The box the whole canvas occupies, in canvas units.
- *
- * Node size is included rather than only the centres, because a scene is a card
- * and half of it hangs outside its own point — fitting to the centres alone
- * crops the leftmost and rightmost cards in half every time.
- */
-function sceneBounds(
-  scenes: { id: string; x: number; y: number; width?: number }[],
-  heights: SceneHeights,
-  padding: number,
-): StorylineBounds {
-  if (scenes.length === 0) return { minX: -padding, minY: -padding, width: padding * 2, height: padding * 2 };
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const scene of scenes) {
-    minX = Math.min(minX, scene.x - sceneWidth(scene) / 2);
-    maxX = Math.max(maxX, scene.x + sceneWidth(scene) / 2);
-    minY = Math.min(minY, scene.y - STORYLINE_NODE_HEIGHT / 2);
-    maxY = Math.max(maxY, scene.y - STORYLINE_NODE_HEIGHT / 2 + sceneHeight(scene.id, heights));
-  }
-  return {
-    minX: minX - padding,
-    minY: minY - padding,
-    width: maxX - minX + padding * 2,
-    height: maxY - minY + padding * 2,
-  };
 }
 
 /**
@@ -304,9 +272,32 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     return placed;
   }, [model.edges, scenes, heights]);
 
+  const notes = useMemo<DrawnNote[]>(
+    () => model.notes.map((note) => ({ ...note, ...(dragging[note.id] ?? {}) })),
+    [model.notes, dragging],
+  );
+
+  const bands = useMemo<StorylineBand[]>(
+    () =>
+      model.bands.map((band) => ({
+        ...band,
+        ...(dragging[band.id] ?? {}),
+        ...(resizing && resizing.id === band.id ? resizing.size : {}),
+      })),
+    [model.bands, dragging, resizing],
+  );
+
   // Bare heights here too: this box is what the picture is centred on, and
-  // a card growing as words are typed into it must not slide the rest.
-  const bounds = useMemo(() => sceneBounds(scenes, {}, STORYLINE_FIT_PADDING), [scenes]);
+  // a card growing as words are typed into it must not slide the rest. The
+  // notes and bands are in it (Known Bug, 2026-09-09) at the positions they
+  // are being dragged to, as the scenes are — but a band at its *stored*
+  // size, not the size under the hand pulling its corner: a resize that
+  // widened the box would recentre the picture under that hand, which is
+  // the one gesture where the thing being moved is the edge itself.
+  const bounds = useMemo(
+    () => canvasBounds({ scenes, notes, bands: model.bands.map((band) => ({ ...band, ...(dragging[band.id] ?? {}) })) }, {}, STORYLINE_FIT_PADDING),
+    [scenes, notes, model.bands, dragging],
+  );
 
   /**
    * The zoom that fits the whole canvas in the window it opened into.
@@ -321,7 +312,7 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     // refit the picture and move every other card while she is typing — the
     // view's own scenario checks exactly that. A tall card may run a little
     // past the bottom of a fresh fit; the canvas pans.
-    const box = sceneBounds(model.scenes, {}, STORYLINE_FIT_PADDING);
+    const box = canvasBounds(model, {}, STORYLINE_FIT_PADDING);
     if (!stageSize.width || !stageSize.height || !box.width || !box.height) return 1;
     return clamp(
       Math.min(stageSize.width / box.width, stageSize.height / box.height),
@@ -330,7 +321,7 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
       STORYLINE_MIN_FIT_ZOOM,
       STORYLINE_MAX_FIT_ZOOM,
     );
-  }, [model.scenes, stageSize]);
+  }, [model, stageSize]);
 
   const zoom = clamp(fitZoom * zoomFactor, STORYLINE_MIN_ZOOM, STORYLINE_MAX_ZOOM);
 
@@ -536,21 +527,6 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
    * band drag move a band and six scenes in one gesture without a second map to
    * keep in step.
    */
-  const notes = useMemo<DrawnNote[]>(
-    () => model.notes.map((note) => ({ ...note, ...(dragging[note.id] ?? {}) })),
-    [model.notes, dragging],
-  );
-
-  const bands = useMemo<StorylineBand[]>(
-    () =>
-      model.bands.map((band) => ({
-        ...band,
-        ...(dragging[band.id] ?? {}),
-        ...(resizing && resizing.id === band.id ? resizing.size : {}),
-      })),
-    [model.bands, dragging, resizing],
-  );
-
   const startNoteDrag = useCallback((event: React.PointerEvent<HTMLElement>, note: DrawnNote) => {
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);

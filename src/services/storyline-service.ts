@@ -57,6 +57,63 @@ export function sceneWidth(node: { width?: number }): number {
   return node.width ?? STORYLINE_NODE_WIDTH;
 }
 
+/** The box the canvas occupies, in canvas units: top-left corner and size. */
+export type StorylineBounds = { minX: number; minY: number; width: number; height: number };
+
+/** What the box is drawn round — each list may be the stored one or the one mid-gesture. */
+export type BoundedCanvas = {
+  scenes: readonly { id: string; x: number; y: number; width?: number }[];
+  notes: readonly { x: number; y: number; width: number }[];
+  bands: readonly { x: number; y: number; width: number; height: number }[];
+};
+
+/**
+ * The box the whole canvas occupies, in canvas units.
+ *
+ * Node size is included rather than only the centres, because a scene is a
+ * card and half of it hangs outside its own point — fitting to the centres
+ * alone crops the leftmost and rightmost cards in half every time.
+ *
+ * **Notes and bands count as well as scenes (Known Bug, 2026-09-09).** The
+ * fit used to be to the scenes only, so a note dropped to the right of the
+ * last scene, or a band drawn round empty space, was on the canvas and off
+ * the screen every time the page was opened, until somebody dragged the
+ * view. A note is sized by its text and has no stored height, so it counts
+ * as one bare row tall — enough to bring it on screen, and it is where the
+ * eye goes next anyway. A band is the one thing with a real size.
+ */
+export function canvasBounds(canvas: BoundedCanvas, heights: SceneHeights, padding: number): StorylineBounds {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const scene of canvas.scenes) {
+    minX = Math.min(minX, scene.x - sceneWidth(scene) / 2);
+    maxX = Math.max(maxX, scene.x + sceneWidth(scene) / 2);
+    minY = Math.min(minY, scene.y - STORYLINE_NODE_HEIGHT / 2);
+    maxY = Math.max(maxY, scene.y - STORYLINE_NODE_HEIGHT / 2 + sceneHeight(scene.id, heights));
+  }
+  for (const note of canvas.notes) {
+    minX = Math.min(minX, note.x);
+    maxX = Math.max(maxX, note.x + note.width);
+    minY = Math.min(minY, note.y);
+    maxY = Math.max(maxY, note.y + STORYLINE_NODE_HEIGHT);
+  }
+  for (const band of canvas.bands) {
+    minX = Math.min(minX, band.x);
+    maxX = Math.max(maxX, band.x + band.width);
+    minY = Math.min(minY, band.y);
+    maxY = Math.max(maxY, band.y + band.height);
+  }
+  if (minX === Infinity) return { minX: -padding, minY: -padding, width: padding * 2, height: padding * 2 };
+  return {
+    minX: minX - padding,
+    minY: minY - padding,
+    width: maxX - minX + padding * 2,
+    height: maxY - minY + padding * 2,
+  };
+}
+
 /** A card's size held between the floors and the ceilings — used mid-drag too, so a card never collapses on the way. */
 export function clampNodeSize(size: { width: number; height: number }): { width: number; height: number } {
   return {

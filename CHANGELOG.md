@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-21 — A storyline opens showing all of itself
+
+### Fixes
+
+- **A note or a band put out past the scenes is on the screen when the storyline is opened.** The canvas used to fit itself to the scenes alone, so a note dropped to the right of the last scene, or a band drawn round empty space, was there on the canvas and off the edge of the window every time the page opened, until you dragged the view to find it. The fit now takes the notes and the bands into account as well.
+
 ## 2026-09-21 — A click beside a callout's words
 
 ### Fixes
@@ -138,14 +144,3 @@
 ### Additions
 
 - **A strip of tabs along the bottom of every board:** the board itself and the boards inside it, like sheets in a workbook, with a **+** that makes another. Click a tab to open that board; the strip reads the same from any of them. The new boards are ordinary pages inside the first one — they show up in the tree, and renaming one there (or by its title) renames its tab. Nothing new is stored: the tabs are the tree, read the boards' way.
-
-## 2026-09-20 — Video on a board
-
-### Additions
-
-- **Drop a video file on a board and it plays there.** The file goes into *Library* like a picture would, the board only points at it, and it lands where you dropped it as a wide-screen box showing its first frame with a play mark. Click the mark and it plays with the usual controls; when it is paused or finished it is a still again, which is when it moves, resizes and locks like any shape. MP4, WebM, MOV, M4V and Ogg.
-- **A video in Library can be dragged onto a board** like a picture, with no second copy of the file made. Library shows a video's first frame on its tile and counts a board using it, so it cannot be deleted from under the board.
-
-### Adjustments
-
-- Internal: the drawing library's patch now also keeps its link icon off a video box, as it does off a sticky note. **After updating, restart the launcher rather than reloading the window.**

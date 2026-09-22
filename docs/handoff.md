@@ -305,7 +305,12 @@ Phase 25, closed 2026-09-09. What binds the code:
   a *stable* ref callback — an inline one loops forever) and the lines, Tidy
   up and the untidy check read from it. The two things that must *not* read
   it are the fit and the picture's centring: those use bare heights so typing
-  into a card never slides the rest, which the canvas scenario checks. The
+  into a card never slides the rest, which the canvas scenario checks. Both
+  cover the notes and the bands as well as the scenes (`canvasBounds`, since
+  2026-09-21 — before that a note past the last scene opened off screen),
+  with one deliberate hole: the centring takes a band at its *stored* size,
+  not the size under the hand resizing it, because a box that widened with
+  the drag would recentre the picture under that hand. The
   stored `y` is the middle of the bare top row and the card grows downward
   from it. The cast hangs off the card's corner, outside its box, only when
   there is one; and because the tidy position now moves with the type size,

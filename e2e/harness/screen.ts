@@ -2817,6 +2817,33 @@ export async function dragStorylineBand(window: Page, index: number, byX: number
   await window.mouse.up();
 }
 
+/**
+ * Drags a note by a number of screen pixels, grabbed by its top corner —
+ * clear of the words, where a press would start editing them.
+ */
+export async function dragStorylineNote(window: Page, index: number, byX: number, byY: number): Promise<void> {
+  const box = await window.locator(STORYLINE_NOTE).nth(index).boundingBox();
+  if (!box) throw new Error(`No note at index ${index}`);
+  const from = { x: box.x + 6, y: box.y + 6 };
+  await window.mouse.move(from.x, from.y);
+  await window.mouse.down();
+  await window.mouse.move(from.x + byX, from.y + byY, { steps: 10 });
+  await window.mouse.up();
+}
+
+/** Whether a note is wholly inside the stage — on the screen, not merely on the canvas. */
+export async function storylineNoteOnScreen(window: Page, index: number): Promise<boolean> {
+  const stage = await window.locator(STORYLINE_STAGE).boundingBox();
+  const note = await window.locator(STORYLINE_NOTE).nth(index).boundingBox();
+  if (!stage || !note) return false;
+  return (
+    note.x >= stage.x &&
+    note.y >= stage.y &&
+    note.x + note.width <= stage.x + stage.width &&
+    note.y + note.height <= stage.y + stage.height
+  );
+}
+
 /** Where every note sits on screen, in the order the canvas draws them. */
 export async function storylineNotePlacements(window: Page): Promise<{ x: number; y: number }[]> {
   const placed: { x: number; y: number }[] = [];

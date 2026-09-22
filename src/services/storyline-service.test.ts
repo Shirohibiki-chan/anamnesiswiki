@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createNode, createTab, type Node, type Storyline } from "../constants/schema";
+import { STORYLINE_NODE_HEIGHT, STORYLINE_NODE_WIDTH } from "../constants/storyline";
 import {
   addBand,
   addNote,
   addSceneNode,
+  canvasBounds,
   connect,
   createStoryline,
   disconnect,
@@ -634,5 +636,42 @@ describe("sceneCast", () => {
     const scene = createNode({ parentId: null, templateKey: "scene", name: "Quiet" });
     expect(sceneCast(scene.id, { [scene.id]: scene }, "s")).toEqual([]);
     expect(sceneCast("missing", {}, "s")).toEqual([]);
+  });
+});
+
+describe("canvasBounds", () => {
+  const scene = { id: "s", x: 100, y: 100 };
+
+  it("is the scenes' cards, padded", () => {
+    const box = canvasBounds({ scenes: [scene], notes: [], bands: [] }, {}, 10);
+    expect(box).toEqual({
+      minX: 100 - STORYLINE_NODE_WIDTH / 2 - 10,
+      minY: 100 - STORYLINE_NODE_HEIGHT / 2 - 10,
+      width: STORYLINE_NODE_WIDTH + 20,
+      height: STORYLINE_NODE_HEIGHT + 20,
+    });
+  });
+
+  it("reaches a note put out past the last scene", () => {
+    const note = { x: 900, y: 40, width: 220 };
+    const box = canvasBounds({ scenes: [scene], notes: [note], bands: [] }, {}, 0);
+    expect(box.minX + box.width).toBe(900 + 220);
+    expect(box.minY).toBe(40);
+  });
+
+  it("reaches a band drawn round empty space", () => {
+    const band = { x: -400, y: 300, width: 300, height: 200 };
+    const box = canvasBounds({ scenes: [scene], notes: [], bands: [band] }, {}, 0);
+    expect(box.minX).toBe(-400);
+    expect(box.minY + box.height).toBe(500);
+  });
+
+  it("is a note or a band alone when there are no scenes yet", () => {
+    const box = canvasBounds({ scenes: [], notes: [{ x: 10, y: 20, width: 220 }], bands: [] }, {}, 0);
+    expect(box).toEqual({ minX: 10, minY: 20, width: 220, height: STORYLINE_NODE_HEIGHT });
+  });
+
+  it("is a small box round nothing when the canvas is empty", () => {
+    expect(canvasBounds({ scenes: [], notes: [], bands: [] }, {}, 48)).toEqual({ minX: -48, minY: -48, width: 96, height: 96 });
   });
 });
