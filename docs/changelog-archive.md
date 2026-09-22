@@ -2,6 +2,12 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-20 — Boards in the exports
+
+### Additions
+
+- **A board goes into the exports as a picture.** The Markdown folder and the website carry a PNG of each board — the drawing as it looks, with page cards, notes, bookmarks and videos drawn in as labelled boxes, in their places — and the board's page shows it. The one big Markdown file carries the picture inside itself. The export window says how many boards went in as pictures. The LegendKeeper export can't carry a drawing, so it says a board goes across as an empty page and the board stays here as it is. A board with nothing on it gets no picture.
+
 ## 2026-09-20 — A Layers panel on the board
 
 ### Additions

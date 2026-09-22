@@ -247,15 +247,21 @@ async function captureAssets(rootPath: string, nodes: Node[]): Promise<CapturedA
     // a photo held only by a block in the writing is as deleted as the
     // portrait when the page goes, so it has to be readable to come back.
     for (const fileName of [node.image, node.banner, ...blockImageFiles(node.blocks)]) {
-      if (!fileName) continue;
-      try {
-        captured.push({ fileName, bytes: await fsService.readAssetImage(rootPath, fileName) });
-      } catch {
-        // See above.
-      }
+      const kept = await captureAsset(rootPath, fileName);
+      if (kept) captured.push(kept);
     }
   }
   return captured;
+}
+
+/** One picture's bytes, read off disk now; null for no file or one that won't read (see above). */
+async function captureAsset(rootPath: string, fileName: string | undefined): Promise<CapturedAsset | null> {
+  if (!fileName) return null;
+  try {
+    return { fileName, bytes: await fsService.readAssetImage(rootPath, fileName) };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -642,7 +648,7 @@ export type ProjectStoreState = {
    * to its own record. See `blockImage` in block-service.ts — nothing here
    * decides that for itself.
    */
-  setNodeImageFromLibrary: (nodeId: string, blockId: string, fileName: string) => void;
+  setNodeImageFromLibrary: (nodeId: string, blockId: string, fileName: string) => Promise<void>;
   clearNodeImage: (nodeId: string, blockId: string) => Promise<void>;
   setImageAlt: (nodeId: string, blockId: string, alt: string) => void;
   setImageFocus: (nodeId: string, blockId: string, focusY: number) => void;
@@ -742,7 +748,7 @@ export type ProjectStoreState = {
   pruneAssetFolders: (files: { fileName: string; size: number }[]) => void;
   setNodeBanner: (nodeId: string, data: Uint8Array, extension: string) => Promise<void>;
   /** The cover's half of `setNodeImageFromLibrary`. */
-  setNodeBannerFromLibrary: (nodeId: string, fileName: string) => void;
+  setNodeBannerFromLibrary: (nodeId: string, fileName: string) => Promise<void>;
   setBannerFocus: (nodeId: string, focusY: number) => void;
   clearNodeBanner: (nodeId: string) => Promise<void>;
   /**
@@ -1177,12 +1183,20 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
    * while the user is still moving — a text field, a dragged meter — so a run
    * of writes reverses as the one edit it looked like; see mergeRepeat. Leave
    * it off for anything that happens once per click.
+   *
+   * `leaving` is a picture this patch stops pointing at, read off disk
+   * beforehand (`keepPicture`), for the one case a field is not enough: the
+   * caller is about to delete the file once nothing else shows it, so undo
+   * has to write the bytes back before it puts the field back, and redo has
+   * to release the file again. Known Bug until 2026-09-21 — everything else
+   * the panel did was undoable, and this was the one that wasn't.
    */
   const patchNode = (
     label: string,
     nodeId: string,
     patch: Partial<Omit<Node, "id">>,
     mergeKey?: string,
+    leaving: CapturedAsset | null = null,
   ): void => {
     const node = get().nodes[nodeId];
     if (!node) return;
@@ -1194,11 +1208,30 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     get().updateNode(nodeId, patch);
     record(
       label,
-      () => get().updateNode(nodeId, before as Partial<Omit<Node, "id">>),
-      () => get().updateNode(nodeId, after),
+      async () => {
+        const { rootPath } = get();
+        if (leaving && rootPath) await fsService.saveAssetImage(rootPath, leaving.fileName, leaving.bytes);
+        get().updateNode(nodeId, before as Partial<Omit<Node, "id">>);
+      },
+      () => {
+        get().updateNode(nodeId, after);
+        const { rootPath } = get();
+        if (leaving && rootPath) releaseAsset(rootPath, leaving.fileName);
+      },
       mergeKey,
     );
   };
+
+  /**
+   * The picture a slot is about to stop showing, read off disk before the
+   * change lands. Always read rather than only when the change would delete
+   * the file: whether it will be deleted is decided *after* the field moves
+   * (`releaseAsset` counts what still points at it), and asking beforehand
+   * counts this very slot. One read of one picture per change is cheap;
+   * an undo that puts a field back pointing at nothing is not.
+   */
+  const keepPicture = (rootPath: string, fileName: string | undefined): Promise<CapturedAsset | null> =>
+    captureAsset(rootPath, fileName);
 
   /**
    * Applies one edit to a page's block list, materialising the list first if
@@ -1271,21 +1304,21 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
     picture: BlockPicture,
     label: string,
     mergeKey?: string,
+    leaving: CapturedAsset | null = null,
   ): void => {
     const node = get().nodes[nodeId];
     if (!node) return;
     const blocks = currentBlocks(node);
     if (pageImageBlockId(node, blocks) === blockId) {
-      patchNode(label, nodeId, "image" in picture ? { ...picture, imageSource: undefined } : picture, mergeKey);
+      patchNode(label, nodeId, "image" in picture ? { ...picture, imageSource: undefined } : picture, mergeKey, leaving);
       return;
     }
     if (!blocks.some((block) => block.id === blockId && block.kind === "image")) return;
-    editBlocks(
-      nodeId,
-      (list) => list.map((block) => (block.id === blockId ? withBlockImage(block, picture) : block)),
-      label,
-      mergeKey,
-    );
+    // The block list written here rather than through `editBlocks`, which
+    // ends in the same `patchNode` — this is the one caller that has a
+    // picture to hand it. Same materialisation, same single entry.
+    const next = blocks.map((block) => (block.id === blockId ? withBlockImage(block, picture) : block));
+    patchNode(label, nodeId, { blocks: next }, mergeKey, leaving);
   };
 
   /**
@@ -2832,24 +2865,27 @@ async function stillWorthShowing(rootPath: string, skipped: string[]): Promise<s
       // Drop the old file only after the new one is safely written, and only
       // if this node still exists (it could have been deleted mid-upload).
       const previousImage = get().nodes[nodeId]?.image;
+      if (!get().nodes[nodeId]) return;
+      const kept = await keepPicture(rootPath, previousImage);
       // `imageSource` goes with the picture that's leaving. It's the web
       // address an LK-imported picture came from, and schema.ts is explicit
       // that anything uploaded here has none — so leaving the old one behind
       // makes LK export hand out the previous picture's address for this one.
-      get().updateNode(nodeId, { image: fileName, imageSource: undefined });
+      patchNode("changing a picture", nodeId, { image: fileName, imageSource: undefined }, undefined, kept);
       releaseAsset(rootPath, previousImage);
     },
 
     // Point this node's portrait at a picture the project already has. The
     // whole difference from setNodeImage above is that no file is written:
     // one file, any number of references. See docs/handoff.md on the library.
-    setNodeImageFromLibrary(nodeId, blockId, fileName) {
+    async setNodeImageFromLibrary(nodeId, blockId, fileName) {
       const { rootPath, nodes } = get();
       const existing = nodes[nodeId];
       if (!rootPath || !existing) return;
 
       const previousImage = pictureOf(existing, blockId).image;
       if (previousImage === fileName) return;
+      const kept = await keepPicture(rootPath, previousImage);
       // The crop travels with the slot, not with the file — a different
       // picture in the same slot is a different shape, and keeping the old
       // offset would crop the new one somewhere arbitrary.
@@ -2858,6 +2894,8 @@ async function stillWorthShowing(rootPath: string, skipped: string[]): Promise<s
         blockId,
         { image: fileName, imageAlt: undefined, imageFocusY: undefined },
         "changing a picture",
+        undefined,
+        kept,
       );
       releaseAsset(rootPath, previousImage);
     },
@@ -2868,6 +2906,7 @@ async function stillWorthShowing(rootPath: string, skipped: string[]): Promise<s
       if (!rootPath || !existing) return;
       const previousImage = pictureOf(existing, blockId).image;
       if (!previousImage) return;
+      const kept = await keepPicture(rootPath, previousImage);
       // The crop and the description belong to the picture that's going, not
       // to the slot — leaving either behind would apply them to whatever is
       // uploaded next.
@@ -2876,6 +2915,8 @@ async function stillWorthShowing(rootPath: string, skipped: string[]): Promise<s
         blockId,
         { image: undefined, imageAlt: undefined, imageFocusY: undefined },
         "removing a picture",
+        undefined,
+        kept,
       );
       releaseAsset(rootPath, previousImage);
     },
@@ -3127,7 +3168,8 @@ async function stillWorthShowing(rootPath: string, skipped: string[]): Promise<s
       // portrait — same picture, same address, nothing invented. It only
       // describes the page's own portrait, so a block's own photo takes none.
       const bannerSource = picture.image === existing.image ? existing.imageSource : undefined;
-      get().updateNode(nodeId, { banner: picture.image, bannerFocusY: 50, bannerSource });
+      const kept = await keepPicture(rootPath, previousBanner);
+      patchNode("changing the cover", nodeId, { banner: picture.image, bannerFocusY: 50, bannerSource }, undefined, kept);
       releaseAsset(rootPath, previousBanner);
     },
 
@@ -3142,20 +3184,23 @@ async function stillWorthShowing(rootPath: string, skipped: string[]): Promise<s
       const fileName = `${crypto.randomUUID()}.${extension}`;
       await fsService.saveAssetImage(rootPath, fileName, data);
       const previousBanner = get().nodes[nodeId]?.banner;
+      if (!get().nodes[nodeId]) return;
+      const kept = await keepPicture(rootPath, previousBanner);
       // `bannerSource` clears with it — same reasoning as setNodeImage's.
-      get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50, bannerSource: undefined });
+      patchNode("changing the cover", nodeId, { banner: fileName, bannerFocusY: 50, bannerSource: undefined }, undefined, kept);
       releaseAsset(rootPath, previousBanner);
     },
 
     // The cover's half of setNodeImageFromLibrary — same trade, no file
     // written.
-    setNodeBannerFromLibrary(nodeId, fileName) {
+    async setNodeBannerFromLibrary(nodeId, fileName) {
       const { rootPath, nodes } = get();
       if (!rootPath || !nodes[nodeId]) return;
 
       const previousBanner = nodes[nodeId]?.banner;
       if (previousBanner === fileName) return;
-      get().updateNode(nodeId, { banner: fileName, bannerFocusY: 50, bannerSource: undefined });
+      const kept = await keepPicture(rootPath, previousBanner);
+      patchNode("changing the cover", nodeId, { banner: fileName, bannerFocusY: 50, bannerSource: undefined }, undefined, kept);
       releaseAsset(rootPath, previousBanner);
     },
 
@@ -3168,7 +3213,8 @@ async function stillWorthShowing(rootPath: string, skipped: string[]): Promise<s
       const existing = nodes[nodeId];
       if (!rootPath || !existing?.banner) return;
       const previousBanner = existing.banner;
-      get().updateNode(nodeId, { banner: undefined, bannerFocusY: undefined });
+      const kept = await keepPicture(rootPath, previousBanner);
+      patchNode("removing the cover", nodeId, { banner: undefined, bannerFocusY: undefined, bannerSource: undefined }, undefined, kept);
       releaseAsset(rootPath, previousBanner);
     },
 
