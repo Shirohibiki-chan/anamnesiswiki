@@ -1022,7 +1022,26 @@ export async function typeInEditor(window: Page, text: string): Promise<void> {
   // cursor after everything, which is where someone adding a line would be.
   await editor.click({ position: { x: 8, y: 8 } });
   await window.keyboard.press("Control+End");
+  await caretSettled(window);
   await window.keyboard.type(text, { delay: 20 });
+}
+
+/**
+ * Waits for the editor to have read the browser's caret back. A native move
+ * such as Ctrl+End puts the browser's caret at the end of the block group
+ * and the editor normalises it into the last words a tick later; a key sent
+ * inside that tick acts on the unnormalised spot — Home from there goes to
+ * the *first* block. No hand is that fast; the harness is.
+ */
+async function caretSettled(window: Page): Promise<void> {
+  // The browser reports the move on its next frame and the editor reads it
+  // 20ms after that; a keystroke the editor handles itself (Enter, a
+  // shortcut) acts on what it has read. Then, where there are words, until
+  // the caret is in them.
+  await window.waitForTimeout(60);
+  await window
+    .waitForFunction(() => window.getSelection()?.anchorNode?.nodeType === Node.TEXT_NODE, undefined, { timeout: 500 })
+    .catch(() => {});
 }
 
 /**
@@ -1032,16 +1051,45 @@ export async function typeInEditor(window: Page, text: string): Promise<void> {
  * see `slash-trigger.ts` — so a scenario about the command menu has to be sure
  * it is really there.
  *
- * It gets there with `Home` rather than by making a new line, and that is worth
- * knowing: **pressing `Enter` from here does not add a block.** Measured
- * 2026-08-28, and not chased down, because a scenario built on a keystroke that
- * silently does nothing passes or fails for reasons unrelated to what it is
- * testing. `Home` moves the caret to the front of whatever line it is already
- * on, which is the state under test, and it works.
+ * It gets there by making a new, empty line at the **top** of the page and
+ * typing on that. Until 2026-09-21 it pressed `Home` after `typeInEditor`'s
+ * `Ctrl+End`, and what that did was an accident twice over: the corner click
+ * left a gap cursor beside the page's first callout, `Home` from the
+ * unnormalised end-of-group caret jumped back to it, and typing into a gap
+ * cursor inserts a fresh paragraph *before* the block. So every scenario
+ * built on this helper was, in fact, typing on a new first line — at the top
+ * of the page, always on screen — and that is what it does now on purpose.
+ * (Its own comment used to record that `Enter` from here did nothing; that
+ * was the same bug.) A new line at the *end* of the page was tried first and
+ * put blocks below the fold on CI's smaller window, where every scroll
+ * remounts the block's side menu.
  */
 export async function typeAtLineStartInEditor(window: Page, text: string): Promise<void> {
+  // The editor's top corner is the front of its first block — a click, which
+  // the editor handles on the spot, rather than a Ctrl+Home it reads later.
+  const editor = window.locator(EDITOR).first();
+  await editor.waitFor({ state: "visible", timeout: WAIT_MS });
+  await editor.click({ position: { x: 8, y: 8 } });
+  await caretSettled(window);
+  // Enter at the front of a block puts an empty one above it and leaves the
+  // caret where it was; the step up is onto the new line.
+  await window.keyboard.press("Enter");
+  await window.keyboard.press("ArrowUp");
+  await caretSettled(window);
+  await window.keyboard.type(text, { delay: 20 });
+}
+
+/**
+ * Types at the front of the page's first line, *on* that line rather than
+ * above it — for a scenario that needs the page's writing to *follow* what
+ * it puts in, such as the one that wraps a paragraph round an infobox. A
+ * slash command here lands its block after the first one, with everything
+ * else below it.
+ */
+export async function typeAtPageStartInEditor(window: Page, text: string): Promise<void> {
   await typeInEditor(window, "");
-  await window.keyboard.press("Home");
+  await window.keyboard.press("Control+Home");
+  await caretSettled(window);
   await window.keyboard.type(text, { delay: 20 });
 }
 
@@ -1193,6 +1241,25 @@ export async function editorHeadings(window: Page): Promise<string[]> {
 /** Every run of bold text in the open page, in order. */
 export async function editorBoldText(window: Page): Promise<string[]> {
   return (await window.locator(`${EDITOR} strong`).allInnerTexts()).map(normalize);
+}
+
+/** How many lines — top-level blocks — the open page's writing has. */
+export async function editorLineCount(window: Page): Promise<number> {
+  return window.locator(`${EDITOR} > .bn-block-group > ${EDITOR_BLOCK}`).count();
+}
+
+/** The words in the first callout on the open page. */
+export async function firstCalloutText(window: Page): Promise<string> {
+  return normalize(await window.locator(`${EDITOR} [data-content-type^="callout"]`).first().innerText());
+}
+
+/**
+ * Clicks the coloured edge of the first callout on the open page — its
+ * padding, left of the words — which is where a caret used to land *beside*
+ * the block rather than in it (2026-09-21).
+ */
+export async function clickFirstCalloutEdge(window: Page): Promise<void> {
+  await window.locator(`${EDITOR} [data-content-type^="callout"]`).first().click({ position: { x: 4, y: 6 } });
 }
 
 /** Every run of italic text in the open page, in order. */
@@ -3692,6 +3759,7 @@ export async function typeInBoardViewPanel(window: Page, text: string): Promise<
   await editor.waitFor({ state: "visible", timeout: WAIT_MS });
   await editor.click({ position: { x: 8, y: 8 } });
   await window.keyboard.press("Control+End");
+  await caretSettled(window);
   await window.keyboard.type(text, { delay: 20 });
 }
 
@@ -4160,4 +4228,26 @@ export async function mediaMenuItems(window: Page, index: number): Promise<strin
   const items = (await window.locator(`${BLOCK_MENU} button`).allTextContents()).map(normalize);
   await window.keyboard.press("Escape");
   return items;
+}
+
+/**
+ * Opens BlockNote's own side menu — the handle beside a block in the writing
+ * — for the block `block` points at.
+ *
+ * Hovered twice on purpose. The menu appears on the first hover, and the
+ * hover's own scroll-into-view lands a moment later; BlockNote hides the
+ * menu on any scroll, and nothing re-summons it until the mouse moves
+ * again. On a window tall enough that nothing scrolls, once was enough,
+ * which is why this only ever failed on CI (2026-09-22, read off a
+ * diagnostic: the button there for 300ms, then gone for good).
+ */
+export async function openSideMenuOf(window: Page, block: Locator): Promise<void> {
+  await block.scrollIntoViewIfNeeded();
+  await block.hover();
+  await window.waitForTimeout(500);
+  const box = await block.boundingBox();
+  if (box) await window.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 1);
+  const handle = window.getByLabel("Open block menu");
+  await handle.waitFor({ state: "visible", timeout: WAIT_MS });
+  await handle.click();
 }

@@ -2,6 +2,12 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-20 — A highlighter for boards
+
+### Additions
+
+- **A *Highlighter* button in the board's top-right row, and Shift+P.** It is the pen with a marker's settings — wide, half see-through, yellow to start with — so it is a tool you pick, not three settings to remember. Each stroke goes *under* everything already drawn, so a highlight over words or a shape leaves them readable. It stays in hand for the next stroke; Escape or any other tool puts it down, and the pen gets its own colour, width and opacity back. Pick a different colour from the styles panel while it is in hand and the highlighter remembers it.
+
 ## 2026-09-20 — View a page beside the board
 
 ### Additions

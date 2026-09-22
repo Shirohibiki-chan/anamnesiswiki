@@ -33,6 +33,7 @@ import { getMentionMenuItems } from "../services/editor-blocks/mention-menu-item
 import { applyColumnRepairs, type RepairableEditor } from "../services/editor-blocks/apply-column-repairs";
 import { applyPointerClones, type PointerEditor } from "../services/editor-blocks/apply-pointer-clones";
 import { selectAllExtension } from "../services/editor-blocks/select-all";
+import { calloutCaretExtension } from "../services/editor-blocks/callout-caret";
 import { linkableMarksExtension, refreshLinkableMarks } from "../services/editor-blocks/linkable-marks";
 import { useLinkMarks } from "./use-preferences";
 import { usePreferencesStore } from "../state/preferences-store";
@@ -106,6 +107,9 @@ export function useEditor(
     // page. See select-all.ts — the command works, the key handling does not.
     extensions: [
       selectAllExtension(),
+      // A click on a callout's padding puts the caret in its words rather
+      // than beside them — see callout-caret.ts.
+      calloutCaretExtension(),
       // The marks under words that could be links — see linkable-marks.ts.
       // Always installed; the setting decides whether the list of names it
       // is handed is empty, so turning it off needs no remount. Read off the

@@ -17,6 +17,7 @@ import {
   panelBlockTitles,
   typeAtLineStartInEditor,
   waitForWorld,
+  openSideMenuOf,
 } from "./harness/screen";
 
 const PAGE = "Quietgate";
@@ -79,8 +80,7 @@ describe("grouping blocks in an infobox", () => {
     // The frame is not the blocks: deleting it drops the list of ids, nothing
     // else, so every block in it becomes unclaimed and the sidebar draws it
     // again. A container that took its contents with it would lose work.
-    await app.window.locator(".page-infobox").first().hover();
-    await app.window.getByLabel("Open block menu").click();
+    await openSideMenuOf(app.window, app.window.locator(".page-infobox").first());
     await app.window.getByText("Delete", { exact: true }).click();
     await app.window.waitForTimeout(800);
 

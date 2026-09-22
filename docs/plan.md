@@ -150,18 +150,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Known Bugs
 
-- **Enter at the end of a fresh Note page's last line does nothing.** Found
-  2026-09-21 while driving the app for Phase 31. A new Note page's writing
-  ends with an Info callout and then the "Start writing." paragraph; with
-  the caret at the end of that paragraph, Enter throws "Cannot join
-  blockGroup onto blockContainer" inside the editor and no new line
-  appears. Typing something first and *then* pressing Enter works, as does
-  Enter anywhere else that was tried, so it seems to be that one paragraph
-  straight after a callout in a document written by the template. Not
-  chased; the scenario worked around it by clearing the page first
-  (`e2e/plays-music-in-the-page.e2e.ts`). Worth checking whether the other
-  templates' last lines do the same.
-
 - **A note or a labelled stretch put outside the scenes is on the canvas and off
   the screen.** Found 2026-09-09 while placing the example world's canvas. The
   view fits itself to the *scenes* — `sceneBounds` in `use-storyline-view.ts`

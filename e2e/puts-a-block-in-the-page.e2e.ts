@@ -18,6 +18,7 @@ import {
   panelBlockTitles,
   typeAtLineStartInEditor,
   waitForWorld,
+  openSideMenuOf,
 } from "./harness/screen";
 
 const PAGE = "Quietgate";
@@ -72,8 +73,7 @@ describe("putting a block in the page", () => {
     // holds no text and is not editable, so the caret never goes inside it and
     // backspace has nothing to bite on — the handle beside it is the only way
     // to take it out, and its menu offers exactly one thing.
-    await app.window.locator(".page-block").first().hover();
-    await app.window.getByLabel("Open block menu").click();
+    await openSideMenuOf(app.window, app.window.locator(".page-block").first());
     await app.window.getByText("Delete", { exact: true }).click();
     await app.window.waitForTimeout(800);
 
