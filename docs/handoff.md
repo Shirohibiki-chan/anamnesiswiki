@@ -6394,3 +6394,33 @@ them always**, not only when the file would be deleted — whether it will
 be is decided by what still points at it *after* the field moves, and
 asking beforehand counts the very slot being changed (the first cut did,
 and undo put back a field pointing at nothing).
+
+## What Ctrl+C leaves behind
+
+A copy carries three readings of the selection at once: BlockNote's own HTML,
+ordinary HTML, and plain text. **Only the third is ours and only the third is
+in question** — a target that can show formatting takes the HTML and never
+sees the plain text, so a report about pasting into Word or Google Docs is
+not this code. The setting (`plainCopy`, Settings → Writing) picks between
+Markdown, which is what BlockNote always gave, and the words themselves
+(`copy-as-text.ts`); the formatting bar's button does whichever one the
+setting is not on.
+
+Three things to keep:
+
+- **The app replaces BlockNote's copy handler rather than running beside it**
+  — `disableExtensions: ["copyToClipboard"]` in `use-editor.ts`, naming
+  upstream's extension. Two handlers on one DOM event is a race settled by
+  plugin order, and the loser is silent. The cost is that dragging a block out
+  is our handler too, so it is implemented alongside copy and cut in
+  `copy-clipboard.ts`. If an upgrade renames that extension both would be
+  live; `copies-a-page-out.e2e.ts` is what notices.
+- **Plain text never emits a character that Markdown would read back as
+  formatting.** A bullet is `•`, not `*`. This is the anti-goal from
+  `docs/ideas.md` § Import and paste fidelity applied to our own output:
+  losing formatting is recoverable and inventing it is not, and text copied
+  out of here lands in tools that will parse it.
+- **Blocks are separated by a blank line and list items are not.** That is how
+  they read, and it is also what survives the round trip once pasting plain
+  text in as text is built — a blank line is a paragraph break, so an empty
+  paragraph somebody left on purpose comes back as one.

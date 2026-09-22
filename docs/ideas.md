@@ -274,10 +274,18 @@ copied out again. What was found, against the four anti-goals above:
   (Docs, Word, an email) is fine; it is the plain-text targets — lorebook
   fields, character cards, a text box — that get the litter.
 
-**What follows for the fix, when it is built** (Queued Adjustments): paste
-plain text as text — off with both defaults — and decide separately what the
-plain-text *copy* should be, since Markdown out is litter in a text box and
-exactly right in Discord.
+**The copying-out half was built on 2026-09-22**, and the decision it was
+waiting on turned out to be the wrong shape: neither answer is right for
+everyone, because some people paste into Discord every time and some into a
+plain field every time. So it is a setting — Ctrl+C is plain text or Markdown
+— with the other reading on a formatting-bar button for the paste that goes
+the other way. Plain text is the default, on the grounds that its worst case
+is missing bold and Markdown's is litter in a box about to be fed to a bot.
+See `docs/handoff.md` § What Ctrl+C leaves behind.
+
+**What is left is pasting in** (Queued Adjustments): plain text read as text,
+with both of BlockNote's defaults off. Nothing there needs deciding — the
+anti-goals above already say what it should do.
 
 **Two things about the tools they're leaving, both worth not repeating:**
 

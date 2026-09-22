@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-22 — Copying out, your way
+
+### Additions
+
+- **Ctrl+C can leave plain text behind, and that is what it does to begin with.** Copying out of a page always put Markdown on the clipboard for anywhere that can hold nothing but characters — a lorebook field, a character card, a chat box — so `**bold**`, `# Heading` and a backslash before every line break travelled with the words. There are two readings of a copy now, and Settings → Writing → *What Ctrl+C copies* decides which one the keystroke does: **Plain Text**, the words as they read, or **Markdown**, the formatting written out as marks. Whichever is set, the other is one button away on the formatting bar whenever something is selected. Pasting into Word, Google Docs or another page here is unchanged — those take the formatting either way, whichever of the two is on.
+- **What plain text keeps.** A bullet comes out as the bullet it is drawn as rather than an asterisk, a numbered list keeps its numbers, a checkbox comes as an empty or ticked box, and a table as rows of cells. A blank line between paragraphs stays a blank line, and an empty one left there on purpose stays too. A picture brings its caption if it has one and nothing at all if it doesn't.
+
 ## 2026-09-22 — Removing a picture can be undone
 
 ### Fixes
@@ -138,9 +145,3 @@
 ### Fixes
 
 - **An animated GIF on a board now plays.** The drawing library draws pictures onto a canvas, which only ever takes an animated picture's first frame, so a GIF stood still; its frames are now decoded and drawn one after the other while it is on screen. Also: a GIF pasted or dropped onto a board used to be quietly re-saved as a still PNG on the way in — it now keeps its file, and its frames.
-
-## 2026-09-20 — A board follows the theme
-
-### Fixes
-
-- **Switching the theme with a board open now switches the board too.** A board used to read light or dark once, when it was opened, so a theme picked while one was on screen only reached it on the next visit. It follows at once now — the drawing's own toolbar, panels and canvas included — and follows a theme edited in the Colours panel as well.
