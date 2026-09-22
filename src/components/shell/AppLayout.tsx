@@ -24,6 +24,7 @@ import { TreeSidebar } from "../tree/TreeSidebar";
 import { LeftRail, type SidebarPanel } from "./LeftRail";
 import { TourOverlay } from "./TourOverlay";
 import { PageView } from "../page/PageView";
+import { PartBoundary } from "./PartBoundary";
 import { TemplateView } from "../page/TemplateView";
 import { AllPropertiesModal } from "../properties/AllPropertiesModal";
 import { QuickCaptureDialog } from "./QuickCaptureDialog";
@@ -212,17 +213,25 @@ export function AppLayout() {
               Keyed by template id for the same reason PageView is keyed by node
               id: the tab strip's state resets on a switch without an effect. */}
           <main className="app-layout-page" data-tour="page">
-            {openTemplate ? (
-              <TemplateView key={openTemplate.id} template={openTemplate} />
-            ) : (
-              <PageView key={project?.selectedId ?? "none"} />
-            )}
+            {/* Each column behind a boundary of its own (PartBoundary), so a
+                page that cannot be drawn leaves the tree and the panel
+                standing, and the other way about. Keyed with the page, so
+                moving to another page is a fresh try without a click. */}
+            <PartBoundary key={openTemplate?.id ?? project?.selectedId ?? "none"} what="This page">
+              {openTemplate ? (
+                <TemplateView key={openTemplate.id} template={openTemplate} />
+              ) : (
+                <PageView key={project?.selectedId ?? "none"} />
+              )}
+            </PartBoundary>
           </main>
         </div>
 
         {isRightPanelOpen && (
           <aside className="app-layout-properties" data-tour="properties">
-            <BlockPanel key={project?.selectedId ?? "none"} />
+            <PartBoundary key={project?.selectedId ?? "none"} what="The panel">
+              <BlockPanel key={project?.selectedId ?? "none"} />
+            </PartBoundary>
           </aside>
         )}
 

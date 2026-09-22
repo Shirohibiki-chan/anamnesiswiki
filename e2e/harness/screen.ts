@@ -4257,6 +4257,50 @@ export async function mediaMenuItems(window: Page, index: number): Promise<strin
   return items;
 }
 
+// ---- A part of the window that could not be drawn (PartBoundary) ----
+
+const PART_NOTICE = ".part-boundary";
+const CRASH_SCREEN = ".crash-screen";
+
+/** What every "couldn't be drawn" notice on screen says, top to bottom. */
+export async function partNotices(window: Page): Promise<string[]> {
+  return (await window.locator(PART_NOTICE).allInnerTexts()).map(normalize);
+}
+
+export async function waitForPartNotice(window: Page): Promise<void> {
+  await window.locator(PART_NOTICE).first().waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Presses Try Again on the first such notice. */
+export async function retryPartNotice(window: Page): Promise<void> {
+  await window.locator(PART_NOTICE).first().getByRole("button", { name: "Try Again" }).click();
+}
+
+/** The title of the panel block whose body is the notice, or null if the notice is not in a block. */
+export async function blockHoldingPartNotice(window: Page): Promise<string | null> {
+  return window.locator(PART_NOTICE).first().evaluate(
+    (notice, shell) =>
+      notice
+        .closest(shell)
+        ?.querySelector("[aria-label$='block options']")
+        ?.getAttribute("aria-label")
+        ?.replace(/ block options$/, "") ?? null,
+    BLOCK_SHELL,
+  );
+}
+
+/** Whether the whole-window crash screen is up. */
+export async function crashScreenShown(window: Page): Promise<boolean> {
+  return (await window.locator(CRASH_SCREEN).count()) > 0;
+}
+
+/** Opens a panel block's menu by its title and picks a row by its words. */
+export async function pickBlockMenuItem(window: Page, title: string, label: string): Promise<void> {
+  await openBlockMenu(window, title);
+  await window.locator(`${BLOCK_MENU} button`).filter({ hasText: label }).first().click();
+  await window.waitForTimeout(400);
+}
+
 /**
  * Opens BlockNote's own side menu — the handle beside a block in the writing
  * — for the block `block` points at.

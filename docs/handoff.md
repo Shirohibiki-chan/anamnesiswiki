@@ -6367,3 +6367,16 @@ the list, and the 2026-08-21 report was as much about the app having nothing
 to say as about not opening. Don't collapse the two back into one null —
 that was the shape that produced the bug — and don't catch the throw
 anywhere that can't put the reason in front of her.
+
+## Boundaries round the parts
+
+`ErrorBoundary` (root) turns a render crash into a screen and can only offer
+a restart. `PartBoundary` (since 2026-09-21) wraps the parts that can be
+re-entered — the page column, the block panel, and each block's *body*
+inside its `BlockShell` — and offers *Try Again* in place. Two rules keep
+it useful. **Wrap the body, not the shell**: the shell's heading and ⋯ menu
+staying alive is what lets a broken block be removed without a restart.
+**Key the column boundaries with the page**, as `AppLayout` does, so moving
+to another page is a fresh try rather than a stuck notice. Both boundaries
+record through `recordCrash`, so the bug report picks the fault up either
+way.

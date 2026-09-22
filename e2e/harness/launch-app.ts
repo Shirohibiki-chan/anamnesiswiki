@@ -85,6 +85,13 @@ export type LaunchOptions = TestWorldOptions & {
    * about it needs.
    */
   exampleWorld?: boolean;
+  /**
+   * Something done to the world's files after they are written and before
+   * the app starts — a page damaged on disk the way a sync conflict or a
+   * stray edit would, or a picture given to one page alone — so a scenario
+   * can watch the app meet it on opening.
+   */
+  prepare?: (world: TestWorld) => Promise<void>;
 };
 
 export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp> {
@@ -92,6 +99,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<RunningApp
   await assertPageIsBuiltForElectron();
 
   const world = options.openWorld === false ? null : await makeTestWorld(options);
+  if (world && options.prepare) await options.prepare(world);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "anamnesis-e2e-userdata-"));
   await seedSettings(userDataDir, world, options.showTour === true, options.exampleWorld === true);
   const projectsDir = path.join(userDataDir, "Projects");

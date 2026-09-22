@@ -152,16 +152,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Known Bugs
 
-- **The error boundary at the root exists; the ones that would save the session
-  do not.** `ErrorBoundary.tsx` went in 2026-08-27 and turned a blank window
-  into a screen that says what happened — but it wraps the whole app, so all it
-  can offer is a restart. **What is still missing is a boundary around the parts
-  that can be re-entered**, the block panel and the page view: one bad block on
-  one page still takes the whole app down with it, where a boundary there could
-  name the block that failed and leave the rest of the app usable. More
-  expensive since Phase 18a, because a sidebar is now an arbitrary list of
-  blocks rather than a fixed set of fields.
-
 - **Clearing or replacing a page's picture cannot be undone.** Everything else
   the right-hand panel does became undoable with Phase 19; this one did not,
   because clearing a picture deletes the file from `assets/` once nothing else
