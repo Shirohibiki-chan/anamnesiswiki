@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-21 — One bad block no longer takes the app down
+
+### Fixes
+
+- **A block that can't be drawn now says so where it sits, and the rest of the app carries on.** Before, one damaged block on one page brought up the whole-window crash screen, whose only offer was a restart. Now the page, the sidebar panel and every block in it each have a boundary of their own: the block that failed shows a short notice in its place with *Try Again*, keeps its heading and its menu (so it can be removed the ordinary way), and everything around it — the tree, the writing, the other blocks — keeps working. The fault is still recorded for Settings → Report a Bug.
+
 ## 2026-09-21 — A world that won't open says why
 
 ### Fixes
@@ -138,9 +144,3 @@
 ### Additions
 
 - **A board goes into the exports as a picture.** The Markdown folder and the website carry a PNG of each board — the drawing as it looks, with page cards, notes, bookmarks and videos drawn in as labelled boxes, in their places — and the board's page shows it. The one big Markdown file carries the picture inside itself. The export window says how many boards went in as pictures. The LegendKeeper export can't carry a drawing, so it says a board goes across as an empty page and the board stays here as it is. A board with nothing on it gets no picture.
-
-## 2026-09-20 — A Layers panel on the board
-
-### Additions
-
-- **A Layers panel:** a **Layers** button at the top right of every board opens a list on the board's right of everything on it, top to bottom, each named — a page card by its page, a text or a note by its words, a video by its file, anything else by what it is (Rectangle, Arrow, Drawing, Highlight…). A shape with words on it takes the words as its name, and a frame's shapes are listed under the frame's row. Click a row to select the shape (Shift+click to add it to the selection); the board scrolls to it if none of it was on screen. Drag a row up or down to change what is in front of what — the move is undoable like any other. The eye on a row hides a shape (see-through and locked, so nothing can bump it) and shows it again as it was; the lock locks and unlocks it. The panel stays on the right whether the board is in the page or expanded.

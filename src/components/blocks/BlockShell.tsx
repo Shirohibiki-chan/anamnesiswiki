@@ -7,6 +7,7 @@
 // title one behaviour across thirteen block kinds instead of thirteen
 // implementations of it, and it is why a text block can be a bare paragraph
 // with no heading at all.
+import { PartBoundary } from "../shell/PartBoundary";
 import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { GripVertical, MoreHorizontal } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
@@ -227,7 +228,12 @@ export function BlockShell({
         </button>
       </div>
 
-      <div className="block-shell-body">{children}</div>
+      {/* One block failing to draw costs that block, not the panel: the
+          notice sits where the body was, and the shell's own title and menu
+          above it still work, which is how the block gets removed. */}
+      <div className="block-shell-body">
+        <PartBoundary what="This block">{children}</PartBoundary>
+      </div>
 
       {menuRect && (
         <TreePopover anchorRect={menuRect} onClose={() => setMenuRect(null)}>

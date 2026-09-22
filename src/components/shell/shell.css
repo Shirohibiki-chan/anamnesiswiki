@@ -3344,6 +3344,30 @@ ol.release-notes-list {
    with the React tree that threw. Scrolls rather than clips: a stack trace is
    as long as it is, and a trace cut off at the bottom of the screen is a
    report nobody can finish reading. */
+/* A part of the window that could not be drawn (PartBoundary): a quiet line
+   where the part was, not a screen over the app. */
+.part-boundary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid color-mix(in srgb, var(--color-destructive) 40%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.part-boundary-icon {
+  flex: none;
+  color: var(--color-destructive);
+}
+
+.part-boundary-text {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
 .crash-screen {
   position: fixed;
   inset: 0;
