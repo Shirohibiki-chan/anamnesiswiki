@@ -12,6 +12,7 @@ import type {
   ProjectView,
   FormattingBarMode,
   GraphEdgeLabels,
+  PlainCopyMode,
   PropertiesPanelDefault,
   TreeDoubleClickAction,
 } from "../services/preferences-service";
@@ -33,6 +34,16 @@ export function useFormattingBar(): FormattingBarMode {
 /** Whether words that could link to a page are marked while writing. */
 export function useLinkMarks(): boolean {
   return usePreferencesStore((state) => state.preferences.linkMarks);
+}
+
+/**
+ * Which reading of a copied selection goes on the clipboard as plain text.
+ *
+ * Read by the editor at copy time and by the button that offers the other
+ * one, so both sides of the pair answer to the one setting.
+ */
+export function usePlainCopy(): PlainCopyMode {
+  return usePreferencesStore((state) => state.preferences.plainCopy);
 }
 
 /** What the properties panel does on a page she has never toggled it on. */
@@ -124,6 +135,7 @@ export function usePreferenceActions() {
       setPropertiesPanelDefault: state.setPropertiesPanelDefault,
       setFormattingBar: state.setFormattingBar,
       setLinkMarks: state.setLinkMarks,
+      setPlainCopy: state.setPlainCopy,
       setListPaging: state.setListPaging,
       setListPageSize: state.setListPageSize,
       setProjectView: state.setProjectView,

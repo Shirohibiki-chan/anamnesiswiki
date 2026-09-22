@@ -350,6 +350,17 @@ export const DECLARED_SETTINGS: readonly {
     keywords: ["link", "links", "underline", "dotted", "mention", "wikilink", "suggest"],
   },
   {
+    id: "plain-copy",
+    tabId: "writing",
+    label: "What Ctrl+C Copies",
+    // No "somewhere" in the hint: it holds "where", which pulled this row into
+    // the results for "where are my files saved". Same trap as the rows above.
+    hint: "plain text or Markdown, for a box that can only hold characters",
+    // No "out", no "text": both are near-misses on the words in "where are my
+    // files saved", the query this file's other notes keep coming back to.
+    keywords: ["copy", "paste", "clipboard", "markdown", "plain", "asterisk", "discord", "lorebook"],
+  },
+  {
     id: "update-check",
     tabId: "updates",
     label: "Check for Updates",

@@ -4152,6 +4152,34 @@ export async function boardInkExtent(window: Page): Promise<{ left: number; righ
   return extent;
 }
 
+// ---- Copying out (2026-09-22) ----
+
+/**
+ * What copying the current selection would leave on the clipboard.
+ *
+ * **It never touches the machine's clipboard**, which docs/handoff.md forbids
+ * this suite outright: the copy event is dispatched with a `DataTransfer` of
+ * the test's own, so what comes back is what the editor wrote into that —
+ * the same route `pasteTextInEditor` takes in the other direction. Nothing
+ * here drives Ctrl+C.
+ *
+ * The three readings come back together because the point of the setting is
+ * that only one of them changes: a rich target keeps its formatting whichever
+ * way the plain text is written.
+ */
+export async function copiedFromEditor(window: Page): Promise<{ text: string; html: string }> {
+  return window.locator(EDITOR).first().evaluate((editor) => {
+    const carried = new DataTransfer();
+    editor.dispatchEvent(new ClipboardEvent("copy", { bubbles: true, cancelable: true, clipboardData: carried }));
+    return { text: carried.getData("text/plain"), html: carried.getData("text/html") };
+  });
+}
+
+/** Picks what Ctrl+C copies, in Settings -> Writing, which must be open. */
+export async function pickPlainCopy(window: Page, mode: "text" | "markdown"): Promise<void> {
+  await window.locator(`[data-setting="plain-copy"] input[value="${mode}"]`).check();
+}
+
 // ---- Players (Phase 31) ----
 
 const MEDIA_EMBED = ".media-embed";

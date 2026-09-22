@@ -216,6 +216,16 @@ export function clampGraphNameZoom(value: unknown): number {
 export const FORMATTING_BAR_MODES = ["floating", "fixed"] as const;
 export type FormattingBarMode = (typeof FORMATTING_BAR_MODES)[number];
 
+/**
+ * Which reading of a copied selection goes on the clipboard as plain text.
+ *
+ * Here rather than beside the copying itself so the settings panel and the
+ * stored file agree on the two words without importing the editor, the same
+ * way the formatting bar's two modes live here.
+ */
+export const PLAIN_COPY_MODES = ["text", "markdown"] as const;
+export type PlainCopyMode = (typeof PLAIN_COPY_MODES)[number];
+
 /** What the properties panel does on a page she has never toggled it on. */
 export const PROPERTIES_PANEL_DEFAULTS = ["open", "closed"] as const;
 export type PropertiesPanelDefault = (typeof PROPERTIES_PANEL_DEFAULTS)[number];
@@ -230,6 +240,23 @@ export type Preferences = {
    * turned off by somebody who finds their prose underlined more than they like.
    */
   linkMarks: boolean;
+  /**
+   * What Ctrl+C leaves behind for somewhere that can only hold characters —
+   * a lorebook field, a character card, a chat box (2026-09-22).
+   *
+   * **Only the plain-text half of a copy is in question.** A copy carries the
+   * formatting as well, and anywhere that can show formatting takes that
+   * instead, so this changes nothing about pasting into Word, Google Docs or
+   * another page here.
+   *
+   * Plain text to begin with, because its worst case is bold going missing
+   * and Markdown's is `**litter**` in a box someone is about to feed to a
+   * bot. Whichever this is, the other is on the formatting bar — the setting
+   * decides which one is a keystroke and which one is a click, since somebody
+   * whose every paste goes to Discord should not have to reach for the button
+   * each time.
+   */
+  plainCopy: PlainCopyMode;
   propertiesPanel: PropertiesPanelDefault;
   listPaging: ListPagingMode;
   listPageSize: ListPageSize;
@@ -280,6 +307,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   treeDoubleClick: "expand",
   formattingBar: "floating",
   linkMarks: true,
+  plainCopy: "text",
   propertiesPanel: "open",
   listPaging: "pages",
   listPageSize: 20,
@@ -355,6 +383,7 @@ export function parsePreferences(raw: unknown): Preferences {
   const historyKeepDays = source.historyKeepDays;
   const historyPerPage = source.historyPerPage;
   const graphEdgeLabels = source.graphEdgeLabels;
+  const plainCopy = source.plainCopy;
   return {
     treeDoubleClick: TREE_DOUBLE_CLICK_ACTIONS.includes(treeDoubleClick as TreeDoubleClickAction)
       ? (treeDoubleClick as TreeDoubleClickAction)
@@ -363,6 +392,7 @@ export function parsePreferences(raw: unknown): Preferences {
       ? (formattingBar as FormattingBarMode)
       : DEFAULT_PREFERENCES.formattingBar,
     linkMarks: typeof source.linkMarks === "boolean" ? source.linkMarks : DEFAULT_PREFERENCES.linkMarks,
+    plainCopy: PLAIN_COPY_MODES.includes(plainCopy as PlainCopyMode) ? (plainCopy as PlainCopyMode) : DEFAULT_PREFERENCES.plainCopy,
     propertiesPanel: PROPERTIES_PANEL_DEFAULTS.includes(propertiesPanel as PropertiesPanelDefault)
       ? (propertiesPanel as PropertiesPanelDefault)
       : DEFAULT_PREFERENCES.propertiesPanel,

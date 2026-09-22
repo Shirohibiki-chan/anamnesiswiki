@@ -82,9 +82,12 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   come through well. **Pasting in as text is a build with no decision in it**
   — the anti-goals in `ideas.md` already say so — and it is a paste handler
   passed to BlockNote with `plainTextAsMarkdown` and
-  `prioritizeMarkdownOverHTML` off. **What the plain-text copy should be is
-  her call**: text (right for a lorebook field, loses the bold) or Markdown
-  (right for Discord, litter in a text box).
+  `prioritizeMarkdownOverHTML` off.
+
+  **The copying-out half shipped on 2026-09-22** as a setting rather than a
+  decision: Ctrl+C is plain text or Markdown, whichever Settings → Writing
+  says, and the formatting bar offers the other one. What is left here is the
+  pasting-in half, which needs nothing asked.
 
 - **LegendKeeper's controls for a picture in a page, which the user pointed at
   2026-08-11 as the shape to match.** Two parts, neither built here yet:

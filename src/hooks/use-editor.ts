@@ -34,6 +34,7 @@ import { applyColumnRepairs, type RepairableEditor } from "../services/editor-bl
 import { applyPointerClones, type PointerEditor } from "../services/editor-blocks/apply-pointer-clones";
 import { selectAllExtension } from "../services/editor-blocks/select-all";
 import { calloutCaretExtension } from "../services/editor-blocks/callout-caret";
+import { copyClipboardExtension } from "../services/editor-blocks/copy-clipboard";
 import { linkableMarksExtension, refreshLinkableMarks } from "../services/editor-blocks/linkable-marks";
 import { useLinkMarks } from "./use-preferences";
 import { usePreferencesStore } from "../state/preferences-store";
@@ -121,7 +122,16 @@ export function useEditor(
             ? linkableNames(useProjectStore.getState().nodes, nodeId)
             : [],
       }),
+      // What Ctrl+C leaves for a plain box — see copy-clipboard.ts. Read off
+      // the store at copy time, like the marks above, so changing the setting
+      // takes hold on the page that is already open.
+      copyClipboardExtension({ mode: () => usePreferencesStore.getState().preferences.plainCopy }),
     ],
+    // The one above replaces BlockNote's own copy handler rather than racing
+    // it. Its name here is BlockNote's, and if an upgrade renames it the two
+    // handlers are both live and plugin order decides silently — which is
+    // what `copies-a-page-out.e2e.ts` is watching for.
+    disableExtensions: ["copyToClipboard"],
     initialContent: openedContent.length > 0 ? (openedContent as never) : undefined,
     // Phase 16. These two are what make a picture inside a page possible at
     // all: BlockNote's image block holds a single string, so `uploadFile`

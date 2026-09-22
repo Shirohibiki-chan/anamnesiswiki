@@ -20,6 +20,7 @@ import {
   type FormattingBarMode,
   clampGraphNameZoom,
   type GraphEdgeLabels,
+  type PlainCopyMode,
   type PropertiesPanelDefault,
   type TreeDoubleClickAction,
 } from "../services/preferences-service";
@@ -32,6 +33,7 @@ export type PreferencesStoreState = {
   setPropertiesPanelDefault: (mode: PropertiesPanelDefault) => void;
   setFormattingBar: (mode: FormattingBarMode) => void;
   setLinkMarks: (on: boolean) => void;
+  setPlainCopy: (mode: PlainCopyMode) => void;
   setListPaging: (mode: ListPagingMode) => void;
   setListPageSize: (size: ListPageSize) => void;
   setProjectView: (view: ProjectView) => void;
@@ -94,6 +96,10 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setLinkMarks(on) {
       apply({ ...get().preferences, linkMarks: on });
+    },
+
+    setPlainCopy(mode) {
+      apply({ ...get().preferences, plainCopy: mode });
     },
 
     setTreeDoubleClick(action) {

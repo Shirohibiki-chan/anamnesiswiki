@@ -49,6 +49,7 @@ import { CalloutColorMenuItem } from "./CalloutColorMenuItem";
 import { Infobox } from "../blocks/Infobox";
 import { PageBlock } from "../blocks/PageBlock";
 import { MediaEmbedBlock } from "../blocks/MediaEmbedBlock";
+import { CopyOtherWayButton } from "./CopyOtherWayButton";
 import { ExpandImageButton } from "./ExpandImageButton";
 import { PageFilePanel } from "./PageFilePanel";
 import { SaveImageButton } from "./SaveImageButton";
@@ -102,6 +103,7 @@ function toolbarGroup(key: string): string {
   if (key.endsWith("StyleButton")) return key === "colorStyleButton" ? "colour" : "marks";
   if (key.endsWith("BlockButton")) return "indent";
   if (key === "createLinkButton") return "link";
+  if (key === "copyOtherWay") return "copy";
   return "file";
 }
 
@@ -181,7 +183,7 @@ function PageFormattingToolbar() {
           ) : (
             item
           ),
-        ),
+        ).concat(<CopyOtherWayButton key="copyOtherWay" />),
       )}
     </FormattingToolbar>
   );
