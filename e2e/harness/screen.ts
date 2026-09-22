@@ -1034,8 +1034,13 @@ export async function typeInEditor(window: Page, text: string): Promise<void> {
  * the *first* block. No hand is that fast; the harness is.
  */
 async function caretSettled(window: Page): Promise<void> {
+  // The browser reports the move on its next frame and the editor reads it
+  // 20ms after that; a keystroke the editor handles itself (Enter, a
+  // shortcut) acts on what it has read. Then, where there are words, until
+  // the caret is in them.
+  await window.waitForTimeout(60);
   await window
-    .waitForFunction(() => window.getSelection()?.anchorNode?.nodeType === Node.TEXT_NODE, undefined, { timeout: 1000 })
+    .waitForFunction(() => window.getSelection()?.anchorNode?.nodeType === Node.TEXT_NODE, undefined, { timeout: 500 })
     .catch(() => {});
 }
 
@@ -1046,25 +1051,40 @@ async function caretSettled(window: Page): Promise<void> {
  * see `slash-trigger.ts` — so a scenario about the command menu has to be sure
  * it is really there.
  *
- * It gets there by making a new line at the end of the page. It used to press
- * `Home` instead, because **`Enter` from the end of the page did nothing**
- * (measured 2026-08-28, not chased) — which on 2026-09-21 turned out to be the
- * callout gap-cursor bug, since fixed. `Home` only ever reached the front of
- * the *visual* line, so on a page whose last block wrapped it was the middle
- * of a paragraph; a fresh line is what "the start of a line" meant all along.
+ * It gets there by making a new, empty line at the **top** of the page and
+ * typing on that. Until 2026-09-21 it pressed `Home` after `typeInEditor`'s
+ * `Ctrl+End`, and what that did was an accident twice over: the corner click
+ * left a gap cursor beside the page's first callout, `Home` from the
+ * unnormalised end-of-group caret jumped back to it, and typing into a gap
+ * cursor inserts a fresh paragraph *before* the block. So every scenario
+ * built on this helper was, in fact, typing on a new first line — at the top
+ * of the page, always on screen — and that is what it does now on purpose.
+ * (Its own comment used to record that `Enter` from here did nothing; that
+ * was the same bug.) A new line at the *end* of the page was tried first and
+ * put blocks below the fold on CI's smaller window, where every scroll
+ * remounts the block's side menu.
  */
 export async function typeAtLineStartInEditor(window: Page, text: string): Promise<void> {
-  await typeInEditor(window, "");
+  // The editor's top corner is the front of its first block — a click, which
+  // the editor handles on the spot, rather than a Ctrl+Home it reads later.
+  const editor = window.locator(EDITOR).first();
+  await editor.waitFor({ state: "visible", timeout: WAIT_MS });
+  await editor.click({ position: { x: 8, y: 8 } });
+  await caretSettled(window);
+  // Enter at the front of a block puts an empty one above it and leaves the
+  // caret where it was; the step up is onto the new line.
   await window.keyboard.press("Enter");
+  await window.keyboard.press("ArrowUp");
   await caretSettled(window);
   await window.keyboard.type(text, { delay: 20 });
 }
 
 /**
- * Types at the front of the page's first line — for a scenario that needs
- * the page's writing to *follow* what it puts in, such as the one that wraps
- * a paragraph round an infobox. A slash command here lands its block after
- * the first one, with everything else below it.
+ * Types at the front of the page's first line, *on* that line rather than
+ * above it — for a scenario that needs the page's writing to *follow* what
+ * it puts in, such as the one that wraps a paragraph round an infobox. A
+ * slash command here lands its block after the first one, with everything
+ * else below it.
  */
 export async function typeAtPageStartInEditor(window: Page, text: string): Promise<void> {
   await typeInEditor(window, "");
