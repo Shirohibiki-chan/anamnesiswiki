@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-22 — Removing a picture can be undone
+
+### Fixes
+
+- **Removing or replacing a page's picture, or its cover, can be undone.** It was the one thing the right-hand panel did that undo couldn't take back: removing a picture deletes its file once nothing else shows it, so putting the field back pointed at a file that was gone. The picture's bytes are now kept with the undo entry, the way a deleted page's already were, so undo puts the file back and then the picture; redo takes it away again. This covers *Remove image*, choosing a different picture from the library, uploading over one, and the cover's three equivalents.
+
 ## 2026-09-21 — One bad block no longer takes the app down
 
 ### Fixes
@@ -138,9 +144,3 @@
 ### Fixes
 
 - **Switching the theme with a board open now switches the board too.** A board used to read light or dark once, when it was opened, so a theme picked while one was on screen only reached it on the next visit. It follows at once now — the drawing's own toolbar, panels and canvas included — and follows a theme edited in the Colours panel as well.
-
-## 2026-09-20 — Boards in the exports
-
-### Additions
-
-- **A board goes into the exports as a picture.** The Markdown folder and the website carry a PNG of each board — the drawing as it looks, with page cards, notes, bookmarks and videos drawn in as labelled boxes, in their places — and the board's page shows it. The one big Markdown file carries the picture inside itself. The export window says how many boards went in as pictures. The LegendKeeper export can't carry a drawing, so it says a board goes across as an empty page and the board stays here as it is. A board with nothing on it gets no picture.

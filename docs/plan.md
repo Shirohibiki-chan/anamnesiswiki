@@ -36,8 +36,13 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   is a line or two calling a planner in a service, the way
   `renameTagEverywhere` calls `planTagRename`. The next slices worth taking, in
   rough order of what would hurt most if it broke: applying a template
-  (`applyTemplate`, `applyCustomTemplate`), the asset lifecycle
-  (`setNodeImage`, `clearNodeImage`, the banner pair), and the tab actions.
+  (`applyTemplate`, `applyCustomTemplate`) and the tab actions. The asset
+  lifecycle (`setNodeImage`, `clearNodeImage`, the banner pair) was looked
+  at on 2026-09-22 when its undo was fixed: its rules — which block draws
+  the page's picture, where a block's picture lives — already sit in
+  `block-service.ts`, and what is left in the store is the ordering of
+  reads, writes and releases against the disk, which is the store's job.
+  Nothing there to peel.
 
   **Not as its own phase.** Take a slice when a feature is already touching it,
   so the tests arrive with a reason to trust them. A rewrite of the whole file
@@ -152,12 +157,9 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
 
 ## Known Bugs
 
-- **Clearing or replacing a page's picture cannot be undone.** Everything else
-  the right-hand panel does became undoable with Phase 19; this one did not,
-  because clearing a picture deletes the file from `assets/` once nothing else
-  points at it, so undo would have to put the bytes back rather than a field.
-  `deleteNodes` already does exactly that with `captureAssets` — the way in is
-  to do the same here, not to invent a second mechanism.
+None open as of 2026-09-22. The five that were here on 2026-09-21 were fixed
+that day and the next; each is in `CHANGELOG.md` and, where a rule came out
+of it, in `docs/handoff.md`.
 
 ---
 

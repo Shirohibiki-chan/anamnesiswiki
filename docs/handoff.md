@@ -6380,3 +6380,17 @@ staying alive is what lets a broken block be removed without a restart.
 to another page is a fresh try rather than a stuck notice. Both boundaries
 record through `recordCrash`, so the bug report picks the fault up either
 way.
+
+## A picture's file comes back with undo
+
+`patchNode` takes a `leaving` picture — the file a slot is about to stop
+showing, read off disk first by `keepPicture` — and its undo writes the
+bytes back before it puts the field back; its redo releases the file again.
+Every action that changes which picture a slot shows goes through it
+(`setNodeImage`, `setNodeImageFromLibrary`, `clearNodeImage`, and the
+cover's three). Two things to keep: **read the bytes before the change**,
+not after — `releaseAsset` may have deleted the file by then; and **read
+them always**, not only when the file would be deleted — whether it will
+be is decided by what still points at it *after* the field moves, and
+asking beforehand counts the very slot being changed (the first cut did,
+and undo put back a field pointing at nothing).
