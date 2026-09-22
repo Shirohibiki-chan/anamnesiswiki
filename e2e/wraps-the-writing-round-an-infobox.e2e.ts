@@ -13,7 +13,7 @@ import {
   openPage,
   pickInfoboxMenuItem,
   textAroundInfobox,
-  typeAtLineStartInEditor,
+  typeAtPageStartInEditor,
   waitForWorld,
 } from "./harness/screen";
 
@@ -41,7 +41,7 @@ describe("wrapping the writing round an infobox", () => {
     await waitForWorld(app.window);
     await openPage(app.window, PAGE);
     await app.window.waitForTimeout(800);
-    await typeAtLineStartInEditor(app.window, "/infobox");
+    await typeAtPageStartInEditor(app.window, "/infobox");
     await app.window.getByText("A framed group of blocks, with its own Add Block").first().click();
     await app.window.waitForTimeout(800);
     await addBlockToInfobox(app.window, "Text Block");

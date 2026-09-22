@@ -19,6 +19,7 @@
 import { createExtension } from "@blocknote/core";
 import { Plugin, PluginKey, Selection } from "prosemirror-state";
 import type { EditorState, Transaction } from "prosemirror-state";
+import type { EditorView } from "prosemirror-view";
 
 const key = new PluginKey("anamnesisCalloutCaret");
 
@@ -39,6 +40,46 @@ export function settleGapCursor(state: EditorState): Transaction | null {
 
 const SETTLED = "settled";
 
+/**
+ * Puts the browser's caret where the state's selection is, and *in the text
+ * node* there rather than on the element before it. `focus()` alone leaves
+ * it at the element's edge — the same spot the click left it — and from that
+ * spot End and Ctrl+End move nothing.
+ */
+function drawCaretInWords(view: EditorView): void {
+  view.focus();
+  const from = view.state.selection.from;
+  let at: { node: globalThis.Node; offset: number };
+  try {
+    at = view.domAtPos(from);
+  } catch {
+    return;
+  }
+  if (at.node.nodeType === Node.TEXT_NODE) return;
+  const after = at.node.childNodes[at.offset];
+  const before = at.offset > 0 ? at.node.childNodes[at.offset - 1] : null;
+  const selection = view.dom.ownerDocument.getSelection();
+  if (after?.nodeType === Node.TEXT_NODE) selection?.collapse(after, 0);
+  else if (before?.nodeType === Node.TEXT_NODE) selection?.collapse(before, before.textContent?.length ?? 0);
+}
+
+/**
+ * Whether the browser's caret sits on an element rather than in a text node,
+ * at the place the state's selection is — the leftover of the click above.
+ * False when it is in text, or when it has been moved somewhere else.
+ */
+function caretOnAnEdge(view: EditorView): boolean {
+  const selection = view.dom.ownerDocument.getSelection();
+  const anchor = selection?.anchorNode;
+  if (!anchor || !view.dom.contains(anchor)) return true;
+  if (anchor.nodeType === Node.TEXT_NODE) return false;
+  try {
+    return view.posAtDOM(anchor, selection.anchorOffset) === view.state.selection.from;
+  } catch {
+    return true;
+  }
+}
+
 export const calloutCaretExtension = createExtension(() => ({
   key: "anamnesisCalloutCaret",
   prosemirrorPlugins: [
@@ -49,20 +90,22 @@ export const calloutCaretExtension = createExtension(() => ({
         apply: (tr) => tr.getMeta(key) === SETTLED,
       },
       appendTransaction: (_transactions, _oldState, newState) => settleGapCursor(newState),
-      // The state now says the caret is in the words, but the browser's is
-      // not there yet: ProseMirror holds off moving the drawn caret while a
-      // mouse button is down on Chromium, and the click that made the gap
-      // cursor was claimed by the gap cursor's own plugin, so the usual move
-      // on release never comes. Left like that, End and Ctrl+End go nowhere
-      // and typing lands beside the words. `focus()` is the one call that
-      // forces the drawn caret to where the state says — after the click has
-      // finished, not in the middle of it.
+      // The state now says the caret is in the words, but the drawn one is
+      // not there yet: the click that made the gap cursor was claimed by the
+      // gap cursor's own plugin, and what the browser is left holding is a
+      // caret on the edge of the callout's content element rather than in
+      // its text — a spot End and Ctrl+End cannot move from, and where typing
+      // lands beside the words. `focus()` forces the drawn caret to where the
+      // state says. Once now, and once more after the click has finished —
+      // but that second time only if the caret is still on the edge: a key
+      // pressed in between (Ctrl+End, say) has moved it on, and pulling it
+      // back would undo the press.
       view: () => ({
         update: (view) => {
           if (!key.getState(view.state)) return;
-          view.focus();
+          drawCaretInWords(view);
           setTimeout(() => {
-            if (key.getState(view.state)) view.focus();
+            if (key.getState(view.state) && caretOnAnEdge(view)) drawCaretInWords(view);
           }, 0);
         },
       }),

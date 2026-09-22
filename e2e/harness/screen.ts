@@ -1022,7 +1022,21 @@ export async function typeInEditor(window: Page, text: string): Promise<void> {
   // cursor after everything, which is where someone adding a line would be.
   await editor.click({ position: { x: 8, y: 8 } });
   await window.keyboard.press("Control+End");
+  await caretSettled(window);
   await window.keyboard.type(text, { delay: 20 });
+}
+
+/**
+ * Waits for the editor to have read the browser's caret back. A native move
+ * such as Ctrl+End puts the browser's caret at the end of the block group
+ * and the editor normalises it into the last words a tick later; a key sent
+ * inside that tick acts on the unnormalised spot — Home from there goes to
+ * the *first* block. No hand is that fast; the harness is.
+ */
+async function caretSettled(window: Page): Promise<void> {
+  await window
+    .waitForFunction(() => window.getSelection()?.anchorNode?.nodeType === Node.TEXT_NODE, undefined, { timeout: 1000 })
+    .catch(() => {});
 }
 
 /**
@@ -1032,16 +1046,30 @@ export async function typeInEditor(window: Page, text: string): Promise<void> {
  * see `slash-trigger.ts` — so a scenario about the command menu has to be sure
  * it is really there.
  *
- * It gets there with `Home` rather than by making a new line, and that is worth
- * knowing: **pressing `Enter` from here does not add a block.** Measured
- * 2026-08-28, and not chased down, because a scenario built on a keystroke that
- * silently does nothing passes or fails for reasons unrelated to what it is
- * testing. `Home` moves the caret to the front of whatever line it is already
- * on, which is the state under test, and it works.
+ * It gets there by making a new line at the end of the page. It used to press
+ * `Home` instead, because **`Enter` from the end of the page did nothing**
+ * (measured 2026-08-28, not chased) — which on 2026-09-21 turned out to be the
+ * callout gap-cursor bug, since fixed. `Home` only ever reached the front of
+ * the *visual* line, so on a page whose last block wrapped it was the middle
+ * of a paragraph; a fresh line is what "the start of a line" meant all along.
  */
 export async function typeAtLineStartInEditor(window: Page, text: string): Promise<void> {
   await typeInEditor(window, "");
-  await window.keyboard.press("Home");
+  await window.keyboard.press("Enter");
+  await caretSettled(window);
+  await window.keyboard.type(text, { delay: 20 });
+}
+
+/**
+ * Types at the front of the page's first line — for a scenario that needs
+ * the page's writing to *follow* what it puts in, such as the one that wraps
+ * a paragraph round an infobox. A slash command here lands its block after
+ * the first one, with everything else below it.
+ */
+export async function typeAtPageStartInEditor(window: Page, text: string): Promise<void> {
+  await typeInEditor(window, "");
+  await window.keyboard.press("Control+Home");
+  await caretSettled(window);
   await window.keyboard.type(text, { delay: 20 });
 }
 
@@ -3711,6 +3739,7 @@ export async function typeInBoardViewPanel(window: Page, text: string): Promise<
   await editor.waitFor({ state: "visible", timeout: WAIT_MS });
   await editor.click({ position: { x: 8, y: 8 } });
   await window.keyboard.press("Control+End");
+  await caretSettled(window);
   await window.keyboard.type(text, { delay: 20 });
 }
 
