@@ -72,23 +72,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   as a fix; that's a design decision wearing a tidy-up's clothes, and it's hers.
   Related: icons you choose yourself, in `docs/ideas.md`.
 
-- **Paste was measured on 2026-09-21 and is wrong today; the fix is not yet
-  built.** The findings are in `docs/ideas.md` → Import and paste fidelity.
-  The short version: plain text is read as Markdown on the way in, so
-  `*asterisks*` become italics, `<angle brackets>` vanish and `# ` becomes a
-  heading; one Markdown-looking word in a Google Docs paste throws the
-  document's real formatting away; and the plain-text copy *out* is Markdown
-  with backslashes before line breaks. Google Docs and Word HTML themselves
-  come through well. **Pasting in as text is a build with no decision in it**
-  — the anti-goals in `ideas.md` already say so — and it is a paste handler
-  passed to BlockNote with `plainTextAsMarkdown` and
-  `prioritizeMarkdownOverHTML` off.
-
-  **The copying-out half shipped on 2026-09-22** as a setting rather than a
-  decision: Ctrl+C is plain text or Markdown, whichever Settings → Writing
-  says, and the formatting bar offers the other one. What is left here is the
-  pasting-in half, which needs nothing asked.
-
 - **LegendKeeper's controls for a picture in a page, which the user pointed at
   2026-08-11 as the shape to match.** Two parts, neither built here yet:
   - **Buttons that appear over the picture on hover** — change image, reposition,
