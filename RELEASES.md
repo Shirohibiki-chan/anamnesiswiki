@@ -122,7 +122,7 @@ The biggest release so far. A world can hold several versions of itself now, as 
 - **Export ▸ As a Website** writes a folder of web pages anyone can read in a browser. It uses your theme and fonts and includes a search box. Hidden pages, hidden tabs and Secret callouts are always left out, and the export counts them for you before it saves.
 - **Import a folder of notes.** An Obsidian vault, a folder of `.md` and `.txt` files, a zip, or a single note becomes a new world, pictures and `[[links]]` included. You can also drag it onto the start screen.
 - **Ctrl+P prints the page**: the whole page, on white, with nothing around it. Choose Print to PDF in the print dialog to get a PDF.
-- **YouTube blocks and filled Spotify fields from a `.lk` import come in as real players**, and warning and error panels come in as coloured callouts instead of Secrets.
+- **YouTube blocks and filled Spotify fields imported from LegendKeeper come in as real players**, and warning and error panels come in as coloured callouts instead of Secrets.
 
 ### Undo and history
 
@@ -148,7 +148,7 @@ The biggest release so far. A world can hold several versions of itself now, as 
 - **Plain text pasted into a page doesn't lose characters any more.** Roleplay-style `*actions*` used to lose their asterisks, and a name in `<angle brackets>` disappeared completely.
 - **Changes made right after opening a page are saved.** Setting a shortcut, changing the home page or moving pages in the first moment after opening one could be undone the next time the app started.
 - **A folder turned into another kind of page stays that way.** It used to switch back to a folder the next time the world opened.
-- **Warnings imported from a `.lk` file are no longer turned into Secrets.** Before this fix, every warning in an imported world was quietly marked as private.
+- **Warnings imported from LegendKeeper are no longer turned into Secrets.** Before this fix, every warning in an imported world was quietly marked as private.
 - **One broken block no longer crashes the whole app.** That block shows a notice with *Try Again* and a menu to remove it, and everything else keeps working.
 - **A world that can't be opened says why**, and a damaged one stays on the start screen's list instead of disappearing.
 - **Clicking the coloured edge of a callout puts the cursor in it.** It used to leave an invisible cursor beside the callout, so typing and Enter did nothing.
