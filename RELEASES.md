@@ -13,6 +13,150 @@ that.
 
 ---
 
+## v0.7.0 — 2026-09-30
+
+The biggest release so far. A world can hold several versions of itself now, as universes. A page can be shown as a table. Pages can be laid out in columns and infoboxes instead of one long column of writing. There's a graph of how everything connects, storylines for putting scenes in order, and whiteboards. YouTube, Spotify and SoundCloud players can go in a page, and a world can go out as Markdown, a single file or a website. The window has been rearranged too, so if something isn't where you left it, **Things that moved** below says where it went.
+
+### Installing
+
+- **The update button works for this one.** Unlike last time, there's nothing to download by hand.
+- **Windows** shows "Windows protected your PC" the first time you run a new installer. Click More info, then Run anyway.
+- **macOS won't open it from a double-click.** Right-click the app, choose Open, then Open again. You only have to do it once, and Mac updates still have to be installed by hand.
+
+### Things that moved
+
+- **The buttons along the top of the window are now a rail down the left**: Project, Library, Templates, Search, Graph, Switch Project and Settings, each labelled.
+- **Assets is called Library now.** Nothing on disk changed, and your pictures are still in the same `assets` folder.
+- **The bar above the page is gone.** Home, back and forward sit in a row at the bottom of the sidebar, under the tree. The button that shows and hides the properties panel is at the top right of the page.
+- **The window has its own title bar in your theme's colours**, with slimmer minimise, maximise and close buttons. On Windows, the snap-layouts grid you got by hovering over maximise went with the old buttons. Dragging a window to the edge of the screen and Win+arrow still snap it.
+- **Settings opens as a panel down the right-hand side**, and it stays in the same place for every section. The app beside it stays clickable, so you can walk to another page and watch a theme or a font change land on it.
+- **Species is called Race now**, and there's a new Creature template for animals and monsters. Pages you already made just show up as Race. Nothing on disk was rewritten.
+- **Page text is in Nunito and starts at 15px instead of 16.** If you'd already moved the Writing size slider, your text comes out about 6% smaller than before. Nudge the slider up one step to get it back.
+- **Typing `/` only opens the slash menu at the start of a line.** A slash in the middle of a sentence, as in "and/or", is just a slash.
+- **Ctrl+V pastes plain text exactly as you copied it.** `*asterisks*`, `<angle brackets>` and a `#` at the start of a line all stay as you typed them. Ctrl+Shift+V pastes it as Markdown, for when you want those turned into formatting.
+- **Ctrl+C copies plain text to anywhere that only takes plain text**, such as a chat box or a character card field, rather than Markdown full of `**` marks. If you'd rather have Markdown, change *What Ctrl+C copies* under Settings → Writing. The other kind is always one button away on the formatting bar.
+
+### Universes
+
+- **A universe is one version of your world**, such as Canon, an AU or a what-if. Make one with the **+** on the universe switcher under your world's name, or turn a page already at the top of the tree into one without moving anything inside it.
+- **The tree shows one universe at a time.** A character that used to sit four levels deep under AUs / Demonic AU / Characters is now two levels down. *All universes* shows everything at once.
+- **A shared universe holds what's true in every version**, like a map, a magic system or a language. Its pages appear under whichever universe you're working in.
+- **Following a link or a search result into another universe takes you there.** The app also remembers which universe you were in the next time you open the world.
+- **Removing a universe keeps every page in it.** It just goes back to being an ordinary page at the top of the tree.
+
+### Laying out a page
+
+- **Blocks can sit in the writing, not just in the sidebar.** Anything from Add Block (text, pictures, tags, meters, lists of pages) can go into the page through the `/` menu's *Page blocks*. There it gets the full width of the page. Delete it from the page and it goes back to the sidebar.
+- **Infoboxes.** `/infobox` puts a framed group of blocks into the page, with its own colour and width. It can sit to one side with the writing flowing around it (*Wrap Left* / *Wrap Right*).
+- **Columns.** `/columns` or `/three columns` put lanes of writing side by side. Drag the line between them to resize the lanes. Removing a column never loses what's in it.
+- **Blocks can be dragged narrower** by their edges. They snap to half, a third, a quarter and so on as you drag.
+- **Each picture block holds its own picture.** Two picture blocks used to show the same portrait. You choose which one is the page's main picture.
+- **`/contents`** adds a list of the page's headings that updates as you edit. Click a heading in it to jump there.
+- **Link to one spot on a page.** Every block's menu has *Copy Link to This Block*. Following that link opens the right tab, scrolls to the block and highlights it.
+
+### Writing
+
+- **Callouts can be any colour**, and the slash menu offers Info, Success, Warning, Danger, Quote and Secret. Each one comes with an icon you can change or remove.
+- **Emoji and icons in a sentence.** Type `:` and a few letters for a Discord-style list (`:smile:`). Ctrl+`:` opens the full picker. The emoji tab now has all 1,870 emoji instead of 129.
+- **Page names you've already written can become links.** `/Link Page Names` finds every page name in the page and lets you choose which ones to link, and one undo takes them all back. A dotted line under a name shows it could be a link while you type. You can turn that off in Settings → Writing.
+- **Make a page without leaving the one you're writing.** `/New Page` asks for a name and a location, then drops a link where your cursor was. Typing `[[` and a name that doesn't exist yet offers to create the page.
+- **The formatting bar can stay fixed at the top of the page** instead of only appearing when you select something. Settings → Writing.
+- **21 new typefaces**, for 119 in all, and the font menu has a search box.
+- **A new page can be written in straight away.** The "what kind of page is this?" offer goes away once you start typing.
+- **The `?` sheet has three tabs**: Keys, Slash Commands, and the Markdown shortcuts that turn into formatting as you type.
+
+### Tables
+
+- **Any page can be shown as a table of the pages inside it.** Right-click it and choose Turn into ▸ Table. There's a row for each page and a column for each property. Nothing moves, and turning the table off puts everything back exactly as it was.
+- **Type straight into the cells.** Text, numbers, dates and dropdowns can be edited in the row, and one undo puts a cell back.
+- **Filter, sort, group and hide columns.** Filters can compare numbers (*more than*, *at most*…), and a table can pull in pages from across the whole universe or the whole world, not just the ones inside it.
+- **Four layouts**: table, cards, a board you can drag cards between (which sets their value), and a list.
+- **Subpage Index and Tag Index blocks work the same way**, with the same layouts, columns, filters, sorting and grouping.
+
+### The graph
+
+- **See what a page is connected to.** The button beside a page's name opens a graph of everything it mentions, everything that mentions it, its reference fields and the pages it's filed under. The Graph button on the rail draws your whole universe.
+- **Filter it** by template, tag or kind of connection, choose how many steps out it reaches, and hide pages nothing points at. Pages you drag stay where you put them.
+- **It works on big worlds.** It was tested at 800+ pages: zoomed out, pages are dots and the busiest ones are bigger, pointing at a page lights up its connections, and panning and zooming stay smooth.
+- **Characters now come with Family, Friends, Allies, Rivals and Enemies fields**, and each one shows up on the graph as a labelled line.
+
+### Storylines
+
+- **Storyline is a new kind of page with a canvas for a body.** Each scene on it is a real page in your tree. Draw arrows between scenes to show what leads to what, including stories that split and join back up.
+- **Put pages you already have on it**, write what happens straight onto a card, give a scene a picture, and add notes (with `[[links]]`) and labelled stretches like "Act 2".
+- **Each card shows who's in the scene**, taken from whatever that scene's page links to.
+- **Right-click anything on the canvas** to see everything you can do with it. Tidy Up lines the scenes up in order when you ask it to.
+
+### Boards
+
+- **Board is a new kind of page: a whiteboard** with shapes, arrows, freehand drawing, text, sticky notes and a highlighter, in a hand-drawn style.
+- **Put your pages on it.** Drag them in from the sidebar or use *Put a Page on It*. A card shows the page's picture and name, and stretching a card far enough opens it into the page itself, which you can write in. *View* opens a page in a panel beside the board.
+- **Link any shape to a page.** A locked card or linked shape opens its page with one click.
+- **Paste a web address** and it becomes a card with the site's title and picture. **Drop a video file** and it plays on the board. **Animated GIFs move.**
+- **Frames can hold frames and can be rotated.** There's a Layers panel for everything on the board, and a strip of tabs along the bottom for boards inside boards.
+- Pictures on a board go into the Library like everything else, and the board follows your theme.
+
+### Music and video
+
+- **Paste a YouTube, YouTube Music, Spotify or SoundCloud link on an empty line** and it becomes a player. There's also `/YouTube`, `/Spotify`, `/SoundCloud` and `/Embed`, and Add Block ▸ Music or Video puts one in the sidebar.
+- **Nothing loads from YouTube until you press play.** A video shows as a still until then, so a page with five videos doesn't start five players.
+- **Players still show their title and picture offline.** They just can't play until you're back online.
+
+### Home pages and quick capture
+
+- **Quick capture.** A block you type a thought into, which files it as a new page under the right place without taking you away from where you are. Start with a destination's name and a dash (`magic - i love witches!`) to send it straight there. **Ctrl+Shift+N** opens it from anywhere.
+- **Recently Edited and Shortcuts blocks**, for a home page.
+- **A Dashboard template** that arrives already built, with a snippet (`dashboard.css`) that styles it. You can edit the snippet, switch it off or delete it.
+- **Style names.** Give a page a style name from its right-click menu, and a snippet can style that one page. Templates can carry a style name too, so every Character page can share a character-sheet look.
+
+### Templates
+
+- **Every built-in template has been rebuilt** with its own tabs and sections. A Character opens on *Who They Are* with *Ties* beside it. This only changes new pages. Pages you've already made, and templates you've customised, stay as they are.
+- **Five new templates**: Country, Creature, Technology, Scene and Quest. Storyline, Board, Dashboard, Folder and Note are listed separately as special pages.
+- **A template can name the pages inside it after the page it's used on.** Make a page called Damien from it and you get Damien_Pics and Damien_Sheets, which follow if you rename Damien. *Add Pages From Template* on a page's right-click menu adds a template's inner pages to a page that already exists.
+- **Share a template as a file.** Your templates can be saved as a `.anpage` file, and one you've been sent can be opened from the Templates panel. Its pictures come with it.
+
+### Getting your world in and out
+
+- **Export ▸ As Markdown** writes a folder of `.md` files that opens as an Obsidian vault. There's also **one big Markdown file**, and **a JSON zip** that's your project folder exactly as it sits on disk.
+- **Export ▸ As a Website** writes a folder of web pages anyone can read in a browser. It uses your theme and fonts and includes a search box. Hidden pages, hidden tabs and Secret callouts are always left out, and the export counts them for you before it saves.
+- **Import a folder of notes.** An Obsidian vault, a folder of `.md` and `.txt` files, a zip, or a single note becomes a new world, pictures and `[[links]]` included. You can also drag it onto the start screen.
+- **Ctrl+P prints the page**: the whole page, on white, with nothing around it. Choose Print to PDF in the print dialog to get a PDF.
+- **YouTube blocks and filled Spotify fields from a `.lk` import come in as real players**, and warning and error panels come in as coloured callouts instead of Secrets.
+
+### Undo and history
+
+- **Undo now covers the properties panel**: fields, tags, pictures and every block. It also covers adding, renaming, reordering and deleting tabs. Deleting a tab used to be permanent.
+- **Removing a page's picture can be undone**, and the picture comes back with it.
+- **Keep a version under a name.** In *Earlier Versions*, *Keep This Version* saves the one you're looking at under a name, and named versions are never cleaned up automatically. *Keep a Copy Now* saves the page as it is right now.
+- **The tree has earlier versions too**, covering page order, the home page, pins and which folders were open. Right-click the world's name at the top of the sidebar to find them.
+- **Settings → History** controls how often copies are kept and for how long.
+
+### New to Anamnesis
+
+- **An example world, Saltmere**, comes with a new install. It's a small world you can open and explore in about ten minutes, and deleting it is permanent.
+- **A four-step tour** runs the first time a world opens. Settings → Getting Started brings the tour back, or makes a fresh copy of the example world.
+
+### Other additions
+
+- **Projects can be deleted** from a tile's ••• menu. The folder goes to the recycle bin, so you can get it back if you picked the wrong one.
+- **Each page remembers whether its properties panel is open or closed.** Settings → Sidebar chooses which one new pages start with.
+- **Settings → About** shows which version you're running and what it's built with.
+
+### Fixes worth knowing about
+
+- **Plain text pasted into a page doesn't lose characters any more.** Roleplay-style `*actions*` used to lose their asterisks, and a name in `<angle brackets>` disappeared completely.
+- **Changes made right after opening a page are saved.** Setting a shortcut, changing the home page or moving pages in the first moment after opening one could be undone the next time the app started.
+- **A folder turned into another kind of page stays that way.** It used to switch back to a folder the next time the world opened.
+- **Warnings imported from a `.lk` file are no longer turned into Secrets.** Before this fix, every warning in an imported world was quietly marked as private.
+- **One broken block no longer crashes the whole app.** That block shows a notice with *Try Again* and a menu to remove it, and everything else keeps working.
+- **A world that can't be opened says why**, and a damaged one stays on the start screen's list instead of disappearing.
+- **Clicking the coloured edge of a callout puts the cursor in it.** It used to leave an invisible cursor beside the callout, so typing and Enter did nothing.
+- **Faint text is brighter in every theme.** Hints, dates, labels and placeholders were hard to read, especially in menus.
+- **A segmented meter's segments match its number**, so 7 out of 10 fills seven whole segments.
+
+---
+
 ## v0.6.0 — 2026-08-27
 
 Anamnesis carries its own browser engine now instead of borrowing whichever one your computer happens to have. That's why this one has to be installed by hand — the copy you're running can't update itself across to it — and it's the last time that'll be true. Alongside it: every page keeps its earlier versions, every shortcut fits on one screen, there's somewhere to report a bug from inside the app, and a crash tells you what happened instead of leaving you a blank window.
