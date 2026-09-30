@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-30 — Import shows everything it can take, and takes more
+
+### Additions
+
+- **The Import window lists where a world can come from, one tile each:** LegendKeeper, Obsidian, Text & Markdown, HTML, Anamnesis Backup, Folder and Zip, each with a line saying what to pick. Before, there were two buttons, *Choose a File* and *Choose a Folder*, and the only way to find out what the app could take was the sentence above them. A tile opens the picker already set to that kind of file; pick something else by mistake and it still comes in as what it really is.
+- **A drop box under the tiles.** Drag a file or folder onto it (or anywhere on the window, as before) and it imports; it lights up while something is being dragged. Clicking it opens a picker for anything importable, for when you have the file and don't know which tile it is.
+- **Web pages can be imported.** A single `.html` page, a folder of them, or a zip — a Notion export, a saved wiki, or a website published from here. Headings, lists, tables, quotes, code, pictures and links between the pages all come across, and a page's folder of sub-pages becomes pages inside it. To bring in a whole website with the HTML tile, pick its `index.html`.
+- **A website published from Anamnesis comes back with its tabs, fields, portrait and callouts.** What the website had already flattened — a meter drawn as a bar, a table drawn from a database — comes back as it was drawn, so the backup below is the way back that loses nothing.
+- **An Export as JSON zip can be imported.** It used to be turned away with directions to unzip it into your projects folder yourself. Now the Anamnesis Backup tile (or Zip, or dropping it) restores it as a new project — every page, picture and earlier version exactly as it was saved — says how many of each before it starts, and opens it. It never writes over an existing project: restoring next to the original gives the copy its own folder. A project folder picked through Folder is restored the same way.
+
+### Changes
+
+- **The start screen's Import line** reads "From LegendKeeper, Obsidian, Markdown, HTML or a backup."
+
 ## 2026-09-30 — Import says whose files it takes
 
 ### Changes
@@ -140,12 +154,3 @@
 ### Additions
 
 - **Add Block offers Music or Video.** A YouTube, YouTube Music, Spotify or SoundCloud player as a sidebar block — a character's theme in the infobox, a location's ambience beside its description. The block opens on a box for the link; once it has one it draws the same player the page does, at sidebar width, and names itself by what the link is ("Spotify track", "YouTube video") until you rename it. It has everything a sidebar block has — a title, a colour, a place in a template, drag between the sidebar, the page and an infobox — and its own menu gains Open on the service, Copy Link and Fetch Again. Nothing in the sidebar plays until you press play.
-
-## 2026-09-21 — Music and video in the page
-
-### Additions
-
-- **A YouTube, YouTube Music, Spotify or SoundCloud link becomes a player in the page.** Paste the link on an empty line and it turns into the player — a link pasted in the middle of a sentence stays a link, since the sentence is what you were writing. `/YouTube`, `/Spotify`, `/SoundCloud` and `/Embed` in the slash menu put down a box for the link instead, for when it isn't on the clipboard yet; a link from anywhere else is turned away with a line saying which four play here. Every form of link the services hand out works: `youtu.be`, watch, shorts, live and playlist links, YouTube Music, Spotify's tracks, albums, playlists, artists, episodes and shows, and SoundCloud tracks and sets.
-- **Each one looks like it belongs.** The player sits in the same frame every block gets, so it takes the theme. A YouTube video is a still until it is played — the video's own picture with its title over it and a play mark — and only a click loads the real player, so a page with five videos doesn't start five players and nothing from YouTube loads into your page until you ask. YouTube Music plays through the same player, since its links share YouTube's ids. Spotify's own card is shown as it is, in its dark look on a dark theme, compact for a track and tall for an album or playlist; SoundCloud's player takes the theme's accent for its buttons and bar. A video is the width of the page; a single track is not, and either can be dragged to another width by its edges, the way a block can.
-- **A caption line under each player, the way a picture has** — hover to find it — and a menu on right-click or the `⋯` in the corner: Open on the service, Copy Link, Fetch Again, Remove.
-- **A player draws whole with the internet off.** When a link is pasted the service is asked once what it is — the title, who made it, and a thumbnail that goes into the world's library — and that is what the card draws, with a "needs the internet to play" note where the player would be. A link the service wouldn't answer for keeps its address and is asked again the next time the page is opened online.

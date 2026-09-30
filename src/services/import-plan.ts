@@ -61,3 +61,28 @@ export type ImportPlan = {
   assets: ImportAsset[];
   preview: ImportPreviewNode[];
 };
+
+/** One file of a world's own backup, by its path inside the world. */
+export type BackupFile = { path: string; read: () => Promise<Uint8Array> };
+
+/**
+ * A world's own files, restored as they are (2026-09-30).
+ *
+ * **Not an `ImportPlan`, because nothing is translated.** The JSON export is
+ * the project folder zipped exactly as it sat on disk, so bringing it back is
+ * putting the files back — no nodes to build, no preview tree to draw from a
+ * guess, and nothing that could come across imperfectly. The counts are what
+ * the preview says in place of a tree.
+ */
+export type BackupPlan = {
+  kind: "backup";
+  projectName: string;
+  pageCount: number;
+  pictureCount: number;
+  versionCount: number;
+  files: BackupFile[];
+};
+
+export function isBackupPlan(plan: ImportPlan | BackupPlan): plan is BackupPlan {
+  return "kind" in plan && plan.kind === "backup";
+}

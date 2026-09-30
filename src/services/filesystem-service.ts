@@ -2529,6 +2529,57 @@ export async function writeFileTree(parentDir: string, folderName: string, tree:
   return { path: root, filesWritten: tree.files.length, copied, missing };
 }
 
+/**
+ * A world's own files, put back as a new project (2026-09-30).
+ *
+ * **Into a fresh folder, never over one**, for `freshFolder`'s reason: a
+ * backup restored beside the world it came from lands as `Name (2)` rather
+ * than on top of it. The two then share an id, which is what a folder copied
+ * in File Explorer looks like and what the library scan already repairs by
+ * minting the newer one its own (`reidentifyForkedProject`) — so this does not
+ * decide which of them is the original.
+ *
+ * **Every path is checked before anything is written.** The files come out of
+ * a zip somebody handed her, and an entry named `../../something` would
+ * otherwise write outside the folder it was meant for. One bad path refuses
+ * the whole backup, since a world restored with pieces missing is worse than
+ * one not restored.
+ *
+ * The name in `project.json` is set to the one she confirmed, edited untyped
+ * for `setProjectCoverImage`'s reason: a field this build doesn't know about
+ * survives the trip.
+ */
+export async function restoreWorldBackup(
+  parentDir: string,
+  folderName: string,
+  name: string,
+  files: { path: string; read: () => Promise<Uint8Array> }[],
+  onProgress?: (done: number, total: number) => void,
+): Promise<string> {
+  for (const file of files) {
+    const segments = file.path.split("/");
+    if (segments.some((segment) => !segment || segment === "." || segment === ".." || /[:\\]/.test(segment))) {
+      throw new Error(`This backup has a file in it that points outside itself (${file.path}), so nothing was restored.`);
+    }
+  }
+
+  const root = await freshFolder(parentDir, folderName);
+  let done = 0;
+  for (const file of files) {
+    const segments = file.path.split("/");
+    if (segments.length > 1) await mkdir(joinPath(root, ...segments.slice(0, -1)), { recursive: true });
+    await writeFile(joinPath(root, ...segments), await file.read());
+    done += 1;
+    onProgress?.(done, files.length);
+  }
+
+  const projectPath = joinPath(root, PROJECT_FILE);
+  const raw = JSON.parse(await readTextFile(projectPath)) as Record<string, unknown>;
+  raw.name = name;
+  await writeTextFile(projectPath, JSON.stringify(raw, null, 2));
+  return root;
+}
+
 // --- Phase 12: themes and snippets ----------------------------------------
 // A theme is a `.css` file in a folder, so reading them is a directory listing
 // and some text reads. That is all this section is. Deciding what a stylesheet
