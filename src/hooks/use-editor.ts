@@ -6,6 +6,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ClipboardEvent as ReactClipboardEvent,
@@ -35,6 +36,7 @@ import { applyPointerClones, type PointerEditor } from "../services/editor-block
 import { selectAllExtension } from "../services/editor-blocks/select-all";
 import { calloutCaretExtension } from "../services/editor-blocks/callout-caret";
 import { copyClipboardExtension } from "../services/editor-blocks/copy-clipboard";
+import { pasteAsText } from "../services/editor-blocks/paste-clipboard";
 import { linkableMarksExtension, refreshLinkableMarks } from "../services/editor-blocks/linkable-marks";
 import { useLinkMarks } from "./use-preferences";
 import { usePreferencesStore } from "../state/preferences-store";
@@ -102,6 +104,11 @@ export function useEditor(
     ? withoutDanglingBlockRefs(content, new Set(nodes[nodeId].blocks.map((block) => block.id)))
     : content;
 
+  // One per editor, and made before it: the chord extension and the paste
+  // handler are two ends of the same flag, and both are read once when the
+  // editor is created.
+  const paste = useMemo(() => pasteAsText(), []);
+
   const editor = useCreateBlockNote({
     schema: editorSchema,
     // Ctrl+A, which stops selecting anything once a row of columns is on the
@@ -126,7 +133,14 @@ export function useEditor(
       // the store at copy time, like the marks above, so changing the setting
       // takes hold on the page that is already open.
       copyClipboardExtension({ mode: () => usePreferencesStore.getState().preferences.plainCopy }),
+      // The chord half of pasting — see paste-clipboard.ts. Its handler is
+      // `pasteHandler` below; the two share one flag, which is why they are
+      // made together rather than imported separately.
+      paste.extension,
     ],
+    // Plain text pasted in is plain text, rather than Markdown. The other
+    // reading is Ctrl+Shift+V.
+    pasteHandler: paste.handler,
     // The one above replaces BlockNote's own copy handler rather than racing
     // it. Its name here is BlockNote's, and if an upgrade renames it the two
     // handlers are both live and plugin order decides silently — which is

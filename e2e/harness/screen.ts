@@ -4200,6 +4200,27 @@ export async function pasteTextInEditor(window: Page, text: string): Promise<voi
 }
 
 /**
+ * Pastes text the way Ctrl+Shift+V does — the chord that asks for the one
+ * reading the app does not do by default, Markdown (2026-09-22).
+ *
+ * **The chord is dispatched rather than pressed, and that is a limit worth
+ * knowing.** Pressing it for real would make the browser paste whatever is on
+ * the machine's clipboard, which this suite may not touch (docs/handoff.md) —
+ * so what is covered here is everything downstream of the key: the flag it
+ * arms and the reading the paste then gets. That the browser delivers a paste
+ * event for that chord at all is the browser's own behaviour, and is not
+ * covered.
+ */
+export async function pasteAsMarkdownInEditor(window: Page, text: string): Promise<void> {
+  await window.locator(EDITOR).first().evaluate((editor, pasted) => {
+    editor.dispatchEvent(new KeyboardEvent("keydown", { key: "V", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }));
+    const carried = new DataTransfer();
+    carried.setData("text/plain", pasted);
+    editor.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: carried }));
+  }, text);
+}
+
+/**
  * Puts the caret on the last line of the open page — clicked directly, because
  * `typeInEditor`'s top-corner click lands on whatever the first block is, and
  * when that is a player (a node, not text) Ctrl+End has no caret to move.

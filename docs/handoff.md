@@ -6424,3 +6424,30 @@ Three things to keep:
   they read, and it is also what survives the round trip once pasting plain
   text in as text is built — a blank line is a paragraph break, so an empty
   paragraph somebody left on purpose comes back as one.
+
+## What Ctrl+V reads
+
+Plain text pasted into a page is put in as the characters it was made of;
+Ctrl+Shift+V asks for the Markdown reading instead. **The asymmetry with
+copying out is the point, not an oversight** — a setting decides what Ctrl+C
+leaves behind because both answers are lossless, and no setting decides this
+one because the two answers are not equal: reading `*action text*` as italics
+deletes characters that were typed, and the literal reading loses nothing that
+Ctrl+I cannot put back.
+
+Two things to keep:
+
+- **`plainTextAsMarkdown: false` is not enough, and this is the trap.**
+  tiptap's Bold, Italic, Strike and Code marks each add a *paste rule*, a
+  regex run over whatever was just pasted, fired from an `appendTransaction`
+  that watches for ProseMirror's `uiEvent: "paste"`. Every route through the
+  paste pipeline sets that marker, so `pasteText`, `pasteHTML` and
+  `defaultPasteHandler` all still eat `*asterisks*` however the handler is
+  configured. The literal reading therefore inserts with `insertInlineContent`
+  and `insertBlocks` — ordinary edits, no marker, no rules. Moving it back
+  onto any paste call brings the bug back, and only
+  `e2e/pastes-text-into-a-page.e2e.ts` will say so.
+- **A blank line is a paragraph break and a single one is a line break**, the
+  mirror of `copy-as-text.ts`. That pairing is what makes the round trip
+  exact, which is the acceptance test the fidelity notes name: not whether it
+  looks right on screen, but whether pasting it out gives back what went in.
