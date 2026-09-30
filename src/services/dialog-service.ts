@@ -319,24 +319,43 @@ export async function pickImageFile(): Promise<string | null> {
  * choice fails at the parse step with a message, which is a better place to
  * fail than a file list that silently omits the file.
  *
- * One picker for every format (settled 2026-08-18, built out in Phase 20):
- * the errand is "bring my world in", and which program it came out of is a
- * detail of the file. Each importer is a filter entry here and a branch on
- * what the bytes turn out to be in `use-import.ts`. A folder is the one
- * thing a file picker cannot return, so that has its own button and the
- * drop on the window.
+ * **The picker opens on the format she chose** (2026-09-30). The import
+ * window used to have one *Choose a File* for everything, and the only way to
+ * learn what the app could take was the sentence above it; it has a button
+ * per source now, and `kind` puts that source's filter first, which is the
+ * one the picker opens on. The bytes still decide what a file is
+ * (`use-import.ts`), so the other filters stay listed and a `.lk` picked
+ * through *Text & Markdown* still imports as what it is. A folder is the one
+ * thing a file picker cannot return, so that is `pickFolder` and the drop on
+ * the window.
  */
-export async function pickImportFile(): Promise<string | null> {
+export type ImportFileKind = "any" | "lk" | "note" | "html" | "zip" | "backup";
+
+const IMPORT_FILTERS = {
+  lk: { name: "LegendKeeper export (.lk)", extensions: ["lk"] },
+  note: { name: "Markdown or text (.md, .txt)", extensions: ["md", "markdown", "txt"] },
+  html: { name: "Web page or saved website (.html, .zip)", extensions: ["html", "htm", "zip"] },
+  zip: { name: "Zipped folder (.zip)", extensions: ["zip"] },
+  backup: { name: "Anamnesis backup (.zip)", extensions: ["zip"] },
+} as const;
+
+const IMPORT_TITLES: Record<ImportFileKind, string> = {
+  any: "Import a project",
+  lk: "Choose a LegendKeeper export",
+  note: "Choose a note",
+  html: "Choose a web page — for a whole site, its index.html",
+  zip: "Choose a zip",
+  backup: "Choose an Anamnesis backup",
+};
+
+export async function pickImportFile(kind: ImportFileKind = "any"): Promise<string | null> {
+  const everything = { name: "Anything importable", extensions: ["lk", "md", "markdown", "txt", "html", "htm", "zip"] };
+  const own = kind === "any" ? everything : IMPORT_FILTERS[kind];
+  const rest = [everything, IMPORT_FILTERS.lk, IMPORT_FILTERS.note, IMPORT_FILTERS.html, IMPORT_FILTERS.zip].filter((filter) => filter.name !== own.name);
   const result = await onePicker(() =>
     chooseFile({
-      title: "Import a project",
-      filters: [
-        { name: "Anything importable", extensions: ["lk", "md", "markdown", "txt", "zip"] },
-        { name: "LegendKeeper export (.lk)", extensions: ["lk"] },
-        { name: "Markdown or text (.md, .txt)", extensions: ["md", "markdown", "txt"] },
-        { name: "Zipped folder of notes (.zip)", extensions: ["zip"] },
-        { name: "All files", extensions: ["*"] },
-      ],
+      title: IMPORT_TITLES[kind],
+      filters: [own, ...rest, { name: "All files", extensions: ["*"] }].map((filter) => ({ name: filter.name, extensions: [...filter.extensions] })),
     }),
   );
   return typeof result === "string" ? result : null;

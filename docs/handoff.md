@@ -2693,9 +2693,38 @@ says so. Don't fix a round-trip gap on one side only.
 
 - **The bytes decide the kind before the name does.** `use-import.ts` sniffs
   gzip and `PK` first, so `world.lk.zip` opens as a `.lk` and a file whose
-  extension Windows is hiding opens as what it is. A zip with `project.json`
-  at its root is the JSON export and is refused with directions rather than
-  read as an empty vault — reading it would import nothing and say nothing.
+  extension Windows is hiding opens as what it is. The import window's tiles
+  (2026-09-30) only choose which picker opens and which filter it opens on;
+  a file picked through the "wrong" tile still imports as what it is, so
+  never branch on which tile was clicked.
+
+- **A world's own files are restored, never read as notes.** A zip or folder
+  with `project.json` at its top is the JSON export (or a project copied by
+  hand) and becomes a `BackupPlan`: the files are written back as they are
+  by `restoreWorldBackup` and the world is then opened with `loadProject`,
+  the same call the library uses — nothing is built in memory, so skipping
+  the load leaves a world on disk that never opens. It lands in a fresh
+  folder, never over one, and every path is checked for `..` and drive
+  letters first, since the zip came from somebody else. A restored world can
+  share its id with the one it was copied from; the library scan's fork
+  repair already handles that, so the restore doesn't mint a new one.
+
+- **HTML goes through the markdown importer, not beside it.**
+  `html-import.ts` turns each page into the note Obsidian would have written
+  — links to pages in the listing as `[[path|words]]`, pictures as
+  listing-absolute paths, title and fields in front matter — and hands the
+  listing on. A second importer would mean a second copy of how folders nest,
+  what a link reaches and which pictures copy. `Name/index.html` is filed as
+  `Name.md` beside `Name/`, which is how the markdown importer knows the page
+  holds the folder. A picked `index.html` means its whole folder (a file
+  picker can't pick a site). **This app's own website is recognised by
+  `main > article.page`** and read by its classes: tabs, the side panel's
+  fields and portrait, callouts; the root `index.html` repeats the home page
+  and is dropped. Change a class in `html-page.ts` and `ownSiteNote` has to
+  change with it — `html-import.test.ts` § "our own website" and
+  `e2e/imports-by-source.e2e.ts` are what notice. It uses the renderer's
+  `DOMParser`; the unit tests borrow one from happy-dom (a dev dependency
+  only).
 
 - **Universes come back as folders, and order comes back alphabetical.** Both
   are things the export cannot say — a universe is a folder with no note by

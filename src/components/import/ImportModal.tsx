@@ -1,10 +1,18 @@
 // Phase 8 — bring a `.lk` export in as a brand-new project; Phase 20 — the
-// same door for a folder of markdown, a zip of one, or a single note. Four
-// steps in one modal: pick the file or folder (or arrive with one already
+// same door for a folder of markdown, a zip of one, or a single note;
+// 2026-09-30 — web pages, and a world's own backup. Four steps in one modal:
+// pick where the world is coming from (or arrive with something already
 // dropped on the window), preview what was found (tree + template counts + a
 // plain-language list of anything that won't come across perfectly), pick a
 // destination folder, then write it all to disk. See docs/lk-format.md for
 // the `.lk` mapping and docs/handoff.md § Markdown import for the other.
+//
+// **A tile per source, named the way she thinks of it.** Obsidian and Folder
+// run the same code, and so do Zip and the backup — but somebody with a vault
+// looks for the word Obsidian, and somebody with a backup looks for the word
+// backup. The tiles only choose which picker opens; what a file *is* is
+// decided from its bytes in `use-import.ts`.
+import { ArchiveRestore, CodeXml, FileArchive, FileText, Folder, Gem, ScrollText, Upload, type LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getTemplateIcon } from "../../constants/icons";
@@ -13,7 +21,8 @@ import { useDialogs } from "../../hooks/use-dialogs";
 import { useImport } from "../../hooks/use-import";
 import { useImportDrop } from "../../hooks/use-import-drop";
 import { useTemplates } from "../../hooks/use-templates";
-import type { ImportPlan, ImportPreviewNode } from "../../services/import-plan";
+import type { ImportFileKind } from "../../services/dialog-service";
+import { isBackupPlan, type BackupPlan, type ImportPlan, type ImportPreviewNode } from "../../services/import-plan";
 import type { ImportPick } from "../../services/import-source";
 import "./import.css";
 
@@ -23,6 +32,28 @@ import "./import.css";
 // the button having done nothing at all — which is the complaint that put it
 // here. It also stops a second click reaching a picker that is already up.
 type Status = "idle" | "picking" | "parsing" | "preview" | "importing" | "error";
+
+type ImportSource = { label: string; hint: string; Icon: LucideIcon; pick: "folder" | ImportFileKind };
+
+const IMPORT_SOURCES: ImportSource[] = [
+  { label: "LegendKeeper", hint: "A .lk export", Icon: ScrollText, pick: "lk" },
+  { label: "Obsidian", hint: "A vault folder", Icon: Gem, pick: "folder" },
+  { label: "Text & Markdown", hint: "A .md or .txt note", Icon: FileText, pick: "note" },
+  { label: "HTML", hint: "A web page or a website", Icon: CodeXml, pick: "html" },
+  { label: "Anamnesis Backup", hint: "An Export as JSON zip", Icon: ArchiveRestore, pick: "backup" },
+  { label: "Folder", hint: "Notes or web pages", Icon: Folder, pick: "folder" },
+  { label: "Zip", hint: "A zipped folder of either", Icon: FileArchive, pick: "zip" },
+];
+
+function plural(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
+}
+
+function backupSummary(plan: BackupPlan): string {
+  const parts = [plural(plan.pageCount, "page"), plural(plan.pictureCount, "picture")];
+  if (plan.versionCount > 0) parts.push(plural(plan.versionCount, "earlier version"));
+  return `A backup of an Anamnesis world — ${parts.join(", ")}. It comes back exactly as it was saved.`;
+}
 
 function pluralizeLabel(label: string, count: number): string {
   if (count === 1) return label;
@@ -65,14 +96,14 @@ function progressHeadline(
 
 export function ImportModal({ onClose, initialPick }: { onClose: () => void; initialPick?: ImportPick }) {
   const { pickImportFile, pickFolder } = useDialogs();
-  const { parseImport, importProject } = useImport();
+  const { parseImport, importProject, restoreBackup } = useImport();
   const { recordProjectOpened, projectsDir, prepareNewProjectsDir } = useAppSettings();
   const { getLabel } = useTemplates();
 
   // Opened with something already dropped on the window, it starts reading
   // rather than at its buttons.
   const [status, setStatus] = useState<Status>(initialPick ? "parsing" : "idle");
-  const [plan, setPlan] = useState<ImportPlan | null>(null);
+  const [plan, setPlan] = useState<ImportPlan | BackupPlan | null>(null);
   const [projectName, setProjectName] = useState("");
   const [error, setError] = useState<string | null>(null);
   // Set only when this one import is going somewhere other than the folder in
@@ -127,18 +158,19 @@ export function ImportModal({ onClose, initialPick }: { onClose: () => void; ini
   // A drop while the modal is waiting at its buttons reads the same way a
   // picker's answer does. Off once something is being read or written, so a
   // second drop cannot replace a plan halfway through.
-  useImportDrop(readPick, status === "idle" || status === "error");
+  const { dragging } = useImportDrop(readPick, status === "idle" || status === "error");
 
   // One try around both halves on purpose. Opening the picker was outside it
   // before, and the click handler discards this promise — so a picker that
   // failed to open threw into nothing: no dialog, no message, no clue. Every
   // way this can fail now ends on a line she can read.
-  async function handlePick(kind: ImportPick["kind"]) {
+  async function handlePick(source: ImportSource["pick"]) {
     setError(null);
     setStatus("picking");
+    const kind = source === "folder" ? "folder" : "file";
     let path: string | null;
     try {
-      path = kind === "folder" ? await pickFolder({ title: "Choose a folder of notes to import" }) : await pickImportFile();
+      path = source === "folder" ? await pickFolder({ title: "Choose a folder to import" }) : await pickImportFile(source);
     } catch (e) {
       setError(`Couldn't open the ${kind} picker${e instanceof Error && e.message ? ` — ${e.message}` : "."}`);
       setStatus("error");
@@ -186,7 +218,9 @@ export function ImportModal({ onClose, initialPick }: { onClose: () => void; ini
     // "Importing your project" with no error and no way back.
     let result: Awaited<ReturnType<typeof importProject>>;
     try {
-      result = await importProject(parentDir, trimmedName, plan, setProgress);
+      result = isBackupPlan(plan)
+        ? await restoreBackup(parentDir, trimmedName, plan, (done, total) => setProgress({ phase: "writing", done, total }))
+        : await importProject(parentDir, trimmedName, plan, setProgress);
     } catch (e) {
       result = { ok: false, error: e instanceof Error ? e.message : "Something went wrong writing the project to disk." };
     }
@@ -210,26 +244,37 @@ export function ImportModal({ onClose, initialPick }: { onClose: () => void; ini
 
         {(status === "idle" || status === "picking" || status === "parsing" || status === "error") && (
           <div className="import-modal-pick">
-            <p>
-              Bring in a world from a LegendKeeper export (.lk), a folder of Markdown notes (an Obsidian vault, say), a zip of one, or a single
-              note. You can also drop any of those onto this window.
-            </p>
+            <p>Where is your world coming from?</p>
             {error && <p className="import-modal-error">{error}</p>}
-            {/* `ui-btn` is not decoration here. Without it the app's reset leaves
-                this as bare text — no fill, no border, no padding, not even a
-                pointer cursor — so the one control that starts an import read as
-                a line of prose, and clicking anywhere near it did nothing. It
-                shipped that way from Phase 8 and was reported as the picker
-                failing to open, which is what missing a 21px-tall invisible
-                button looks like from the outside. */}
-            <div className="import-modal-buttons">
-              <button type="button" className="ui-btn ui-btn-primary" onClick={() => void handlePick("file")} disabled={isBusy}>
-                {status === "picking" ? "Waiting for the picker…" : status === "parsing" ? "Reading…" : "Choose a File"}
-              </button>
-              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => void handlePick("folder")} disabled={isBusy}>
-                Choose a Folder
-              </button>
+            <div className="import-modal-sources">
+              {IMPORT_SOURCES.map(({ label, hint, Icon, pick }) => (
+                <button
+                  key={label}
+                  type="button"
+                  className="import-modal-source"
+                  onClick={() => void handlePick(pick)}
+                  disabled={isBusy}
+                >
+                  <Icon size={18} className="import-modal-source-icon" aria-hidden />
+                  <span className="import-modal-source-text">
+                    <b>{label}</b>
+                    <span>{hint}</span>
+                  </span>
+                </button>
+              ))}
             </div>
+            {/* The drop works anywhere on the window; this box is what says so.
+                A click on it is the everything-picker, for somebody who has the
+                file and doesn't know which tile it is. */}
+            <button
+              type="button"
+              className={`import-modal-drop${dragging ? " is-dragging" : ""}`}
+              onClick={() => void handlePick("any")}
+              disabled={isBusy}
+            >
+              <Upload size={20} aria-hidden />
+              <span>{dragging ? "Let go to import it" : "Drop a file or folder here, or click to choose one"}</span>
+            </button>
             {/* The picker is an OS window this app doesn't draw, so when it
                 opens behind the app there is nothing on screen to say so. This
                 line is the only thing that can. */}
@@ -256,20 +301,26 @@ export function ImportModal({ onClose, initialPick }: { onClose: () => void; ini
               <input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
             </label>
 
-            <p className="import-modal-summary">
-              {plan.totalResources} page{plan.totalResources === 1 ? "" : "s"} found —{" "}
-              {Object.entries(plan.templateCounts)
-                .map(([key, count]) => `${count} ${pluralizeLabel(getLabel(key), count ?? 0)}`)
-                .join(", ")}
-            </p>
+            {isBackupPlan(plan) ? (
+              <p className="import-modal-summary">{backupSummary(plan)}</p>
+            ) : (
+              <>
+                <p className="import-modal-summary">
+                  {plan.totalResources} page{plan.totalResources === 1 ? "" : "s"} found —{" "}
+                  {Object.entries(plan.templateCounts)
+                    .map(([key, count]) => `${count} ${pluralizeLabel(getLabel(key), count ?? 0)}`)
+                    .join(", ")}
+                </p>
 
-            <div className="import-modal-tree">
-              {plan.preview.map((node) => (
-                <ImportPreviewRow key={node.id} node={node} depth={0} />
-              ))}
-            </div>
+                <div className="import-modal-tree">
+                  {plan.preview.map((node) => (
+                    <ImportPreviewRow key={node.id} node={node} depth={0} />
+                  ))}
+                </div>
+              </>
+            )}
 
-            {plan.lossyNotes.length > 0 && (
+            {!isBackupPlan(plan) && plan.lossyNotes.length > 0 && (
               <div className="import-modal-lossy">
                 <h3 className="ui-eyebrow">A few things won't come across perfectly:</h3>
                 <ul>
@@ -307,7 +358,13 @@ export function ImportModal({ onClose, initialPick }: { onClose: () => void; ini
 
         {status === "importing" && (
           <div className="import-modal-pick">
-            <p>{progressHeadline(progress, plan?.pendingImages.length ?? 0, plan?.assets.length ?? 0)}</p>
+            <p>
+              {plan && isBackupPlan(plan)
+                ? progress && progress.total > 0
+                  ? `Restoring your world — ${progress.done} of ${progress.total} files.`
+                  : "Restoring your world…"
+                : progressHeadline(progress, plan?.pendingImages.length ?? 0, plan?.assets.length ?? 0)}
+            </p>
             {progress && progress.total > 0 && (
               <div
                 className="import-modal-progress-track"
@@ -324,7 +381,7 @@ export function ImportModal({ onClose, initialPick }: { onClose: () => void; ini
             )}
             {/* Only a `.lk` fetches anything; a vault's pictures are files
                 beside the notes and never leave the machine. */}
-            {(plan?.pendingImages.length ?? 0) > 0 && (
+            {plan && !isBackupPlan(plan) && plan.pendingImages.length > 0 && (
               <p className="import-modal-progress-note">
                 Pictures are stored on the servers of whatever you exported from, so this part needs the internet.
               </p>

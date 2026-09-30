@@ -1,6 +1,13 @@
+// @vitest-environment happy-dom
 import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import { inputFromFolder, inputFromText, inputFromZip, nameFromPath, sniffFile } from "./import-source";
+import { backupFromListing, inputFromFolder, inputFromText, nameFromPath, readZip, sniffFile } from "./import-source";
+
+function inputFromZip(name: string, bytes: Uint8Array) {
+  const read = readZip(name, bytes);
+  if (read.kind !== "notes") throw new Error("expected notes");
+  return read.input;
+}
 
 const encode = (text: string) => new TextEncoder().encode(text);
 
@@ -58,13 +65,55 @@ describe("inputFromZip", () => {
     expect(inputFromZip("archive", bytes).files.sort()).toEqual(["README.md", "Vault/A.md"]);
   });
 
-  it("refuses a world's own files with directions", () => {
-    const bytes = zipSync({ "Valeraverse/project.json": encode("{}"), "Valeraverse/Canon/_folder.json": encode("{}") });
-    expect(() => inputFromZip("Valeraverse", bytes)).toThrow(/Unzip it into your projects folder/);
+  it("reads a world's own files as a backup to restore, not as notes", async () => {
+    const bytes = zipSync({
+      "Valeraverse/project.json": encode(JSON.stringify({ name: "Valeraverse World" })),
+      "Valeraverse/Canon/_folder.json": encode("{}"),
+      "Valeraverse/Canon/Kaine.json": encode("{}"),
+      "Valeraverse/assets/a.png": new Uint8Array([1]),
+      "Valeraverse/.history/k/1.json": encode("{}"),
+      "Valeraverse/.anamnesis-open.json": encode("{}"),
+    });
+    const read = readZip("archive", bytes);
+    expect(read.kind).toBe("backup");
+    if (read.kind !== "backup") return;
+    expect(read.plan.projectName).toBe("Valeraverse World");
+    expect(read.plan.pageCount).toBe(2);
+    expect(read.plan.pictureCount).toBe(1);
+    expect(read.plan.versionCount).toBe(1);
+    // The claim that it was open when zipped stays behind.
+    expect(read.plan.files.map((file) => file.path)).not.toContain(".anamnesis-open.json");
+    const kaine = read.plan.files.find((file) => file.path === "Canon/Kaine.json")!;
+    expect(new TextDecoder().decode(await kaine.read())).toBe("{}");
   });
 
   it("says so when the bytes are not a zip", () => {
     expect(() => inputFromZip("x", encode("not a zip"))).toThrow(/couldn't be opened/);
+  });
+});
+
+describe("backupFromListing", () => {
+  it("falls back to the folder's name, and says so when project.json is damaged", () => {
+    const read = async () => new Uint8Array();
+    expect(backupFromListing("Folder Name", ["project.json"], "{}", read).projectName).toBe("Folder Name");
+    expect(() => backupFromListing("x", ["project.json"], "{not json", read)).toThrow(/damaged/);
+  });
+});
+
+describe("web pages", () => {
+  it("comes through a folder as notes", async () => {
+    const input = await inputFromFolder("Site", ["a.html", "b.md"], async (path) =>
+      encode(path === "a.html" ? "<html><body><h1>Alpha</h1><p>Hi</p></body></html>" : "plain"),
+    );
+    expect(input.files.sort()).toEqual(["a.md", "b.md"]);
+    expect(input.texts.get("a.md")).toContain('title: "Alpha"');
+    expect(input.texts.get("b.md")).toBe("plain");
+  });
+
+  it("comes through a single file as a note", () => {
+    const input = inputFromText("Page", "Page.html", encode("<title>Page</title><p>Words</p>"));
+    expect(input.files).toEqual(["Page.md"]);
+    expect(input.texts.get("Page.md")).toContain("Words");
   });
 });
 

@@ -59,21 +59,21 @@ describe("importing a folder of notes", () => {
     if (destination) await rm(destination, { recursive: true, force: true });
   });
 
-  it("offers a folder beside a file on the import screen", async () => {
+  it("offers Obsidian and Folder among the import screen's tiles", async () => {
     await app.window.getByLabel("Switch project").click();
     await app.window.locator(".start").waitFor({ state: "visible", timeout: 20_000 });
     await app.window.getByRole("button", { name: /^Import/ }).click();
 
     const modal = app.window.locator(".import-modal");
     await modal.waitFor({ state: "visible", timeout: 10_000 });
-    await expect.poll(() => modal.getByRole("button", { name: "Choose a File", exact: true }).count()).toBe(1);
-    await expect.poll(() => modal.getByRole("button", { name: "Choose a Folder", exact: true }).count()).toBe(1);
+    await expect.poll(() => modal.getByRole("button", { name: /^Obsidian/ }).count()).toBe(1);
+    await expect.poll(() => modal.getByRole("button", { name: /^Folder/ }).count()).toBe(1);
   });
 
   it("reads the exported vault and previews what it found", async () => {
     const modal = app.window.locator(".import-modal");
     await answerNextOpenDialog(app, vault);
-    await modal.getByRole("button", { name: "Choose a Folder", exact: true }).click();
+    await modal.getByRole("button", { name: /^Folder/ }).click();
 
     await modal.locator(".import-modal-summary").waitFor({ state: "visible", timeout: 30_000 });
     const summary = (await modal.locator(".import-modal-summary").innerText()).trim();
