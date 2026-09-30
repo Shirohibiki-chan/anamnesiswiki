@@ -211,7 +211,7 @@ export function ImportModal({ onClose, initialPick }: { onClose: () => void; ini
         {(status === "idle" || status === "picking" || status === "parsing" || status === "error") && (
           <div className="import-modal-pick">
             <p>
-              Bring in a world from a .lk export, a folder of Markdown notes (an Obsidian vault, say), a zip of one, or a single
+              Bring in a world from a LegendKeeper export (.lk), a folder of Markdown notes (an Obsidian vault, say), a zip of one, or a single
               note. You can also drop any of those onto this window.
             </p>
             {error && <p className="import-modal-error">{error}</p>}
