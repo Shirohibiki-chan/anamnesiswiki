@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-30 — Dragging a page on the graph moves only that page
+
+### Fixes
+
+- **Dragging a page on a graph leaves every other page where it was.** Only the page you dragged used to be remembered, so the next time the graph was drawn (opening it again, for instance) everything else was laid out afresh around it, and the lines pulled the pages joined to it along after it. Now letting go of a page remembers where every page on the picture is, so nothing moves unless you move it. Pages added later find a spot around what you've arranged, and Reset Positions still hands the whole picture back to the automatic layout.
+
 ## 2026-09-30 — Import shows everything it can take, and takes more
 
 ### Additions
@@ -148,9 +154,3 @@
 ### Changes
 
 - **The docs stop saying no.** The line "no YouTube, Spotify or map embeds", carried since Phase 18, is retired everywhere it was written, with the date it was lifted and the condition it came with. Maps stay out.
-
-## 2026-09-21 — A player in the sidebar
-
-### Additions
-
-- **Add Block offers Music or Video.** A YouTube, YouTube Music, Spotify or SoundCloud player as a sidebar block — a character's theme in the infobox, a location's ambience beside its description. The block opens on a box for the link; once it has one it draws the same player the page does, at sidebar width, and names itself by what the link is ("Spotify track", "YouTube video") until you rename it. It has everything a sidebar block has — a title, a colour, a place in a template, drag between the sidebar, the page and an infobox — and its own menu gains Open on the service, Copy Link and Fetch Again. Nothing in the sidebar plays until you press play.

@@ -100,7 +100,8 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
    * Letting go writes the position to `project.json`, but the layout is not
    * recomputed from it — doing that would re-solve the forces around the newly
    * fixed node and jump every other one the instant she let go. The stored
-   * arrangement becomes fixed points the *next* time this graph is worked out.
+   * arrangement becomes fixed points the *next* time this graph is worked out,
+   * and it holds every page that was on the picture — see `endNodeDrag`.
    */
   const [moved, setMoved] = useState<Record<string, Point>>({});
 
@@ -310,9 +311,15 @@ export function useGraphView(model: GraphModel, { resetKey, onArrange, dotsBelow
       }
       // Written on letting go, never during the drag: a position saved per
       // pointer move is sixty writes a second to a file on her disk.
-      if (drag) onArrange(moved);
+      //
+      // **Every page on the picture is written, not just the one dragged.**
+      // Storing only that one left the rest free, so the next time the graph
+      // was worked out they were laid out again around it and its lines pulled
+      // its neighbours after it (reported 2026-09-30). Once she has arranged
+      // anything, the whole picture is hers; pages added later settle around it.
+      if (drag) onArrange(Object.fromEntries(nodes.map((drawn) => [drawn.id, { x: drawn.x, y: drawn.y }])));
     },
-    [moved, onArrange],
+    [nodes, onArrange],
   );
 
   /**
