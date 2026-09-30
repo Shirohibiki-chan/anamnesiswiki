@@ -89,6 +89,12 @@ export type StorylineViewOptions = {
    * random. The graph's view hook says the same thing about the same trap.
    */
   resetKey: string;
+  /**
+   * Bumped to have the picture centred and fitted again, which Tidy Up does:
+   * it moves every card at once, and the old frame would leave them off to
+   * one side. Moving a card never refits — see `frame`.
+   */
+  refit?: number;
   /** Called on letting go of a scene, with everything moved by this drag. */
   onArrange: (moved: Record<string, Point>) => void;
   /** Called when a line is dragged from one scene and dropped on another. */
@@ -108,7 +114,7 @@ export type StorylineViewOptions = {
 };
 
 export function useStorylineView(model: StorylineModel, options: StorylineViewOptions) {
-  const { resetKey, onArrange, onConnect, onMoveNote, onMoveBand, onResizeBand, onResizeScene } = options;
+  const { resetKey, refit = 0, onArrange, onConnect, onMoveNote, onMoveBand, onResizeBand, onResizeScene } = options;
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [zoomFactor, setZoomFactor] = useState(1);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
@@ -287,32 +293,50 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
     [model.bands, dragging, resizing],
   );
 
-  // Bare heights here too: this box is what the picture is centred on, and
-  // a card growing as words are typed into it must not slide the rest. The
-  // notes and bands are in it (Known Bug, 2026-09-09) at the positions they
-  // are being dragged to, as the scenes are — but a band at its *stored*
-  // size, not the size under the hand pulling its corner: a resize that
-  // widened the box would recentre the picture under that hand, which is
-  // the one gesture where the thing being moved is the edge itself.
+  // The box the lines are drawn in, at the positions things are being dragged
+  // to, so a line to a card pulled past the edge is not cut off. It is not
+  // what the picture is centred on any more — that is `frame`, below, which
+  // holds still while things move.
   const bounds = useMemo(
     () => canvasBounds({ scenes, notes, bands: model.bands.map((band) => ({ ...band, ...(dragging[band.id] ?? {}) })) }, {}, STORYLINE_FIT_PADDING),
     [scenes, notes, model.bands, dragging],
   );
 
   /**
+   * The box the picture is centred on and fitted to, taken when the canvas
+   * opens and again only when something is added to it or taken off it, or
+   * Tidy Up is pressed — never because something on it moved.
+   *
+   * **Centring on `bounds` instead slid the whole canvas under the hand**
+   * (reported 2026-09-30): a card dragged right grew the box on the right, the
+   * centre went with it, so the dragged card went half as far as the pointer
+   * and every card she wasn't touching slid the other way. Taking the stored
+   * positions instead of the live ones only postponed the slide to the drop.
+   * Bare heights on purpose, so a description typed into a card does not
+   * refit the picture either — the view's own scenario checks exactly that.
+   */
+  const frameKey = [
+    resetKey,
+    refit,
+    model.scenes.map((scene) => scene.id).join(","),
+    model.notes.map((note) => note.id).join(","),
+    model.bands.map((band) => band.id).join(","),
+  ].join("|");
+  const [frame, setFrame] = useState(() => ({ key: frameKey, box: canvasBounds(model, {}, STORYLINE_FIT_PADDING) }));
+  if (frame.key !== frameKey) setFrame({ key: frameKey, box: canvasBounds(model, {}, STORYLINE_FIT_PADDING) });
+
+  /**
    * The zoom that fits the whole canvas in the window it opened into.
    *
-   * **Measured against the stored positions rather than against `bounds`**,
-   * which moves as scenes are dragged — refitting on that would pull the
-   * picture out from under the hand doing the dragging. The graph's view hook
-   * makes the same call and says so at greater length.
+   * **Measured against `frame` rather than against `bounds`**, which moves as
+   * scenes are dragged — refitting on that would pull the picture out from
+   * under the hand doing the dragging. The graph's view hook makes the same
+   * call and says so at greater length.
    */
   const fitZoom = useMemo(() => {
-    // Bare heights on purpose, so a description typed into a card does not
-    // refit the picture and move every other card while she is typing — the
-    // view's own scenario checks exactly that. A tall card may run a little
-    // past the bottom of a fresh fit; the canvas pans.
-    const box = canvasBounds(model, {}, STORYLINE_FIT_PADDING);
+    // A tall card may run a little past the bottom of a fresh fit; the canvas
+    // pans.
+    const { box } = frame;
     if (!stageSize.width || !stageSize.height || !box.width || !box.height) return 1;
     return clamp(
       Math.min(stageSize.width / box.width, stageSize.height / box.height),
@@ -321,14 +345,16 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
       STORYLINE_MIN_FIT_ZOOM,
       STORYLINE_MAX_FIT_ZOOM,
     );
-  }, [model, stageSize]);
+  }, [frame, stageSize]);
 
   const zoom = clamp(fitZoom * zoomFactor, STORYLINE_MIN_ZOOM, STORYLINE_MAX_ZOOM);
 
   // Right-to-left: centre the box on the stage's middle, scale about it, then
   // apply the panning. The scene element sits at the stage's centre, which is
   // what makes the origin here the middle.
-  const sceneTransform = `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) translate(${-(bounds.minX + bounds.width / 2)}px, ${-(bounds.minY + bounds.height / 2)}px)`;
+  const centreX = frame.box.minX + frame.box.width / 2;
+  const centreY = frame.box.minY + frame.box.height / 2;
+  const sceneTransform = `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) translate(${-centreX}px, ${-centreY}px)`;
 
   /**
    * A point in window pixels turned into a point on the canvas.
@@ -340,10 +366,10 @@ export function useStorylineView(model: StorylineModel, options: StorylineViewOp
    */
   const toCanvas = useCallback(
     (event: { clientX: number; clientY: number }, stage: DOMRect): Point => ({
-      x: (event.clientX - stage.left - stage.width / 2 - pan.x) / zoom + bounds.minX + bounds.width / 2,
-      y: (event.clientY - stage.top - stage.height / 2 - pan.y) / zoom + bounds.minY + bounds.height / 2,
+      x: (event.clientX - stage.left - stage.width / 2 - pan.x) / zoom + centreX,
+      y: (event.clientY - stage.top - stage.height / 2 - pan.y) / zoom + centreY,
     }),
-    [pan, zoom, bounds],
+    [pan, zoom, centreX, centreY],
   );
 
   const dragRef = useRef<{ id: string; fromX: number; fromY: number; atX: number; atY: number; moved: boolean } | null>(

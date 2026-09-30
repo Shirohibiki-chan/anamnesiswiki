@@ -341,4 +341,22 @@ describe("a storyline's canvas", () => {
     expect(await storylineScenesLeftToRight(app.window)).not.toContain("The Fall");
     expect(await storylineSceneSummaries(app.window)).toContain(said);
   });
+
+  it("moves only the card being dragged, and that card as far as the pointer went", async () => {
+    // Reported 2026-09-30: dragging a card moved the card it was joined to as
+    // well. The canvas was centred on the box around every card, so a card
+    // dragged down and right grew that box, the centre followed it, and every
+    // other card slid up and left while the dragged one went half as far as
+    // the pointer. Measured on screen, which is where she saw it.
+    await fitStorylineOnScreen(app.window);
+    const before = await storylineScenePositions(app.window);
+    expect(before.length).toBeGreaterThan(1);
+
+    await dragStorylineScene(app.window, 0, 150, 120);
+    const after = await storylineScenePositions(app.window);
+
+    expect(Math.round(after[0].x - before[0].x)).toBe(150);
+    expect(Math.round(after[0].y - before[0].y)).toBe(120);
+    expect(after.slice(1)).toEqual(before.slice(1));
+  });
 });

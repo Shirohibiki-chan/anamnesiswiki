@@ -136,6 +136,9 @@ export function PageStoryline({ node }: { node: Node }) {
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const candidates = useSceneCandidates(node.id, picking ?? "");
   const [refusal, setRefusal] = useState<string | null>(null);
+  // Tidy Up moves every card at once, so it is the one arrangement that
+  // centres the picture again. See `refit` on useStorylineView.
+  const [refit, setRefit] = useState(0);
   /**
    * The annotation being typed into, and the draft it currently holds.
    *
@@ -196,6 +199,7 @@ export function PageStoryline({ node }: { node: Node }) {
 
   const view = useStorylineView(model, {
     resetKey: node.id,
+    refit,
     onArrange,
     onConnect,
     onMoveNote,
@@ -644,7 +648,10 @@ export function PageStoryline({ node }: { node: Node }) {
           <button
             type="button"
             className="ui-btn ui-btn-secondary"
-            onClick={() => tidyStoryline(node.id, heights)}
+            onClick={() => {
+              tidyStoryline(node.id, heights);
+              setRefit((count) => count + 1);
+            }}
             disabled={!untidy}
             // **The key comes from the binding, never from a string here.**
             // Undo is Ctrl+Shift+Z rather than Ctrl+Z — her call, 2026-08-27,

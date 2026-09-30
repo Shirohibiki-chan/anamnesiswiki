@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-30 — Dragging a scene on a storyline moves only that scene
+
+### Fixes
+
+- **Dragging a scene on a storyline moves that scene and nothing else.** The canvas kept itself centred on all your scenes as a whole, so dragging one card shifted that middle and the whole picture slid with it: the card you were dragging only went about half as far as your pointer, and the card joined to it slid the other way. The canvas now holds still while you drag, and only re-centres when a scene, note or band is added or removed, or you press Tidy Up.
+
 ## 2026-09-30 — Dragging a page on the graph moves only that page
 
 ### Fixes
@@ -144,13 +150,3 @@
 - **A new page can simply be written in.** The tab strip and the writing area are there from the moment the page is made, above the "what kind of page is this?" offer rather than instead of it. Type a word and the offer goes away on its own, with the word where you typed it; the sidebar still offers a template afterwards, as it did after *Skip this*, and *Skip this* is still there for sending the offer away without writing. Before, the offer was the whole page and the link under it was the only way past it.
 - **A page whose offer was sent away from the sidebar now has somewhere to write.** Pressing the ✕ on the sidebar's "this page doesn't have a template yet" used to leave the offer standing in the middle of the page anyway; now the page shows its writing area instead.
 
-## 2026-09-21 — Players come in and go out with the world
-
-### Additions
-
-- **A LegendKeeper import turns its YouTube blocks into real players**, and its filled Spotify property into a player in the sidebar, titled as it was there. Both used to come in as a plain link and a note in the lossy list. An empty Spotify slot stays skipped — most pages in a real export carry two — since a box asking for a link on every character is not what an empty slot was.
-- **Players leave with the world.** The Markdown folder and the one big file write each player as its link on a line of its own, the caption in italics under it, and the sidebar's under its heading — the form the Markdown importer reads back, so a folder of notes with a YouTube link on its own line comes in as a player. The published site carries the player itself: a YouTube still that plays when clicked (a link to the video for a reader with scripts off), Spotify's card and SoundCloud's bar as they are, in the site's own theme. The LegendKeeper export writes a YouTube player back as LegendKeeper's own YouTube block and a sidebar Spotify player as its Spotify property; a Spotify or SoundCloud player in the writing goes across as a link, and the export window says so.
-
-### Changes
-
-- **The docs stop saying no.** The line "no YouTube, Spotify or map embeds", carried since Phase 18, is retired everywhere it was written, with the date it was lifted and the condition it came with. Maps stay out.
