@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-30 — Import says whose files it takes
+
+### Changes
+
+- **Import names LegendKeeper.** The Import button on the start screen and the first line of the Import window both used to offer a bare ".lk", which means nothing to anyone who doesn't already know whose format that is. The window now says "a LegendKeeper export (.lk)" and the button "A world from LegendKeeper", the way the export menu and the file picker already named it. The button lost "Bring in" to stay on two lines like the three beside it.
+
 ## 2026-09-22 — Pasted text stays the text you pasted
 
 ### Fixes
@@ -143,10 +149,3 @@
 - **Each one looks like it belongs.** The player sits in the same frame every block gets, so it takes the theme. A YouTube video is a still until it is played — the video's own picture with its title over it and a play mark — and only a click loads the real player, so a page with five videos doesn't start five players and nothing from YouTube loads into your page until you ask. YouTube Music plays through the same player, since its links share YouTube's ids. Spotify's own card is shown as it is, in its dark look on a dark theme, compact for a track and tall for an album or playlist; SoundCloud's player takes the theme's accent for its buttons and bar. A video is the width of the page; a single track is not, and either can be dragged to another width by its edges, the way a block can.
 - **A caption line under each player, the way a picture has** — hover to find it — and a menu on right-click or the `⋯` in the corner: Open on the service, Copy Link, Fetch Again, Remove.
 - **A player draws whole with the internet off.** When a link is pasted the service is asked once what it is — the title, who made it, and a thumbnail that goes into the world's library — and that is what the card draws, with a "needs the internet to play" note where the player would be. A link the service wouldn't answer for keeps its address and is asked again the next time the page is opened online.
-
-## 2026-09-21 — Bold, italic and links in a board's text
-
-### Additions
-
-- **Ordinary text on a board takes bold, italic and links.** Writing in a text box, a small toolbar sits over it with Bold, Italic and Link — Ctrl+B, Ctrl+I and Ctrl+K do the same — and puts the mark around the selected words. The marks are Markdown's, in the words themselves: `**bold**`, `*italic*` and `[words](address)` show while writing and are hidden when drawn, so the drawn words come out bold, slanted or underlined, and a box is as wide as the words it draws rather than the stars. Link searches your pages the way a note's does, or takes a web address pasted in; a click on a drawn link opens the page or the address, and a page linked this way is in the page's connections. Sticky notes had all of this already; this is the plain text box catching up.
-- **The marks come out in the pictures.** A board's picture in an export, and the drawing's own Save as Image, draw the words the same way.
