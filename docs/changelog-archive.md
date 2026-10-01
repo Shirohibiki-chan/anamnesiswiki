@@ -2,6 +2,17 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-21 — Players come in and go out with the world
+
+### Additions
+
+- **A LegendKeeper import turns its YouTube blocks into real players**, and its filled Spotify property into a player in the sidebar, titled as it was there. Both used to come in as a plain link and a note in the lossy list. An empty Spotify slot stays skipped — most pages in a real export carry two — since a box asking for a link on every character is not what an empty slot was.
+- **Players leave with the world.** The Markdown folder and the one big file write each player as its link on a line of its own, the caption in italics under it, and the sidebar's under its heading — the form the Markdown importer reads back, so a folder of notes with a YouTube link on its own line comes in as a player. The published site carries the player itself: a YouTube still that plays when clicked (a link to the video for a reader with scripts off), Spotify's card and SoundCloud's bar as they are, in the site's own theme. The LegendKeeper export writes a YouTube player back as LegendKeeper's own YouTube block and a sidebar Spotify player as its Spotify property; a Spotify or SoundCloud player in the writing goes across as a link, and the export window says so.
+
+### Changes
+
+- **The docs stop saying no.** The line "no YouTube, Spotify or map embeds", carried since Phase 18, is retired everywhere it was written, with the date it was lifted and the condition it came with. Maps stay out.
+
 ## 2026-09-21 — A player in the sidebar
 
 ### Additions
