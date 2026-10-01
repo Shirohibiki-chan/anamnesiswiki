@@ -255,11 +255,37 @@ describe("the graph of a whole universe", () => {
     // written as integers in that frame and read back as a fixed point, so
     // this is an equality and not a tolerance — see graphNodeSpot. The first
     // version compared fractions of the rest of the picture with a tolerance,
-    // and the rest re-settles around a pin, so a change to what a node's box
-    // is moved it across that tolerance without anything being wrong.
+    // and the rest used to re-settle around a pin, so a change to what a node's
+    // box is moved it across that tolerance without anything being wrong.
     expect(reopenedAt).toEqual(droppedAt);
     // And nowhere near where the simulation had put it, measured against the
     // rest of the graph rather than the screen — see graphNodePlacement.
     expect(Math.hypot(reopened.x - settled.x, reopened.y - settled.y)).toBeGreaterThan(0.15);
+  });
+
+  /**
+   * **Dragging one page moves that page and nothing else, even afterwards.**
+   * Reported 2026-09-30: drag a page, and the page it is joined to had moved
+   * too the next time the graph was worked out. Only the dragged page was
+   * stored, so every other page was laid out again around it and its lines
+   * pulled its neighbours after it. Every other page is compared exactly, in
+   * the graph's own coordinates — see graphNodeSpot.
+   */
+  it("leaves every other page where it was when one is dragged", async () => {
+    await openWorldGraph(app.window);
+    const names = await graphNodeNames(app.window);
+    const unique = names.filter((name) => names.indexOf(name) === names.lastIndexOf(name));
+    const [dragged, ...rest] = unique;
+    const before = new Map<string, { x: number; y: number }>();
+    for (const name of rest) before.set(name, await graphNodeSpot(app.window, name));
+
+    await dragGraphNode(app.window, dragged, -160, 110);
+    await app.window.waitForTimeout(WRITTEN_MS);
+    await closePageGraph(app.window);
+    await openWorldGraph(app.window);
+
+    const after = new Map<string, { x: number; y: number }>();
+    for (const name of rest) after.set(name, await graphNodeSpot(app.window, name));
+    expect(after).toEqual(before);
   });
 });
