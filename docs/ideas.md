@@ -6,7 +6,95 @@ Ideas parked for later. Nothing here is scheduled — see [plan.md](plan.md) for
 
 **Interactive atlas / maps**
 
-LK's atlas — nested image maps with clickable pins that link to wiki pages — is the single feature Anamnesis intentionally doesn't ship in Phase 1. It's the most complex piece of LK to build well and the piece the user has said they use less than the wiki. If demand shows up (either from the user or from anyone she shares the app with), revisit as its own multi-phase project. Leaflet with custom CRS is the likely implementation.
+LK's atlas — a picture of the world you can pan and zoom, with pins, paths, regions and labels that open pages, and maps nested inside maps — is the one large LK feature Anamnesis does not have. It was left out of Phase 1 as the most complex piece of LK to build well. **She asked for it on 2026-10-03** and reviewed LK's map tool screen by screen that day; everything below comes from her screenshots, LK's 0.18.0.0 changelog and map posts, and a read of Atlas VTT's code. Unscheduled: the next step is scoping a phase in `plan.md`, not building.
+
+**Build our own, and Anamnesis stays MIT. Settled 2026-10-03.** [Atlas VTT](https://github.com/atlas-vtt/atlas-vtt) was the alternative: an Obsidian plugin, ~120,000 lines of TypeScript on React, Zustand and PixiJS, licensed AGPL-3.0. AGPL costs nothing and limits nobody's use — the only string is that a modified version must stay open under the same licence — but taking its code would make all of Anamnesis AGPL. It was not taken because of what it holds rather than the licence alone: its strength is the battle-map side (fog, lighting, grids, tokens, dice, a player window — see *Battle maps* below), while LK's world-map tools are almost all absent from it. It has pins (point, icon, number/letter label, GM-only, a link to a note or another map), plain text and freehand drawing, and a ruler; it has no paths or regions as objects, no zoom visibility, no navigation, no clustering, and calibrates by grid square rather than by a drawn line. About 30% of its code calls Obsidian directly (the vault for every save, Obsidian's own editor for the note panel, Obsidian's pop-out window for the player view) and 24,000 lines of styling sit on Obsidian's theme variables. Use it as a reference for how it does the floating panel, pins and measuring — not as code to copy.
+
+**What a map holds — four kinds of object, each with a link, a Display rule and zoom visibility.** A right-click radial menu offers all four (Pin, Path, Region, Label); a bottom toolbar has Select, Pin, Label, Region, Path, Measure and a ⋮ menu.
+
+- **Pins.** Name; four kinds — Large, Small, Icon (the teardrop marker with a glyph inside), Image (any picture as a small framed portrait, which keeps an icon setting too); colour row plus a custom colour; eight shapes; an icon picker; Display (always / on hover / never); Link; zoom visibility. **A link is optional** — an unlinked pin is just a marker, so a map can be laid out before its pages exist.
+- **Paths** — roads, rivers, routes. Name, colour, Style (width in five steps, curviness in three, solid / dashed / dotted, opacity in three), Display, Link, **Hidden**, zoom visibility, Edit points (large dots at the ends, small ones between). Right-click: colour row, Focus on path, Navigate from here, Link to…, Edit path, Edit shape, Duplicate, Remove, Hide. Labels follow the path and appear by zoom, the way road names do on a web map.
+- **Regions** — filled shapes for countries, climates, areas. Name, colour, fill Style, Display, Link, zoom visibility, Edit points.
+- **Labels** — text with no pin: Sm / Md / Lg, Sans / Serif / Mono, an outline Style, text colour, stroke colour, Link, zoom visibility.
+
+**What LK's Hidden does, and what ours should.** On a path it only fades the object for whoever is editing; LK has no layers and no player view, so what a reader sees is unclear. Anamnesis is one person's machine, so fading alone is a tidy-up tool. If a player screen ever exists (see *Battle maps*), Hidden should mean faded for the GM and absent for players — the half of LK's idea that is worth having.
+
+**Measuring, calibration and navigation.** *Calibrate Map Scale*: draw a line, type the real distance and pick a unit. After that the ruler reads real distances (*13.52 mi*), a scale bar sits in the bottom-left corner, regions show area and perimeter, and paths show length. **Navigation mode** works out a route along named paths between pins and lists it as a side panel — title *start → end*, total distance, then turn-by-turn steps (*Depart from…*, *Head west 8.6*, *Continue north to…*, *Arrive at…*) with S and E markers and the route drawn in orange. Steps are named after the pins and paths they pass, and distances read *units* until the map is calibrated; a travel speed turns distance into travel time. LK leaves measuring and navigation working on read-only maps.
+
+**The ⋮ menu's switches:** Enable pin clustering, Peek on click, Auto-nest pins in regions, Navigation mode.
+
+**Nested maps are a pin linked to a map page.** In LK, clicking such a pin opens the page in the peek panel, with the map drawn small inside it, its own zoom buttons, and **Go to Map** to step into it. Holding Shift on a map shows only the pins that lead to other maps, and clicking one goes straight there. **Our board View panel currently refuses to show a canvas inside itself** (`BoardViewPanel.tsx`), on the belief that LK could not; LK does show a map inside a panel over a map, so a map page opened in a panel must show its map.
+
+**Page panels: docked or floating, wherever a page panel opens — on maps and on boards. Settled 2026-10-03.** Floating is an option beside the docked side panel, never a replacement for it. The panel's header carries three buttons and a close: **Float** (pop out into a window that can be dragged and resized), **Dock** (back to the side), **Open** (go to the page itself). LK's own pop-out button only navigates to the page, which is the inconvenient half of this. **The first panel opens docked; after that a new panel opens the way the last one was left.** Atlas's floating panel is the model for the floating half: dragged by its header, resized from its edges, several open at once, a pin button that keeps one open (and clicking into the writing pins it), and it reopens at the scroll position it was left at. Ours holds our real page view — the board View panel is already `PageView` for another page — so the editor inside is done and the work is the window around it.
+
+**Two ways to peek at a map object's page — both. Settled 2026-10-03.** Hold Ctrl and hover for a quick preview card (Atlas's statblock gesture, applied to pins, regions, paths and labels); click to open the full panel (LK's *Peek on click*).
+
+**More from LK's map changelog, not visible in the screenshots:**
+
+- Ctrl while drawing snaps pins to paths and regions; **a new region can borrow a neighbour's border**, so two countries share one edge exactly.
+- Box-select with Shift to restyle many objects at once; Ctrl+D duplicates; undo and redo; **Tool lock** for dropping many pins in a row.
+- **A pin must be selected before it can be dragged**, so panning never moves one by accident; pin locking and pin dragging are their own setting.
+- A map sidebar: the list of objects with click-to-fly-to, a finder that filters by name and tag, objects nested into **groups that can be hidden or soloed**, and clustering that follows those groups.
+- Style a tool before dropping anything, so every new pin comes out the same.
+- A pin can point at a specific tab of a page; double-click (or Shift-click) a pin to open its page.
+- **Standalone pins that can sync their name, icon and style from the page they link to** (a Sync checkbox, on by default when the pin was made from an existing page); a page can carry its own default pin look.
+- Drag a page from the sidebar onto the map to pin it; the pin editor's Link field pre-fills a page whose name matches the pin's.
+- Hiding a pin hides its descendants.
+- **A map block** for the writing and the sidebar, which centres itself on the host page's pin when there is one, with its own viewport and an Open button.
+- Reset view, centre map and fullscreen buttons; smooth zoom; middle-click to pan; right-click undoes the last point while drawing a path or region.
+- Image pins can be animated GIFs and needn't be square; colour pickers keep saved swatches.
+
+**Limits to plan for.** LK takes background pictures up to 14,000 px and 100 MB and serves big ones as tiles. A map drawn as one GPU texture tops out around 8,192 px a side (Atlas's own cap), so a large world map means cutting the picture into tiles. Leaflet with a custom CRS was the first guess at an engine and is still a candidate; Atlas's PixiJS is the other, and a choice between them belongs to the scoping, not to this note.
+
+---
+
+**Battle maps — maybe someday**
+
+The game-night side of a map tool: a grid (square or hex, with auto-detection), tokens, fog of war revealed as the party explores, dynamic lighting with walls and doors, initiative, a separate player screen, a token's statblock on Ctrl+hover, and clickable dice. **Parked 2026-10-03 as "maybe someday", behind the world map.** It is a different job from worldbuilding — running a session rather than writing a world down — and people who run games usually have a tool for it already. Saying not yet costs nothing if the world map keeps the map, its objects and its panels as separate pieces that tokens and fog could later sit on.
+
+**Clickable dice belong here, not in the writing.** LK lets `4d6` or `DC15` typed anywhere in a page be clicked to roll; she declined it on 2026-10-03 because it pulls this whole side in with it.
+
+**The reference is [Atlas VTT](https://github.com/atlas-vtt/atlas-vtt)**, which does all of it — fog, lighting, vision and grid detection are its hardest and most Obsidian-free code. It is AGPL-3.0, so porting any of it means relicensing Anamnesis as AGPL; building our own keeps MIT. That choice comes back if this is ever picked up.
+
+---
+
+**What LegendKeeper has that we don't — audit of 2026-10-03**
+
+LK has no help docs as such, so this was read off every LK changelog post (0.7 to 0.19.1, about 150) plus its features, FAQ, pricing and how-to pages, and each item was checked against our code and `CHANGELOG.md` rather than our docs alone. **She asked for all of it on the list.** Maps are in the atlas entry above. Left off as not applying: live collaboration (cursors, presence, comments, an activity feed), members and permissions, billing, project transfer, a hosted share link (Publish makes a site instead), the mobile web client, and LK's calendar timelines with moons — Storylines are the chosen answer to time (see *Timeline visualization*).
+
+**Writing**
+
+- **Tables.** Header rows and columns, cell colours, merging and splitting cells — BlockNote appears to carry switches for these that `use-editor.ts` never turns on, which wants confirming before anything is promised. Plus banded and transparent table styles, and a **Random** button that highlights a random row, which turns any table into a roll table.
+- **Line-start shortcuts:** `!!` + space makes a callout, `>>` + space a toggle, `??` + space a secret.
+- **Make a page from selected text.** *Create & Link*: highlight words, make a page of that name and link it in place. *Cut*: highlight a chunk and move it out into a new page, named from what was selected.
+- **Drag a page from the sidebar into the writing** to drop a mention. Today `PAGE_DRAG_TYPE` is read only by boards.
+- **Change a link's text after it exists.** Ours sets it only in the New page dialog. LK also has a shortcut: `@Castle(spooky castle)` shows *spooky castle*.
+- **Definite-article folding:** *the @The Castle* comes out *the Castle*.
+- **Unlinked mentions** in Backlinks — pages that say a page's name without linking it.
+- **Right-click a mention to peek** at its page, in the panel described in the atlas entry.
+- **A hover preview inside a hover preview.**
+- **Accent-insensitive search:** *Espana* finds *España*. No diacritic folding was found in our search or matching.
+- **Tell auto-link to ignore a page**, for a name that keeps being suggested wrongly.
+- **Focus mode** that hides both side panels and leaves the writing, and a key (LK uses Ctrl+.) that toggles both sidebars. F11 fullscreens the window, which is a different thing.
+- **Lock a page** against accidental edits.
+- **New sub-pages take their parent's icon.**
+- **Clear a page's content**, to start over or to apply a template to a page that already exists.
+- **Version history that shows what changed**, in red and green. Ours previews an earlier version without marking the differences.
+- **An automatic contents rail** down the side of a long page, switchable off. The contents block exists; the rail does not.
+
+**Pictures**
+
+- **Remove a picture's background**, offline.
+- **Wrap text round a cut-out picture's outline** rather than its box.
+- Wrap left / right, linking a picture to a page and LK's whole picture menu are already in `plan.md` → Queued Adjustments (since 2026-08-11), so they are not repeated here.
+
+**Everything else**
+
+- **Name generators** — LK has fourteen (taverns, gods, ships, spells, guilds and more) and has said it means to bring generation into the app.
+- **Emoji that look the same on every system.** LK moved to one emoji set because Windows, macOS and Linux draw them differently; we draw the system's, which matters with a Linux user in the picture.
+- **Turn off features you don't use**, so their buttons go away.
+- **Drag tags into the order you want** on a page.
+- **Unsplash and Pinterest in the picture library.** Our changelog says they were not planned because they would talk to someone else's server; that reason belonged to the network rule retired 2026-08-25, so this is open again rather than settled.
 
 ---
 
