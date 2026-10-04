@@ -61,16 +61,15 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   and reports the old version, which is worth remembering before reading a bug
   report from that machine.
 
-- **The colour dot on every tree row is in the wrong place, and the folder
-  colour feature wants an overhaul.** Both flagged by the user 2026-08-18, with
-  a screenshot; she said plainly she'd deal with the overhaul later, so this is
-  a marker, not a brief. What's known: the circle sitting between a row's name
-  and its ⋯ menu (`tree-row-color-dot`, `TreeItem.tsx`) is unwanted *there* —
-  that's placement, not the ability to colour a page. **The overhaul itself is
-  undesigned and must be asked about rather than guessed at**, the same rule the
-  search scope controls carry below. Don't quietly move the dot into the ⋯ menu
-  as a fix; that's a design decision wearing a tidy-up's clothes, and it's hers.
-  Related: icons you choose yourself, in `docs/ideas.md`.
+- **The folder colour feature wants an overhaul.** Flagged by the user
+  2026-08-18, with a screenshot; she said plainly she'd deal with it later, so
+  this is a marker, not a brief. **The colour dot that sat between a row's name
+  and its ⋯ menu is gone (2026-10-03, at her request)** — the row's ⋯ menu and
+  right-click menu already carried *Set Color*, so nothing was lost and the
+  ability to colour a page is unchanged. **The overhaul itself is undesigned and
+  must be asked about rather than guessed at**, the same rule the search scope
+  controls carry below. Related: icons you choose yourself, and links wearing
+  the colour of the page they point at, both in `docs/ideas.md`.
 
 - **LegendKeeper's controls for a picture in a page, which the user pointed at
   2026-08-11 as the shape to match.** Two parts, neither built here yet:
