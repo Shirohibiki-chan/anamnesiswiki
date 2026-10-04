@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-03 — The colour circle is gone from the sidebar
+
+### Changes
+
+- **The little circle that appeared on a sidebar row when you pointed at it is gone.** It sat between a page's name and its ⋯ button and did one thing, open the colour picker, which was already on the ⋯ menu and the right-click menu as *Set Color*. Those two are where the colour picker lives now; nothing else about colours has changed.
+
 ## 2026-09-30 — Dragging a scene on a storyline moves only that scene
 
 ### Fixes
@@ -142,11 +148,3 @@
 ### Additions
 
 - **A number column can be filtered by a line, not only by an exact value.** Pick a number in a table's *Filter* and it now offers *is more than*, *is less than*, *is at least* and *is at most*, each with a box to type the number into. They compare as numbers, so 9 is less than 40 rather than after it; a page with no number in that column is on neither side of the line and is left out. *Contains* is no longer offered on a number, since part of a number is not a question anyone asks.
-
-## 2026-09-21 — Start writing and the template offer gets out of the way
-
-### Changes
-
-- **A new page can simply be written in.** The tab strip and the writing area are there from the moment the page is made, above the "what kind of page is this?" offer rather than instead of it. Type a word and the offer goes away on its own, with the word where you typed it; the sidebar still offers a template afterwards, as it did after *Skip this*, and *Skip this* is still there for sending the offer away without writing. Before, the offer was the whole page and the link under it was the only way past it.
-- **A page whose offer was sent away from the sidebar now has somewhere to write.** Pressing the ✕ on the sidebar's "this page doesn't have a template yet" used to leave the offer standing in the middle of the page anyway; now the page shows its writing area instead.
-

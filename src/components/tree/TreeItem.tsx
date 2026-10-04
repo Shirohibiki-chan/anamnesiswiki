@@ -396,18 +396,6 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
 
         {isProjectHome && <Home size={11} className="tree-row-home-badge" aria-label="Project home" />}
 
-        <button
-          type="button"
-          className="tree-row-color-dot"
-          style={ownHex ? { backgroundColor: ownHex, borderColor: ownHex } : undefined}
-          title="Set color"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (openPopover === "color") closePopover();
-            else openPopoverAt("color", e.currentTarget);
-          }}
-        />
-
         {/* The right-click menu, for anyone who doesn't right-click. Anchored to
             the button rather than the row so the menu opens under the thing
             that was pressed. */}
