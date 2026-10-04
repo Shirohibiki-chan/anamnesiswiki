@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-04 — The colour picker fits its colours
+
+### Fixes
+
+- **Every colour in a page's colour picker sits inside the panel.** The panel had a fixed width from before the full palette grew to eight colours across, so the last column — yellow, seafoam and grey — hung out past its right edge, and in the short row the **+** did too. The panel now takes the width of its colours, whichever row is showing.
+
 ## 2026-10-03 — The colour circle is gone from the sidebar
 
 ### Changes
@@ -142,9 +148,3 @@
 ### Additions
 
 - **Settings has an About section.** Which version this is, what the app is built with and under what licence — Electron, React, BlockNote, Excalidraw and the rest, each a link — and a note on the fonts: the three the app is set in, the size of the library, and that all of them are open typefaces bundled with the app. The app's own MIT licence and the source code are a click away. The other half of a bullet whose first half became Patch Notes.
-
-## 2026-09-21 — More than, less than
-
-### Additions
-
-- **A number column can be filtered by a line, not only by an exact value.** Pick a number in a table's *Filter* and it now offers *is more than*, *is less than*, *is at least* and *is at most*, each with a box to type the number into. They compare as numbers, so 9 is less than 40 rather than after it; a page with no number in that column is on neither side of the line and is left out. *Contains* is no longer offered on a number, since part of a number is not a question anyone asks.

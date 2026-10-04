@@ -721,9 +721,16 @@ button.tree-path-crumb:hover {
 }
 
 /* The swatches themselves moved to the shared `.color-swatches` grid in
-   blocks.css — a page and a block are coloured from one control now. */
+   blocks.css — a page and a block are coloured from one control now.
+
+   **Sized by the swatches, never by a number.** It was a fixed 232px, set
+   before the full palette became eight 28px columns (264px with its gaps and
+   padding), so the last column hung out past the panel's edge — and the short
+   row was too wide for it as well. `min-content` is as wide as the widest row
+   of tiles, and the inherited-colour hint wraps to that rather than widening
+   the panel. */
 .tree-color-picker {
-  width: 232px;
+  width: min-content;
 }
 
 .tree-color-inherited {

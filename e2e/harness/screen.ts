@@ -4371,3 +4371,31 @@ export async function openSideMenuOf(window: Page, block: Locator): Promise<void
   await handle.waitFor({ state: "visible", timeout: WAIT_MS });
   await handle.click();
 }
+
+/** Opens a row's colour picker through its right-click menu's Set Color. */
+export async function openRowColourPicker(window: Page, rowName: string): Promise<void> {
+  await openTreeRowMenu(window, rowName);
+  await pickTreeMenuItem(window, "Set Color");
+  await window.locator(".tree-color-picker").waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/** Swaps the open colour picker's short row for the whole palette. */
+export async function showEveryColour(window: Page): Promise<void> {
+  await window.getByRole("button", { name: "More Colours", exact: true }).click();
+  await window.locator(".color-swatch-grid").waitFor({ state: "visible", timeout: WAIT_MS });
+}
+
+/**
+ * How many tiles in the open colour picker reach past the edge of the panel
+ * holding it — the panel's own box, border included, measured in the page.
+ */
+export async function coloursOutsidePicker(window: Page): Promise<number> {
+  return window.locator(".tree-color-picker").evaluate((picker) => {
+    const panel = picker.closest(".tree-popover") ?? picker;
+    const edge = panel.getBoundingClientRect();
+    return Array.from(picker.querySelectorAll(".color-swatch")).filter((tile) => {
+      const box = tile.getBoundingClientRect();
+      return box.left < edge.left || box.right > edge.right || box.top < edge.top || box.bottom > edge.bottom;
+    }).length;
+  });
+}
