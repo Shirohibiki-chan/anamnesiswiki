@@ -2,6 +2,13 @@
 
 Older entries, moved out to keep `CHANGELOG.md` short. Newest of the archive is first; see [CHANGELOG.md](../CHANGELOG.md) for current entries.
 
+## 2026-09-21 — Start writing and the template offer gets out of the way
+
+### Changes
+
+- **A new page can simply be written in.** The tab strip and the writing area are there from the moment the page is made, above the "what kind of page is this?" offer rather than instead of it. Type a word and the offer goes away on its own, with the word where you typed it; the sidebar still offers a template afterwards, as it did after *Skip this*, and *Skip this* is still there for sending the offer away without writing. Before, the offer was the whole page and the link under it was the only way past it.
+- **A page whose offer was sent away from the sidebar now has somewhere to write.** Pressing the ✕ on the sidebar's "this page doesn't have a template yet" used to leave the offer standing in the middle of the page anyway; now the page shows its writing area instead.
+
 ## 2026-09-21 — Players come in and go out with the world
 
 ### Additions

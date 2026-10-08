@@ -615,7 +615,6 @@ button.tree-path-crumb:hover {
    was truncated three-quarters of the way along to reserve space for controls
    that weren't on screen. Names now get the full width of the panel and only
    give it up on the one row being pointed at. */
-.tree-row-color-dot,
 .tree-row-menu,
 .tree-row-add {
   flex-shrink: 0;
@@ -631,11 +630,6 @@ button.tree-path-crumb:hover {
   cursor: pointer;
 }
 
-.tree-row-color-dot {
-  border-radius: 50%;
-  border: 1px solid var(--color-text-placeholder);
-}
-
 /* The focus half is what keeps these reachable without a mouse: `display: none`
    takes them out of the tab order, where `opacity: 0` left them in it —
    focusable but invisible, which was its own bug.
@@ -647,13 +641,10 @@ button.tree-path-crumb:hover {
    the focused element or one containing it, never a descendant of it, so
    `.tree-node:focus-within` is dead CSS here however right it looks. No
    `rowClassName` is configured, so the role is the only handle. */
-.tree-row:hover .tree-row-color-dot,
 .tree-row:hover .tree-row-menu,
 .tree-row:hover .tree-row-add,
-[role="treeitem"]:focus-within .tree-row-color-dot,
 [role="treeitem"]:focus-within .tree-row-menu,
 [role="treeitem"]:focus-within .tree-row-add,
-.tree-row-active .tree-row-color-dot,
 .tree-row-active .tree-row-menu,
 .tree-row-active .tree-row-add {
   display: flex;
