@@ -535,3 +535,17 @@ Asked for by the user 2026-08-31. Wanted, unscheduled. Most of the shape below w
 **A gallery page gets that grouping for nothing.** The tree already nests and a character is already a page, so Damien's gallery is a child of Damien and there is no second set of folders to keep in order. See `CLAUDE.md` → Data on disk for why any page can hold pages, and why borrowing a folder-shaped object from Obsidian would mean importing a limitation with it.
 
 **A page type rather than a block was her call and is worth keeping.** `TEMPLATE_KEYS` holds fifteen and adding one is routine; Phase 22 wants another for universes. A block would put a gallery inside some other page's body, which is the arrangement that makes "where are Damien's pictures" a question again.
+
+---
+
+**A companion in the sidebar**
+
+A little character who sits in a panel and comments on what you're doing: a line when you open a page, based on its name; now and then a line about the word count when you stop typing; and a reaction when you poke him. A friend built one for Obsidian as a plugin, with hand-drawn pixel sprites, two rooms and two outfits to switch between, a slider for how chatty he is, and a Poke button. She saw it 2026-10-13 and wanted the possibility here. It's a fun thing, not a working tool, and it should be priced that way.
+
+**Every line is written in advance, and that's what keeps it inside the rules.** Nothing is generated, so the no-AI-in-the-editor rule in `CLAUDE.md` isn't touched. **Lines ship as a starter set that can be edited and added to** (her call, same day).
+
+**It is optional, something you add, never something every project gets.** Her call, same day: a companion only works if someone has made one, with art and lines, so a permanent panel would sit empty for anyone who hasn't. Where the add lives (a block on a page or the dashboard, or a panel turned on in settings) is not decided.
+
+**The art is the hard part, not the code.** The friend drew her sprites by hand, and neither generated pixel art nor anything I can draw is good enough to ship. Her description of what's needed is a visual-novel sprite: one character whose expression shifts slightly as he talks, not a set of very different pictures. So the build is "your pictures, one per expression", and the open question is **where they come from**: uploaded straight into the companion, or a character page from her own world whose portrait becomes the companion and which carries the expression pictures and lines. The second is the version that only makes sense in this app, since it would be your own character heckling you about your own world. Not decided.
+
+**It doesn't wait for split panes.** In Obsidian the sidebar is a tab area, and a plugin docks into it the same way a note dragged there does. Dragging notes and tabs into the sidebar is Obsidian's docking system, which is Phase 21.5 (deferred) in `plan.md`, and our right bar is the page's own properties, which is why that phase can't borrow Obsidian's answer. The companion needs a fixed spot, not docking. If split panes ever lands, he could become something you move around.
