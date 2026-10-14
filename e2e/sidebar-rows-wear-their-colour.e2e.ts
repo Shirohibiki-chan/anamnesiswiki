@@ -8,7 +8,7 @@
 // outrank it.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchApp, type RunningApp } from "./harness/launch-app";
-import { colourRow, openPage, pickSidebarColour, treeRowBackground, waitForWorld } from "./harness/screen";
+import { colourRow, describeTreeRow, openPage, pickSidebarColour, treeRowBackground, waitForWorld } from "./harness/screen";
 
 /** Given its own colour here. */
 const RED_PAGE = "Thonn Lindqvist";
@@ -30,12 +30,19 @@ describe("sidebar rows and their colour", () => {
 
   it("selects a red page in red, not in the accent", async () => {
     await openPage(app.window, RED_PAGE);
-    await expect
-      .poll(async () => {
-        const { r, g, b, a } = await treeRowBackground(app.window, RED_PAGE);
-        return a > 0 && r > g + 40 && r > b + 40;
-      })
-      .toBe(true);
+    // DIAGNOSTIC (2026-10-14): fails on CI only; say what the row was.
+    try {
+      await expect
+        .poll(async () => {
+          const { r, g, b, a } = await treeRowBackground(app.window, RED_PAGE);
+          return a > 0 && r > g + 40 && r > b + 40;
+        })
+        .toBe(true);
+    } catch (error) {
+      const read = await treeRowBackground(app.window, RED_PAGE);
+      const row = await describeTreeRow(app.window, RED_PAGE);
+      throw new Error(`row never turned red. read ${JSON.stringify(read)}; ${row}`, { cause: error });
+    }
   });
 
   it("leaves a page that only inherits its colour untinted in the subtle look", async () => {
