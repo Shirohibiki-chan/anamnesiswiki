@@ -25,6 +25,22 @@ export const TREE_DOUBLE_CLICK_ACTIONS = ["expand", "rename"] as const;
 export type TreeDoubleClickAction = (typeof TREE_DOUBLE_CLICK_ACTIONS)[number];
 
 /**
+ * How much of a coloured page's colour the sidebar shows (2026-10-13).
+ *
+ * `subtle` is the coloured icon, the stripe on a page's own colour and the
+ * light tint on a coloured folder — the look the sidebar always had. `tinted`
+ * washes every coloured row in its colour, including pages that take theirs
+ * from a folder above them, with names left in the ordinary text colour.
+ * In both, a selected row wears its page's colour rather than the accent.
+ *
+ * **Subtle is the default, her call**: a sidebar where every row is coloured
+ * is something some people love and some find loud, so it is offered rather
+ * than imposed.
+ */
+export const SIDEBAR_COLOURS = ["subtle", "tinted"] as const;
+export type SidebarColour = (typeof SIDEBAR_COLOURS)[number];
+
+/**
  * Whether a long grid of things is broken into pages, or is one endless scroll.
  *
  * Pages are the default and her preference (2026-08-18), and the switch exists
@@ -232,6 +248,8 @@ export type PropertiesPanelDefault = (typeof PROPERTIES_PANEL_DEFAULTS)[number];
 
 export type Preferences = {
   treeDoubleClick: TreeDoubleClickAction;
+  /** See SIDEBAR_COLOURS. */
+  sidebarColour: SidebarColour;
   formattingBar: FormattingBarMode;
   /**
    * Whether words that could be a link to a page are marked while writing —
@@ -305,6 +323,7 @@ export type Preferences = {
 
 export const DEFAULT_PREFERENCES: Preferences = {
   treeDoubleClick: "expand",
+  sidebarColour: "subtle",
   formattingBar: "floating",
   linkMarks: true,
   plainCopy: "text",
@@ -388,6 +407,9 @@ export function parsePreferences(raw: unknown): Preferences {
     treeDoubleClick: TREE_DOUBLE_CLICK_ACTIONS.includes(treeDoubleClick as TreeDoubleClickAction)
       ? (treeDoubleClick as TreeDoubleClickAction)
       : DEFAULT_PREFERENCES.treeDoubleClick,
+    sidebarColour: SIDEBAR_COLOURS.includes(source.sidebarColour as SidebarColour)
+      ? (source.sidebarColour as SidebarColour)
+      : DEFAULT_PREFERENCES.sidebarColour,
     formattingBar: FORMATTING_BAR_MODES.includes(formattingBar as FormattingBarMode)
       ? (formattingBar as FormattingBarMode)
       : DEFAULT_PREFERENCES.formattingBar,

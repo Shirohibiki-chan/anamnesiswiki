@@ -124,52 +124,15 @@ Freeform spatial planning surface — LK ships one as "Board." Kept on the list 
 
 ---
 
-**Icons you choose yourself**
+**Icons you choose yourself — the LK import half**
 
-Asked for by the user 2026-08-18. Wanted, unscheduled. Today a page's icon is
-its template's — every Character gets the same glyph — and the only thing she
-can change per page is its colour.
+Asked for by the user 2026-08-18. **Picking an icon per page is built**: *Set Icon* is on every row's right-click menu, folders included, and on the page title, through the picker Phase 18c made for meters (`components/blocks/IconPicker.tsx` over `constants/glyphs.ts` and `constants/emoji.ts`). A page's own icon replaces its template's — the behaviour since Phase 18c, and the answer she gave on 2026-10-13 when asked. She was unsure whether folders should take one too; they already can, and nothing has to change unless she says otherwise.
 
-**LegendKeeper does this, and her existing world is already full of her
-answers.** Every resource in a `.lk` carries `iconGlyph`, `iconShape` and
-`iconColor`; checked against her real export 2026-08-18, the glyphs are Font
-Awesome class names (`fas fa-tree-palm`, `fas fa-map-marked-alt`, `fas fa-sun`,
-`fas fa-water`, `fas fa-flag`), with a few bare names (`calendar`, `shapes`).
-**Our importer reads none of them**, so a world she decorated page by page
-arrives wearing eight template glyphs. That makes this an import fix as much as
-a feature, and it's the argument for doing it before she re-imports Valeraverse
-again rather than after.
+**What is not built is reading her LK icons on import.** Every resource in a `.lk` carries `iconGlyph`, `iconShape` and `iconColor`; checked against her real export 2026-08-18, the glyphs are Font Awesome class names (`fas fa-tree-palm`, `fas fa-map-marked-alt`, `fas fa-sun`, `fas fa-water`, `fas fa-flag`), with a few bare names (`calendar`, `shapes`). **Our importer reads none of them**, so a world she decorated page by page arrives wearing template glyphs — the argument for doing this before she re-imports Valeraverse rather than after.
 
-**The awkward part is that we don't ship Font Awesome and shouldn't start.**
-The app draws with `lucide-react`, which is bundled, offline and already the
-source of `constants/icons.ts`. So an imported glyph needs a name-to-name map,
-and it will be partial — Lucide has no palm tree. **A page whose glyph doesn't
-map keeps its template icon**, which is exactly what it has today, so a missing
-entry costs nothing and the map can grow. Don't reach for a Font Awesome
-package to close the gap: it's a second icon set in the bundle for a handful of
-pages, and the Policy Boundary rules out fetching one.
+**We don't ship Font Awesome and shouldn't start.** The app draws with `lucide-react`, so an imported glyph needs a name-to-name map into `glyphs.ts`, and it will be partial — Lucide has no palm tree. **A page whose glyph doesn't map keeps its template icon**, which is what it has today, so a missing entry costs nothing and the map can grow. Don't reach for a Font Awesome package to close the gap: a second icon set in the bundle for a handful of pages.
 
-`iconShape` and `iconColor` are atlas-pin styling — a pin's outline and its
-fill on a map. There's no atlas here (see the top of this file), and the colour
-is already a per-node thing we have. Read the glyph; leave the other two.
-
-**Half of this is now built.** Phase 18c needed an icon per meter and so it
-shipped the picker and the registry underneath it: `constants/glyphs.ts` is a
-curated Lucide set with search keywords, `constants/emoji.ts` is the emoji
-half, and `components/blocks/IconPicker.tsx` is the control — deliberately
-written to take a value and a callback and know nothing about meters, so a
-page's icon can use it as-is. **How it's picked is therefore answered**, and
-the answer to "~1500 things in a popover" was: don't ship 1500, ship a curated
-few hundred grouped and searchable, and add to the list when something is
-missing. An unknown stored name degrades to text rather than to a crash, which
-is also what makes an emoji storable as itself.
-
-**What's still undecided and needs her, not a guess:** whether a page's icon
-replaces the template's or sits beside it, and whether folders get one too.
-The LK glyph-name map for import is also still unwritten — that's the part
-that makes this an import fix, and `glyphs.ts` is where the target names now
-live. Related but separate: the colour control's placement, below in Queued
-Adjustments.
+`iconShape` and `iconColor` are map-pin styling — a pin's outline and its fill. They had no home while there was no atlas; with the atlas now wanted (top of this file), they are the page's default pin look, and the map phases should read them when LK maps come in.
 
 ---
 
@@ -449,7 +412,7 @@ Her idea, 2026-08-31, offered as a small one and as a start rather than a fix: a
 
 **Colour must not be the only signal.** It fails for anyone who cannot separate two of them, and it fails for the person using one colour for several things, which she named herself. The complement is already there: every template has an icon, so a chip can say *Character* or *Location* without any colour at all, and the two together do more than either. Contrast rules apply as everywhere else in this project — a tinted chip still has to be comfortably readable, not merely passing.
 
-**It leans on a feature that is already flagged as needing an overhaul.** `plan.md` → Queued Adjustments carries the folder-colour rework, undesigned and to be asked about rather than guessed at. Giving colour a second job raises what that overhaul has to get right, so these two should be looked at together rather than this being slipped in first.
+**The shape is settled, 2026-10-13.** A link takes its target's *effective* colour — its own, or the nearest coloured page or folder above it, the same cascade the sidebar draws — and a link with no colour anywhere above it keeps today's look. **Any one link can be recoloured by hand** from its right-click menu, with the same swatches, and a *Follow Page* entry that puts it back on the cascade; a hand-picked colour belongs to that link alone and survives the page being recoloured. Readability is checked against the lightest surface, as everywhere. The folder-colour overhaul this used to wait on shipped the same day (Settings → Sidebar, *Subtle* / *Tinted Rows*), so nothing blocks it.
 
 ---
 **How bot creators actually organise — two real vaults**

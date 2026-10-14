@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-13 — The sidebar wears your colours
+
+### Fixes
+
+- **The page you have open wears its own colour in the sidebar.** A page set to red, once selected, still turned the usual seafoam; its row now takes a wash of red instead, with the name in plain text so even the darker colours stay readable. A page with no colour anywhere above it is selected in seafoam as before.
+
+### Additions
+
+- **Settings → Sidebar → Colour in the sidebar.** Two looks:
+  - **Subtle**, the one you already had and still the default: coloured icons, a stripe beside a page with its own colour, and a light tint on coloured folders.
+  - **Tinted Rows**: every coloured row gets a gentle wash of its colour, including pages that take theirs from a folder above them, with the names left in plain text.
+
 ## 2026-10-04 — The colour picker fits its colours
 
 ### Fixes
@@ -142,9 +154,3 @@
 ### Changes
 
 - **The sheet is the same height whichever tab is open**, so switching tabs doesn't move the strip under the pointer.
-
-## 2026-09-21 — About
-
-### Additions
-
-- **Settings has an About section.** Which version this is, what the app is built with and under what licence — Electron, React, BlockNote, Excalidraw and the rest, each a link — and a note on the fonts: the three the app is set in, the size of the library, and that all of them are open typefaces bundled with the app. The app's own MIT licence and the source code are a click away. The other half of a bullet whose first half became Patch Notes.

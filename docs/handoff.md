@@ -4770,10 +4770,19 @@ Phase 26, step 2. What binds the code:
   people has to read it too; one aimed at her own disk (Markdown, `.lk`, JSON)
   must not.
 
-- **Folders get full-row colour tinting; pages get icon-only.** Folders are
-  categorical anchors and should read as containers; pages are their contents and
-  shouldn't compete. Colour cascades to descendants, and the node that *set* the
-  colour gets a left-border stripe so ownership is visible.
+- **Folders get full-row colour tinting; pages get icon-only — in the default
+  look.** Folders are categorical anchors and should read as containers; pages
+  are their contents and shouldn't compete. Colour cascades to descendants, and
+  the node that *set* the colour gets a left-border stripe so ownership is
+  visible. **Since 2026-10-13 that is *Subtle*, one of two looks** in Settings →
+  Sidebar (`sidebarColour`); *Tinted Rows* washes every coloured row, inherited
+  colour included, and keeps names in `--color-text-primary`. **In both, a
+  selected row wears its own colour instead of the accent**, name in the
+  primary text colour. **Every wash is drawn in `tree.css` off `--row-hex`,
+  never inline**: the folder tint was an inline background once, no rule could
+  outrank it, and a red page selected always came out the accent colour. The
+  look is one attribute on `.tree-panel`, read once by `TreePanel` — never a
+  preference read in `TreeItem`, which renders per row.
 
 - **Empty folders stay folders** — an empty container isn't visually demoted; the
   user may be preparing it.

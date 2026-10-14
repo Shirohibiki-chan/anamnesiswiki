@@ -1,11 +1,29 @@
-// Settings → Sidebar. How the page tree behaves, as opposed to how it looks.
-import { usePropertiesPanelDefault, useTreeDoubleClick, usePreferenceActions } from "../../hooks/use-preferences";
+// Settings → Sidebar. How the page tree behaves, and how much colour it shows.
+import {
+  usePropertiesPanelDefault,
+  useSidebarColour,
+  useTreeDoubleClick,
+  usePreferenceActions,
+} from "../../hooks/use-preferences";
 import {
   PROPERTIES_PANEL_DEFAULTS,
+  SIDEBAR_COLOURS,
   TREE_DOUBLE_CLICK_ACTIONS,
   type PropertiesPanelDefault,
+  type SidebarColour,
   type TreeDoubleClickAction,
 } from "../../services/preferences-service";
+
+const COLOUR_LABELS: Record<SidebarColour, { label: string; hint: string }> = {
+  subtle: {
+    label: "Subtle",
+    hint: "Coloured icons, a stripe beside a page with its own colour, and a light tint on coloured folders.",
+  },
+  tinted: {
+    label: "Tinted Rows",
+    hint: "Every coloured row gets a wash of its colour, including pages that take theirs from a folder above them.",
+  },
+};
 
 const DOUBLE_CLICK_LABELS: Record<TreeDoubleClickAction, { label: string; hint: string }> = {
   expand: { label: "Opens It", hint: "Shows what's inside, the way a folder works everywhere else." },
@@ -20,10 +38,33 @@ const PANEL_LABELS: Record<PropertiesPanelDefault, { label: string; hint: string
 export function SidebarSettings() {
   const treeDoubleClick = useTreeDoubleClick();
   const propertiesPanel = usePropertiesPanelDefault();
-  const { setTreeDoubleClick, setPropertiesPanelDefault } = usePreferenceActions();
+  const sidebarColour = useSidebarColour();
+  const { setTreeDoubleClick, setPropertiesPanelDefault, setSidebarColour } = usePreferenceActions();
 
   return (
     <div className="appearance-settings">
+      <fieldset className="sidebar-setting" data-setting="sidebar-colour">
+        <legend className="sidebar-setting-label">Colour in the sidebar</legend>
+        <p className="sidebar-setting-blurb">
+          How much of a page's colour its row shows. Either way, the page you have open wears its own colour.
+        </p>
+        {SIDEBAR_COLOURS.map((mode) => (
+          <label key={mode} className="sidebar-setting-option">
+            <input
+              type="radio"
+              name="sidebar-colour"
+              value={mode}
+              checked={sidebarColour === mode}
+              onChange={() => setSidebarColour(mode)}
+            />
+            <span className="sidebar-setting-option-text">
+              <span className="sidebar-setting-option-label">{COLOUR_LABELS[mode].label}</span>
+              <span className="sidebar-setting-option-hint">{COLOUR_LABELS[mode].hint}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+
       <fieldset className="sidebar-setting" data-setting="tree-double-click">
         <legend className="sidebar-setting-label">Double-clicking a page in the sidebar</legend>
         <p className="sidebar-setting-blurb">

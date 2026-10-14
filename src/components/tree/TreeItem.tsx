@@ -139,12 +139,16 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
   // it visible through the moment a page is added, before the child arrives.
   const showToggle = hasChildren || node.isOpen;
 
+  // The row's colour reaches the stylesheet as `--row-hex`, and every wash —
+  // the folder tint, the tinted-rows setting, a selected row wearing its
+  // colour — is drawn there off it (tree.css § Colour on a row). The tint used
+  // to be an inline background, which no stylesheet rule could outrank, so a
+  // selected row could only ever turn the accent colour.
+  const isColoured = !!effectiveHex && !isSharedSection;
   const rowStyle: CSSProperties = {
     borderLeft: ownHex ? `2px solid ${ownHex}` : "2px solid transparent",
+    ...(isColoured ? ({ "--row-hex": effectiveHex } as CSSProperties) : {}),
   };
-  if (showFolderTint) {
-    rowStyle.backgroundColor = `${effectiveHex}${node.isSelected ? "40" : "1f"}`;
-  }
 
   function openPopoverAt(which: Exclude<OpenPopover, null>, target: HTMLElement) {
     setAnchorRect(target.getBoundingClientRect());
@@ -334,7 +338,7 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         // without this the buttons vanish and the name springs back to full
         // width underneath an open menu, including the button the menu is
         // anchored to.
-        className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}${looksHidden ? " tree-row-hidden" : ""}${openPopover ? " tree-row-active" : ""}${isSharedSection ? " tree-row-shared-section" : ""}`}
+        className={`tree-row${node.isSelected ? " tree-row-selected" : ""}${showFolderTint ? " tree-row-tinted" : ""}${isColoured ? " tree-row-coloured" : ""}${node.willReceiveDrop ? " tree-row-drop-target" : ""}${looksHidden ? " tree-row-hidden" : ""}${openPopover ? " tree-row-active" : ""}${isSharedSection ? " tree-row-shared-section" : ""}`}
         style={rowStyle}
         // **Right-clicking a row must not move you onto it.** The menu is about
         // that row; going there is a different intent, and losing the page you
@@ -387,7 +391,6 @@ export function TreeItem({ node, style, dragHandle }: NodeRendererProps<TreeNode
         ) : (
           <span
             className="tree-row-name"
-            style={showFolderTint ? { color: effectiveHex ?? undefined, fontWeight: 500 } : undefined}
             onDoubleClick={handleDoubleClick}
           >
             {fullNode.name}
