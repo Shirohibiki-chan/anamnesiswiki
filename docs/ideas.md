@@ -8,6 +8,8 @@ Ideas parked for later. Nothing here is scheduled — see [plan.md](plan.md) for
 
 LK's atlas — a picture of the world you can pan and zoom, with pins, paths, regions and labels that open pages, and maps nested inside maps — is the one large LK feature Anamnesis does not have. It was left out of Phase 1 as the most complex piece of LK to build well. **She asked for it on 2026-10-03** and reviewed LK's map tool screen by screen that day; everything below comes from her screenshots, LK's 0.18.0.0 changelog and map posts, and a read of Atlas VTT's code. Unscheduled: the next step is scoping a phase in `plan.md`, not building.
 
+**Scheduled 2026-10-13 as Phases 33–36 in `plan.md`** — page panels, then three map phases; what is below is the detail they were scoped from.
+
 **Build our own, and Anamnesis stays MIT. Settled 2026-10-03.** [Atlas VTT](https://github.com/atlas-vtt/atlas-vtt) was the alternative: an Obsidian plugin, ~120,000 lines of TypeScript on React, Zustand and PixiJS, licensed AGPL-3.0. AGPL costs nothing and limits nobody's use — the only string is that a modified version must stay open under the same licence — but taking its code would make all of Anamnesis AGPL. It was not taken because of what it holds rather than the licence alone: its strength is the battle-map side (fog, lighting, grids, tokens, dice, a player window — see *Battle maps* below), while LK's world-map tools are almost all absent from it. It has pins (point, icon, number/letter label, GM-only, a link to a note or another map), plain text and freehand drawing, and a ruler; it has no paths or regions as objects, no zoom visibility, no navigation, no clustering, and calibrates by grid square rather than by a drawn line. About 30% of its code calls Obsidian directly (the vault for every save, Obsidian's own editor for the note panel, Obsidian's pop-out window for the player view) and 24,000 lines of styling sit on Obsidian's theme variables. Use it as a reference for how it does the floating panel, pins and measuring — not as code to copy.
 
 **What a map holds — four kinds of object, each with a link, a Display rule and zoom visibility.** A right-click radial menu offers all four (Pin, Path, Region, Label); a bottom toolbar has Select, Pin, Label, Region, Path, Measure and a ⋮ menu.
@@ -61,6 +63,8 @@ The game-night side of a map tool: a grid (square or hex, with auto-detection), 
 **What LegendKeeper has that we don't — audit of 2026-10-03**
 
 LK has no help docs as such, so this was read off every LK changelog post (0.7 to 0.19.1, about 150) plus its features, FAQ, pricing and how-to pages, and each item was checked against our code and `CHANGELOG.md` rather than our docs alone. **She asked for all of it on the list.** Maps are in the atlas entry above. Left off as not applying: live collaboration (cursors, presence, comments, an activity feed), members and permissions, billing, project transfer, a hosted share link (Publish makes a site instead), the mobile web client, and LK's calendar timelines with moons — Storylines are the chosen answer to time (see *Timeline visualization*).
+
+**Scheduled 2026-10-13 across Phases 33 and 37–46 in `plan.md`**; this list is the detail.
 
 **Writing**
 

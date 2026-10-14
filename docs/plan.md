@@ -306,12 +306,165 @@ condition she set when she lifted it. Detail and the scoping it was built
 with are in `docs/shipped.md`; what binds the code is in `docs/handoff.md`
 § Players.
 
-**No scoped phase is left.** What remains is the deferred phases below
-(Cloud Sync and Split Panes), Queued Adjustments, and whatever she scopes
-next.
+**Phases 33–46 are scoped, below** (2026-10-13), turned out of `docs/ideas.md`
+when the plan had run dry. After them come the deferred phases (Cloud Sync and
+Split Panes) and Queued Adjustments.
 
 Two things Phase 12 left behind are in Queued Adjustments rather than here: the
 About dialog and the app's default typefaces. Neither blocks anything.
+
+---
+
+## Phases 33–46 — scoped from `docs/ideas.md`, 2026-10-13
+
+Added together on 2026-10-13, when the plan had run out of scoped phases: she asked for the parked ideas to become phases. **The order is hers**: page panels first, then the three map phases, then the rest. Each section below is a first scoping and says where its detail lives. **As with 15, 16 and 17, each one gets a scoping pass in a docs PR before it is built**, and anything marked open is asked rather than guessed.
+
+**Two automation items here are settings, off until she switches them on** — *Create & Link* and *unlinked mentions* (Phases 37 and 38). Her answer on 2026-10-13, and the same rule as auto-link marking: they sit close to the app having opinions about her prose, which she refused in August (`ideas.md` → *Relationships that write their own other half*, the last paragraph), so they are offered and never on by default.
+
+---
+
+## Phase 33 — Page Panels
+
+**Source:** `ideas.md` → *Interactive atlas / maps*, the *Page panels* and *Two ways to peek* paragraphs. First because boards get it straight away and maps need it.
+
+- A page panel can be **docked** (the board View panel as it is today) **or floating** — a window dragged by its header and resized from its edges, several open at once, with a pin that keeps one open (clicking into its writing pins it) and the scroll position it was left at.
+- The panel's header carries **Float**, **Dock**, **Open** (go to the page) and a close. LK's pop-out only navigates, which is the half she found inconvenient.
+- **The first panel opens docked; after that, a new panel opens the way the last one was left.**
+- Wherever a page panel opens — boards now, maps in Phase 34.
+- **Right-click a mention to peek** at its page in a panel, and **a hover preview inside a hover preview** (`ideas.md` → *What LegendKeeper has that we don't*).
+
+**Settled:** all of the above (2026-10-03). **Open:** none yet.
+
+---
+
+## Phase 34 — Maps: The Map Itself
+
+**Source:** `ideas.md` → *Interactive atlas / maps*. Build our own, Anamnesis stays MIT; Atlas VTT is a reference, not code to copy.
+
+- **A map page**: a picture as its body, panned and zoomed, with reset view, centre map and fullscreen. Large pictures served as tiles — LK takes 14,000 px and 100 MB; one GPU texture tops out near 8,192 px.
+- **Pins**: Large, Small, Icon and Image kinds; colour row plus a custom colour; eight shapes; an icon; Display (always / on hover / never); a link that is optional. Standalone pins that can sync their name, icon and style from the page they link to; a page's own default pin look.
+- **Nested maps**: a pin linked to a map page. In the panel it shows the map small with **Go to Map**; holding Shift shows only pins that lead to other maps. **The board View panel's refusal to show a canvas has to go for maps** (`BoardViewPanel.tsx`) — LK does show a map inside a panel over a map.
+- **Peek**: click a pin for the full panel (Phase 33), hold Ctrl and hover for a quick card.
+- **The pin list** down the side, with fly-to and a filter by name and tag; drag a page from the sidebar onto the map to pin it; double-click a pin to open its page; a selected pin is the only one that drags.
+- **Her LK maps**, if her `.lk` export carries any — checked first, and the importer reads `iconShape` / `iconColor` as the page's default pin look.
+
+**Open:** the engine (Leaflet with a custom CRS, or PixiJS as Atlas uses), decided in this phase's scoping, not before.
+
+---
+
+## Phase 35 — Maps: Drawing the World
+
+**Source:** `ideas.md` → *Interactive atlas / maps*, *What a map holds* and the map-changelog list.
+
+- **Paths** (width, curviness, solid / dashed / dotted, opacity, labels that follow the path and appear by zoom), **regions** (fill, stroke, label) and **labels** (size, face, outline, text and stroke colour), each with a link, Display and zoom visibility.
+- The right-click radial menu (Pin / Path / Region / Label) and the bottom toolbar with its ⋮ switches.
+- **Zoom visibility** on every object; **groups** that nest and can be hidden or soloed; pin **clustering** that follows the groups; auto-nest pins in regions.
+- Ctrl snapping to paths and regions, and **border-borrowing** so two regions share an edge exactly.
+- Box-select to restyle many at once, tool lock, Ctrl+D, undo and redo; style a tool before dropping anything.
+- **Hidden** fades an object for the editor; if a player screen ever exists, it means absent for players (`ideas.md` → *Battle maps*).
+
+---
+
+## Phase 36 — Maps: Distances & Journeys
+
+**Source:** `ideas.md` → *Interactive atlas / maps*, *Measuring, calibration and navigation*.
+
+- **Calibrate** by drawing a line and typing its real distance; then the ruler, a scale bar, a region's area and perimeter, and a path's length.
+- **Navigation mode**: a route along named paths between pins, listed turn by turn in a side panel with S and E markers, and a travel speed that turns distance into time. Measuring and navigation keep working on a read-only map.
+- **A map block** for the writing and the sidebar that centres on the host page's pin.
+- **Maps leave with the world**: the Markdown and site exports carry a picture of a map, the site a working one if it can, and the LK export says what it can't take.
+
+---
+
+## Phase 37 — Writing Toolkit
+
+**Source:** `ideas.md` → *What LegendKeeper has that we don't*, *Writing*.
+
+- **Tables**: header rows and columns, cell colours, merged cells (BlockNote appears to have switches for these — confirm first), banded and transparent styles, and a **Random** button that highlights a row.
+- Line-start shortcuts: `!!` callout, `>>` toggle, `??` secret.
+- **Create & Link** and **Cut** from a selection — **a setting, off by default**.
+- Drag a page from the sidebar into the writing to drop a mention.
+- Change a link's text after it exists, and `@Castle(spooky castle)`; *the @The Castle* folds to *the Castle*.
+- **Focus mode** (both side panels away) and a key that toggles both sidebars.
+- Lock a page; new sub-pages take their parent's icon; clear a page's content.
+- **Version history that shows what changed**, and an **automatic contents rail** on long pages.
+
+---
+
+## Phase 38 — Finding & Linking
+
+**Source:** `ideas.md` → *What LegendKeeper has that we don't*, and *How bot creators actually organise*.
+
+- **Accent-insensitive search and matching** — *Espana* finds *España*.
+- Tell auto-link to ignore a page.
+- **Unlinked mentions** in Backlinks — **a setting, off by default**.
+- **Telling same-named pages apart** in the `@` menu, the wikilink picker and Ctrl-K: her world already has many Sampos and many Valeras.
+
+**Open:** what tells two Sampos apart in a list — the path, the template, the portrait, a colour — is the design work, asked before building.
+
+---
+
+## Phase 39 — Link Colours & LK Icons
+
+**Source:** `ideas.md` → *Links wearing the colour of the page they point at* and *Icons you choose yourself — the LK import half*. What was left of an "Icons & Colours" phase once the sidebar's colour shipped (Settings → Sidebar, 2026-10-13) and per-page icons turned out to exist already.
+
+- **A link takes its target's effective colour** — its own or the nearest coloured page or folder above it — and keeps today's look when there is none. **Any one link can be recoloured by hand** from its right-click menu, with a *Follow Page* entry that puts it back on the cascade. Settled 2026-10-13.
+- **LK icons on import**: a Font Awesome to Lucide name map for `iconGlyph`, partial by nature — a glyph that doesn't map keeps the template's icon. Worth doing before Valeraverse is re-imported.
+
+---
+
+## Phase 40 — Sidebar Groups
+
+**Source:** `ideas.md` → *Collapsible group headers in the sidebar (GitBook-style)*. The shape was settled 2026-08-11 and waited for universes, which shipped in Phase 22: a group is a top-level label with pages under it, collapsing as a unit, made by hand, never inside another group, and a flag on a node rather than a new storage shape.
+
+---
+
+## Phase 41 — Picture Library
+
+**Source:** `ideas.md` → *The picture library — what LK has that we don't*, *What LegendKeeper has that we don't* → *Pictures*, and `plan.md` → Queued Adjustments → LK's picture controls.
+
+- **Nested folders** with a breadcrumb, and a **full-window library** opened from the Assets tab (her call, 2026-08-18) that holds fifty folders comfortably.
+- LK's controls on a picture in a page — the hover buttons and the block menu — moved here from Queued Adjustments when this phase is scoped.
+- **Background removal**, offline, and **text wrapping round a cut-out picture's outline**.
+- **Unsplash and Pinterest** in the library — open again since the network rule was retired.
+
+---
+
+## Phase 42 — Image Gallery
+
+**Source:** `ideas.md` → *Image gallery — a page of pictures that can be taken back out*. Mostly settled with her on 2026-08-31: a page type whose tiles are pictures, uniform and never cropped, taken back out at original quality. Its two open questions are in that entry.
+
+---
+
+## Phase 43 — Two-Way Relationships
+
+**Source:** `ideas.md` → *Relationships that write their own other half*. Put Damien in Valera's Friends and the app offers to put Valera in Damien's. The design work is the pairing table (symmetric and directed pairs, and fields that pair with nothing); offered and switched on, never silent.
+
+---
+
+## Phase 44 — Word & Google Docs Import
+
+**Source:** `ideas.md` → *Import Word and Google Docs, formatting intact*, and the four anti-goals in *Import and paste fidelity*. `.docx` through `mammoth` into the HTML importer, `.odt` as the fallback; nothing invented, empty paragraphs kept, characters untouched, and the round trip as the test.
+
+---
+
+## Phase 45 — Export to AO3
+
+**Source:** `ideas.md` → *Export to AO3*. AO3's tag whitelist as the target, everything that doesn't fit listed before the export runs, pictures named as the thing that can't come.
+
+**Open:** what a work is — one page, or a storyline as chapters — settled before building.
+
+---
+
+## Phase 46 — Small Comforts
+
+**Source:** `ideas.md` → *What LegendKeeper has that we don't*, *Everything else*, and *Code blocks — the half that's left*.
+
+- **Name generators** — taverns, gods, ships, spells and the rest.
+- **Emoji that look the same on every system.**
+- **Turn off features you don't use.**
+- **Drag tags into the order you want.**
+- **Making blocks discoverable** to someone who doesn't know the shortcuts — one answer for all of them, not a button bolted onto one.
 
 ---
 
