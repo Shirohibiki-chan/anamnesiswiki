@@ -104,6 +104,24 @@ describe("withSavedColor", () => {
   });
 });
 
+describe("parsePreferences and the sidebar's colour", () => {
+  // Her call, 2026-10-13: a sidebar of coloured rows is offered, not imposed.
+  it("defaults to the subtle look", () => {
+    expect(parsePreferences({}).sidebarColour).toBe("subtle");
+    expect(DEFAULT_PREFERENCES.sidebarColour).toBe("subtle");
+  });
+
+  it("keeps either look it recognises", () => {
+    expect(parsePreferences({ sidebarColour: "tinted" }).sidebarColour).toBe("tinted");
+    expect(parsePreferences({ sidebarColour: "subtle" }).sidebarColour).toBe("subtle");
+  });
+
+  it("falls back on a word it does not know", () => {
+    expect(parsePreferences({ sidebarColour: "rainbow" }).sidebarColour).toBe("subtle");
+    expect(parsePreferences({ sidebarColour: 1 }).sidebarColour).toBe("subtle");
+  });
+});
+
 describe("parsePreferences and the graph", () => {
   it("defaults to the quiet label mode", () => {
     expect(parsePreferences({}).graphEdgeLabels).toBe("selected");

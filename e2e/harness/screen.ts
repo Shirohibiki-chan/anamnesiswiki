@@ -4399,3 +4399,66 @@ export async function coloursOutsidePicker(window: Page): Promise<number> {
     }).length;
   });
 }
+
+/**
+ * Colours a row through its right-click menu's Set Color, opening the whole
+ * palette first when the colour is not in the short row.
+ */
+export async function colourRow(window: Page, rowName: string, colourName: string): Promise<void> {
+  await openRowColourPicker(window, rowName);
+  const picker = window.locator(".tree-color-picker");
+  if ((await picker.getByRole("button", { name: colourName, exact: true }).count()) === 0) await showEveryColour(window);
+  await picker.getByRole("button", { name: colourName, exact: true }).click();
+  await window.keyboard.press("Escape");
+  await clearTreeSearch(window);
+}
+
+/** Picks one of Settings → Sidebar's colour looks by its label, and closes Settings. */
+export async function pickSidebarColour(window: Page, label: "Subtle" | "Tinted Rows"): Promise<void> {
+  await openSettings(window);
+  await openSettingsSection(window, "Sidebar");
+  await window.locator('[data-setting="sidebar-colour"]').getByRole("radio", { name: new RegExp(`^${label}`) }).check();
+  await window.getByRole("button", { name: "Close settings" }).click();
+}
+
+/**
+ * A tree row's own background as red, green, blue and alpha (0–255, 0–1), read
+ * off the real layout. A wash made with `color-mix` computes to
+ * `color(srgb 0.99 0.65 0.65 / 0.26)` — channels from 0 to 1 — rather than
+ * `rgba(…)`, so both spellings are read.
+ */
+export async function treeRowBackground(window: Page, name: string): Promise<{ r: number; g: number; b: number; a: number }> {
+  return treeRow(window, name)
+    .first()
+    .evaluate(async (row) => {
+      // **The row fades between colours (120ms), and on CI that fade can still
+      // be running a second later** — a window nobody is looking at gets its
+      // animation frames late (docs/testing.md). Read mid-fade, a selected red
+      // row reported the hover's white. Wait for the row's own transitions to
+      // end, capped, the way launchApp waits on the panels.
+      await Promise.race([
+        Promise.all(row.getAnimations().map((animation) => animation.finished.catch(() => {}))),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
+      const value = getComputedStyle(row).backgroundColor;
+      const parts = (value.match(/[\d.]+/g) ?? []).map(Number);
+      const scale = value.startsWith("color(") ? 255 : 1;
+      const alpha = parts.length > 3 ? (parts[3] ?? 0) : parts.length ? 1 : 0;
+      return { r: (parts[0] ?? 0) * scale, g: (parts[1] ?? 0) * scale, b: (parts[2] ?? 0) * scale, a: alpha };
+    });
+}
+
+/** What a tree row looks like to the stylesheet, as one line — for a failure message, not an assertion. */
+export async function describeTreeRow(window: Page, name: string): Promise<string> {
+  const rows = treeRow(window, name);
+  const count = await rows.count();
+  if (count === 0) return `no row named ${name}`;
+  const row = await rows.first().evaluate((element) => ({
+    className: element.className,
+    style: element.getAttribute("style"),
+    background: getComputedStyle(element).backgroundColor,
+    running: element.getAnimations().map((animation) => `${animation.constructor.name} ${animation.playState} ${String(animation.currentTime)}`),
+    panel: element.closest(".tree-panel")?.getAttribute("data-sidebar-colour") ?? null,
+  }));
+  return `${count} row(s); ${JSON.stringify(row)}`;
+}

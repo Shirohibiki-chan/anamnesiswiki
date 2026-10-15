@@ -7,6 +7,7 @@ import { TREE_INDENT, TREE_OVERSCAN_ROWS } from "../../constants/layout";
 import { useProject } from "../../hooks/use-project";
 import { useSearchMatcher, useTreeData, type TreeSearchMode } from "../../hooks/use-tree-data";
 import { useElementSize } from "../../hooks/use-element-size";
+import { useSidebarColour } from "../../hooks/use-preferences";
 import type { TreeNodeData } from "../../services/tree-service";
 import { BookmarksRail } from "./BookmarksRail";
 import { TreeItem } from "./TreeItem";
@@ -16,6 +17,9 @@ import { TreeSearch } from "./TreeSearch";
 export function TreePanel() {
   const { project, renameNode, moveNodes, setExpanded, selectNode, togglePinned, setFocus } = useProject();
   const { treeData, treeRootId, treeRootName, focusPath, getAncestorChain } = useTreeData();
+  // Read here once and handed to the rows as an attribute the stylesheet keys
+  // on, rather than read in every TreeItem — one subscription, not one per row.
+  const sidebarColour = useSidebarColour();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<TreeSearchMode>("all");
@@ -114,7 +118,7 @@ export function TreePanel() {
   }
 
   return (
-    <div className="tree-panel">
+    <div className="tree-panel" data-sidebar-colour={sidebarColour}>
       <TreeSearch value={searchQuery} onChange={setSearchQuery} mode={searchMode} onModeChange={setSearchMode} />
       {/* Above the path bar, not below it: the rail belongs to the project
           and the path bar belongs to whatever the tree is currently showing,

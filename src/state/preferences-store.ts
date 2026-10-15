@@ -22,6 +22,7 @@ import {
   type GraphEdgeLabels,
   type PlainCopyMode,
   type PropertiesPanelDefault,
+  type SidebarColour,
   type TreeDoubleClickAction,
 } from "../services/preferences-service";
 
@@ -30,6 +31,7 @@ export type PreferencesStoreState = {
   /** Called once at startup. See StartupRouter. */
   loadPreferences: () => Promise<void>;
   setTreeDoubleClick: (action: TreeDoubleClickAction) => void;
+  setSidebarColour: (mode: SidebarColour) => void;
   setPropertiesPanelDefault: (mode: PropertiesPanelDefault) => void;
   setFormattingBar: (mode: FormattingBarMode) => void;
   setLinkMarks: (on: boolean) => void;
@@ -104,6 +106,10 @@ export const usePreferencesStore = create<PreferencesStoreState>((set, get) => {
 
     setTreeDoubleClick(action) {
       apply({ ...get().preferences, treeDoubleClick: action });
+    },
+
+    setSidebarColour(mode) {
+      apply({ ...get().preferences, sidebarColour: mode });
     },
 
     setPropertiesPanelDefault(mode) {

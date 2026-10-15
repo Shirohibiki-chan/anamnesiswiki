@@ -61,16 +61,6 @@ Parked in [ideas.md](ideas.md), so this file stays focused on active work.
   and reports the old version, which is worth remembering before reading a bug
   report from that machine.
 
-- **The folder colour feature wants an overhaul.** Flagged by the user
-  2026-08-18, with a screenshot; she said plainly she'd deal with it later, so
-  this is a marker, not a brief. **The colour dot that sat between a row's name
-  and its ⋯ menu is gone (2026-10-03, at her request)** — the row's ⋯ menu and
-  right-click menu already carried *Set Color*, so nothing was lost and the
-  ability to colour a page is unchanged. **The overhaul itself is undesigned and
-  must be asked about rather than guessed at**, the same rule the search scope
-  controls carry below. Related: icons you choose yourself, and links wearing
-  the colour of the page they point at, both in `docs/ideas.md`.
-
 - **LegendKeeper's controls for a picture in a page, which the user pointed at
   2026-08-11 as the shape to match.** Two parts, neither built here yet:
   - **Buttons that appear over the picture on hover** — change image, reposition,

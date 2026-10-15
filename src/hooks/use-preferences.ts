@@ -14,6 +14,7 @@ import type {
   GraphEdgeLabels,
   PlainCopyMode,
   PropertiesPanelDefault,
+  SidebarColour,
   TreeDoubleClickAction,
 } from "../services/preferences-service";
 
@@ -25,6 +26,11 @@ import type {
  */
 export function useTreeDoubleClick(): TreeDoubleClickAction {
   return usePreferencesStore((state) => state.preferences.treeDoubleClick);
+}
+
+/** How much colour the sidebar shows. Read once, by the tree panel, never per row. */
+export function useSidebarColour(): SidebarColour {
+  return usePreferencesStore((state) => state.preferences.sidebarColour);
 }
 
 export function useFormattingBar(): FormattingBarMode {
@@ -132,6 +138,7 @@ export function usePreferenceActions() {
   return usePreferencesStore(
     useShallow((state) => ({
       setTreeDoubleClick: state.setTreeDoubleClick,
+      setSidebarColour: state.setSidebarColour,
       setPropertiesPanelDefault: state.setPropertiesPanelDefault,
       setFormattingBar: state.setFormattingBar,
       setLinkMarks: state.setLinkMarks,

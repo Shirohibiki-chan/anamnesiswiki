@@ -529,6 +529,52 @@ button.tree-path-crumb:hover {
   box-shadow: inset 0 0 0 999px var(--color-hover);
 }
 
+/* Colour on a row (2026-10-13). TreeItem hands a coloured row its colour as
+   `--row-hex` and the class `tree-row-coloured`; everything drawn from it is
+   here, so the rules can outrank each other — the folder tint used to be an
+   inline background, which nothing could outrank, and that is why a selected
+   row always turned the accent colour whatever colour the page was.
+
+   Two looks, picked in Settings → Sidebar and marked on `.tree-panel`:
+   **subtle** (the default) keeps the coloured icon, a page's stripe and the
+   light tint on a coloured folder; **tinted** washes every coloured row,
+   inherited colour included, and leaves the names in the ordinary text
+   colour — coloured names on every row are what made the louder versions read
+   as noise. In both, a selected row wears its own colour, with its name in
+   the ordinary text colour so the darker palette colours stay readable. */
+.tree-row-tinted {
+  background: color-mix(in srgb, var(--row-hex) 12%, transparent);
+}
+
+.tree-row-tinted .tree-row-name {
+  color: var(--row-hex);
+  font-weight: 500;
+}
+
+.tree-row-selected.tree-row-coloured {
+  background: color-mix(in srgb, var(--row-hex) 26%, transparent);
+  color: var(--color-text-primary);
+}
+
+.tree-panel[data-sidebar-colour="tinted"] .tree-row-coloured {
+  background: color-mix(in srgb, var(--row-hex) 14%, transparent);
+}
+
+.tree-panel[data-sidebar-colour="tinted"] .tree-row-tinted .tree-row-name {
+  color: var(--color-text-primary);
+}
+
+.tree-panel[data-sidebar-colour="tinted"] .tree-row-selected.tree-row-coloured {
+  background: color-mix(in srgb, var(--row-hex) 34%, transparent);
+}
+
+/* The same over-the-colour hover as a tinted folder's, for every row that
+   now carries a wash of its own. */
+.tree-row-selected.tree-row-coloured:hover,
+.tree-panel[data-sidebar-colour="tinted"] .tree-row-coloured:hover {
+  box-shadow: inset 0 0 0 999px var(--color-hover);
+}
+
 /* react-arborist renders exactly two focusable elements, and the browser paints
    its default focus ring — a hard white box against a dark sidebar — on
    whichever one holds focus. Both need suppressing; killing only the rows just
