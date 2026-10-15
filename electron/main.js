@@ -406,11 +406,17 @@ handle("fs:watch", (event, targets, options) => {
   // produce a create, a write and a rename in a few milliseconds, and the
   // caller wants to be told once. The delay is the caller's — see WATCH_DELAY_MS
   // in filesystem-service.
+  // **The window that asked can be gone by the time a batch is due** — closed,
+  // or torn down by a reload, with a change still waiting out its delay.
+  // Sending to it then throws in this process, which Electron shows her as an
+  // "Uncaught Exception" box (2026-10-15). Nothing is lost by dropping the
+  // batch: it is a notice that files changed, and a window opened afterwards
+  // reads the disk fresh.
   const flush = () => {
     timer = null;
     const changed = [...pending];
     pending.clear();
-    if (changed.length > 0) event.sender.send("fs:watch-event", id, changed);
+    if (changed.length > 0 && !event.sender.isDestroyed()) event.sender.send("fs:watch-event", id, changed);
   };
 
   const watchers = roots.map((root) =>
@@ -425,6 +431,12 @@ handle("fs:watch", (event, targets, options) => {
       if (timer !== null) clearTimeout(timer);
       for (const watcher of watchers) watcher.close();
     },
+  });
+  // A window that goes away never calls fs:unwatch, so its watches would go on
+  // watching the disk for nobody. Stop them with it.
+  event.sender.once("destroyed", () => {
+    watches.get(id)?.close();
+    watches.delete(id);
   });
   return id;
 });
@@ -794,6 +806,8 @@ handle("updates:check", async () => {
 handle("updates:download", async (event) => {
   const updating = getUpdater();
   const forward = (progress) => {
+    // The same trap as fs:watch's flush: a window closed mid-download.
+    if (event.sender.isDestroyed()) return;
     event.sender.send("updates:progress", {
       received: progress.transferred,
       total: typeof progress.total === "number" ? progress.total : null,
