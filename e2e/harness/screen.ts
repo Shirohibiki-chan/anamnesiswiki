@@ -4447,18 +4447,3 @@ export async function treeRowBackground(window: Page, name: string): Promise<{ r
       return { r: (parts[0] ?? 0) * scale, g: (parts[1] ?? 0) * scale, b: (parts[2] ?? 0) * scale, a: alpha };
     });
 }
-
-/** What a tree row looks like to the stylesheet, as one line — for a failure message, not an assertion. */
-export async function describeTreeRow(window: Page, name: string): Promise<string> {
-  const rows = treeRow(window, name);
-  const count = await rows.count();
-  if (count === 0) return `no row named ${name}`;
-  const row = await rows.first().evaluate((element) => ({
-    className: element.className,
-    style: element.getAttribute("style"),
-    background: getComputedStyle(element).backgroundColor,
-    running: element.getAnimations().map((animation) => `${animation.constructor.name} ${animation.playState} ${String(animation.currentTime)}`),
-    panel: element.closest(".tree-panel")?.getAttribute("data-sidebar-colour") ?? null,
-  }));
-  return `${count} row(s); ${JSON.stringify(row)}`;
-}
