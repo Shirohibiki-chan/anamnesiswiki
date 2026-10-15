@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-15 — No more "Object has been destroyed" box
+
+### Fixes
+
+- **Closing or reloading the window no longer risks a "JavaScript error occurred in the main process" box.** When files in your world changed on disk, the app waited a moment and then told the window — and if the window had closed or reloaded in that moment, the message had nowhere to go and the error box appeared. Nothing was ever lost: it was only a notice that files had changed, never a save. It's now dropped quietly when the window has gone, and the same goes for the download progress of an update. The app also stops watching your folder for a window once that window has closed.
+- Internal tidy-up, nothing visible in the app: a diagnostic message added to one of the app tests while chasing a CI-only failure has been taken back out now that the cause is fixed.
+
 ## 2026-10-13 — The sidebar wears your colours
 
 ### Fixes
@@ -144,13 +151,3 @@
 ### Fixes
 
 - **Pages arriving from a template land in the template's own order.** They used to land in a random order that changed from one page to the next, because every copy was stamped with the same instant and the tie was broken by a fresh id.
-
-## 2026-09-21 — The shortcut sheet knows the slash commands and the markdown
-
-### Additions
-
-- **The `?` sheet has three tabs now: Keys, Slash Commands, Markdown.** *Slash Commands* lists every `/` command the editor offers, in the menu's own groups, with what each does and the short form to type — read from the menu itself, so a command added later appears on its own. *Markdown* lists what turns into formatting as you type: `# ` for a heading, `- ` for a list, `**text**` for bold, and the rest. *Keys* gained a *While writing* list of the editor's own chords — Ctrl+B, Ctrl+Alt+2 for a heading, Ctrl+Shift+8 for a list — under the fixed keys it already showed.
-
-### Changes
-
-- **The sheet is the same height whichever tab is open**, so switching tabs doesn't move the strip under the pointer.
