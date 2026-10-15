@@ -4430,7 +4430,16 @@ export async function pickSidebarColour(window: Page, label: "Subtle" | "Tinted 
 export async function treeRowBackground(window: Page, name: string): Promise<{ r: number; g: number; b: number; a: number }> {
   return treeRow(window, name)
     .first()
-    .evaluate((row) => {
+    .evaluate(async (row) => {
+      // **The row fades between colours (120ms), and on CI that fade can still
+      // be running a second later** — a window nobody is looking at gets its
+      // animation frames late (docs/testing.md). Read mid-fade, a selected red
+      // row reported the hover's white. Wait for the row's own transitions to
+      // end, capped, the way launchApp waits on the panels.
+      await Promise.race([
+        Promise.all(row.getAnimations().map((animation) => animation.finished.catch(() => {}))),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
       const value = getComputedStyle(row).backgroundColor;
       const parts = (value.match(/[\d.]+/g) ?? []).map(Number);
       const scale = value.startsWith("color(") ? 255 : 1;
@@ -4448,6 +4457,7 @@ export async function describeTreeRow(window: Page, name: string): Promise<strin
     className: element.className,
     style: element.getAttribute("style"),
     background: getComputedStyle(element).backgroundColor,
+    running: element.getAnimations().map((animation) => `${animation.constructor.name} ${animation.playState} ${String(animation.currentTime)}`),
     panel: element.closest(".tree-panel")?.getAttribute("data-sidebar-colour") ?? null,
   }));
   return `${count} row(s); ${JSON.stringify(row)}`;
